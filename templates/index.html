@@ -1,412 +1,576 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Squash Ball Striker Simulator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-</head>
-<body>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      /* เพิ่ม CSS ในส่วนนี้ */
+      .result-detail {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: var(--spacing-xs);
+      }
+
+      /* ปรับแต่ง checkbox */
+      .checkbox-control input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-right: var(--spacing-sm);
+      }
+
+      .checkbox-control label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0;
+        font-weight: 500;
+        color: var(--text-primary);
+        cursor: pointer;
+      }
+
+      /* ปรับแต่ง help text */
+      .help-text {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-top: var(--spacing-sm);
+        padding: var(--spacing-sm);
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius-sm);
+        border-left: 3px solid var(--primary-dark);
+      }
+
+      .help-text i {
+        color: var(--primary);
+        margin-right: var(--spacing-xs);
+      }
+
+      /* สไตล์สำหรับการแจ้งเตือน */
+      .highlight {
+        color: var(--primary-light);
+        font-weight: 600;
+      }
+
+      /* สไตล์ปุ่มเมื่อถูก disable */
+      button:disabled {
+        background-color: #555 !important;
+        color: #999 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+        transform: none !important;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
     <!-- Notification System -->
     <div id="notification" class="notification">
-        <div class="notification-icon"></div>
-        <div class="notification-content">
-            <div class="notification-message" id="notification-message"></div>
-        </div>
+      <div class="notification-icon"></div>
+      <div class="notification-content">
+        <div class="notification-message" id="notification-message"></div>
+      </div>
     </div>
 
     <!-- Custom Message Box -->
     <div id="custom-message-box" class="message-box-hidden">
-        <div class="message-box-content">
-            <i id="message-box-icon" class="fas fa-info-circle"></i>
-            <p id="message-box-text">Message goes here</p>
-            <button id="message-box-close-btn">OK</button>
-        </div>
+      <div class="message-box-content">
+        <i id="message-box-icon" class="fas fa-info-circle"></i>
+        <p id="message-box-text">Message goes here</p>
+        <button id="message-box-close-btn">OK</button>
+      </div>
     </div>
 
     <div class="content-wrapper">
-        <div class="container">
-            <h1>
-                <i class="fas fa-bullseye" style="margin-right: 10px;"></i>
-                Squash Ball Striker Simulator
-            </h1>
-            
-            <!-- Mobile Tab Navigation -->
-            <div class="tabs">
-                <button class="tab-btn active" onclick="openTab('simulator')">
-                    <i class="fas fa-sliders-h"></i> Simulator
-                </button>
-                <button class="tab-btn" onclick="openTab('results')">
-                    <i class="fas fa-chart-line"></i> Results
-                </button>
-                <button class="tab-btn" onclick="openTab('field')">
-                    <i class="fas fa-map-marked-alt"></i> Field
-                </button>
-                <button class="tab-btn" onclick="openTab('settings')">
-                    <i class="fas fa-cog"></i> Settings
-                </button>
+      <div class="container">
+        <h1>
+          <i class="fas fa-bullseye" style="margin-right: 10px"></i>
+          Squash Ball Striker Simulator
+        </h1>
+
+        <!-- Mobile Tab Navigation -->
+        <div class="tabs">
+          <button class="tab-btn active" onclick="openTab('simulator')">
+            <i class="fas fa-sliders-h"></i> Simulator
+          </button>
+          <button class="tab-btn" onclick="openTab('results')">
+            <i class="fas fa-chart-line"></i> Results
+          </button>
+          <button class="tab-btn" onclick="openTab('field')">
+            <i class="fas fa-map-marked-alt"></i> Field
+          </button>
+          <button class="tab-btn" onclick="openTab('settings')">
+            <i class="fas fa-cog"></i> Settings
+          </button>
+        </div>
+
+        <!-- Simulator Tab -->
+        <div id="simulator" class="tab-content active">
+          <div class="card">
+            <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
+
+            <div class="control-group">
+              <label for="release-height">Release Height</label>
+              <select id="release-height" class="select-control">
+                <option value="1.0">1.0m (Low)</option>
+                <option value="1.5">1.5m (Medium)</option>
+                <option value="2.0" selected>2.0m (High)</option>
+              </select>
             </div>
-            
-            <!-- Simulator Tab -->
-            <div id="simulator" class="tab-content active">
-                <div class="card">
-                    <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
-                    
-                    <div class="control-group">
-                        <label for="release-height">Release Height</label>
-                        <select id="release-height" class="select-control">
-                            <option value="1.0">1.0m (Low)</option>
-                            <option value="1.5">1.5m (Medium)</option>
-                            <option value="2.0" selected>2.0m (High)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="strike-height">Strike Height</label>
-                        <div class="control-slider">
-                            <input type="range" id="strike-height" min="0.01" max="0.5" step="0.01" value="0.35">
-                            <span id="height-value" class="value">0.35m</span>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="strike-angle">Strike Angle</label>
-                        <div class="control-slider">
-                            <input type="range" id="strike-angle" min="10" max="80" step="0.1" value="45">
-                            <span id="angle-value" class="value">45°</span>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="strike-velocity">Strike Velocity</label>
-                        <div class="control-slider">
-                            <input type="range" id="strike-velocity" min="1" max="20" step="0.1" value="5.25">
-                            <span id="velocity-value" class="value">5.25 m/s</span>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <div class="checkbox-control">
-                            <input type="checkbox" id="ideal-comparison">
-                            <label for="ideal-comparison">Show ideal trajectory comparison</label>
-                        </div>
-                    </div>
+
+            <div class="control-group">
+              <label for="strike-height">Strike Height</label>
+              <div class="control-slider">
+                <input
+                  type="range"
+                  id="strike-height"
+                  min="0.01"
+                  max="0.5"
+                  step="0.01"
+                  value="0.35"
+                />
+                <span id="height-value" class="value">0.35m</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="strike-angle">Strike Angle</label>
+              <div class="control-slider">
+                <input
+                  type="range"
+                  id="strike-angle"
+                  min="10"
+                  max="80"
+                  step="0.1"
+                  value="45"
+                />
+                <span id="angle-value" class="value">45°</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="strike-velocity">Strike Velocity</label>
+              <div class="control-slider">
+                <input
+                  type="range"
+                  id="strike-velocity"
+                  min="1"
+                  max="20"
+                  step="0.1"
+                  value="5.25"
+                />
+                <span id="velocity-value" class="value">5.25 m/s</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="checkbox-control">
+                <input type="checkbox" id="ideal-comparison" />
+                <label for="ideal-comparison"
+                  >Show ideal trajectory comparison</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2><i class="fas fa-crosshairs"></i> Target</h2>
+
+            <div class="control-group">
+              <label for="target-distance">Target Distance</label>
+              <div class="control-slider">
+                <input
+                  type="range"
+                  id="target-distance"
+                  min="0.75"
+                  max="2.65"
+                  step="0.01"
+                  value="1.7"
+                />
+                <span id="target-value" class="value">1.70m</span>
+              </div>
+            </div>
+
+            <div class="zone-indicator">
+              <span>Target Zone: </span>
+              <span id="indicator-zone" class="zone-badge">Zone 3</span>
+            </div>
+          </div>
+
+          <!-- เพิ่มส่วน Optimization Settings -->
+          <div class="card">
+            <h2><i class="fas fa-cogs"></i> Optimization Settings</h2>
+
+            <div class="control-group">
+              <div class="checkbox-control">
+                <input type="checkbox" id="fix-angle" />
+                <label for="fix-angle"
+                  >Fix current angle (optimize only velocity)</label
+                >
+              </div>
+            </div>
+
+            <div class="control-group">
+              <div class="checkbox-control">
+                <input type="checkbox" id="fix-velocity" />
+                <label for="fix-velocity"
+                  >Fix current velocity (optimize only angle)</label
+                >
+              </div>
+            </div>
+
+            <p class="help-text">
+              <i class="fas fa-info-circle"></i> ถ้าไม่เลือกตัวเลือกใดๆ
+              ระบบจะหาค่าที่เหมาะสมทั้งมุมและความเร็ว
+            </p>
+          </div>
+
+          <button
+            id="start-btn"
+            class="btn-primary btn-full pulse"
+            onclick="startSimulation()"
+          >
+            <i class="fas fa-play"></i>Run Simulation
+          </button>
+
+          <button
+            id="optimize-btn"
+            class="btn-accent btn-full"
+            onclick="optimizeSettings()"
+          >
+            <i class="fas fa-magic"></i>Find Optimal Settings
+          </button>
+
+          <!-- แก้ไขส่วนแสดงผลค่าที่เหมาะสม -->
+          <div
+            id="optimal-angle-tolerance-display"
+            style="display: none; margin-top: 16px"
+          >
+            <div class="card">
+              <h3><i class="fas fa-bullseye"></i> ค่าที่เหมาะสม</h3>
+              <div class="results-grid">
+                <div class="result-card">
+                  <div class="result-label">Optimal Angle</div>
+                  <div id="optimized-angle-value" class="result-value">
+                    45.00°
+                  </div>
+                  <div class="result-detail">
+                    Range:
+                    <span id="optimized-angle-tolerance-range"
+                      >42.75° - 47.25°</span
+                    >
+                  </div>
                 </div>
 
-                <div class="card">
-                    <h2><i class="fas fa-crosshairs"></i> Target</h2>
-                    
-                    <div class="control-group">
-                        <label for="target-distance">Target Distance</label>
-                        <div class="control-slider">
-                            <input type="range" id="target-distance" min="0.75" max="2.65" step="0.01" value="1.7">
-                            <span id="target-value" class="value">1.70m</span>
-                        </div>
-                    </div>
-                    
-                    <div class="zone-indicator">
-                        <span>Target Zone: </span>
-                        <span id="indicator-zone" class="zone-badge">Zone 3</span>
-                    </div>
-                </div>
-                
-                <!-- เพิ่มส่วน Optimization Settings -->
-                <div class="card">
-                    <h2><i class="fas fa-cogs"></i> Optimization Settings</h2>
-                    
-                    <div class="control-group">
-                        <div class="checkbox-control">
-                            <input type="checkbox" id="fix-angle">
-                            <label for="fix-angle">Fix current angle (optimize only velocity)</label>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <div class="checkbox-control">
-                            <input type="checkbox" id="fix-velocity">
-                            <label for="fix-velocity">Fix current velocity (optimize only angle)</label>
-                        </div>
-                    </div>
-                    
-                    <p class="help-text">
-                        <i class="fas fa-info-circle"></i> ถ้าไม่เลือกตัวเลือกใดๆ ระบบจะหาค่าที่เหมาะสมทั้งมุมและความเร็ว
-                    </p>
-                </div>
-                
-                <button id="start-btn" class="btn-primary btn-full pulse" onclick="startSimulation()">
-                    <i class="fas fa-play"></i>Run Simulation
-                </button>
-                
-                <button id="optimize-btn" class="btn-accent btn-full" onclick="optimizeSettings()">
-                    <i class="fas fa-magic"></i>Find Optimal Settings
-                </button>
-                
-                <!-- แก้ไขส่วนแสดงผลค่าที่เหมาะสม -->
-                <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
-                    <div class="card">
-                        <h3><i class="fas fa-bullseye"></i> ค่าที่เหมาะสม</h3>
-                        <div class="results-grid">
-                            <div class="result-card">
-                                <div class="result-label">Optimal Angle</div>
-                                <div id="optimized-angle-value" class="result-value">45.00°</div>
-                                <div class="result-detail">Range: <span id="optimized-angle-tolerance-range">42.75° - 47.25°</span></div>
-                            </div>
-                            
-                            <div class="result-card">
-                                <div class="result-label">Optimal Velocity</div>
-                                <div id="optimized-velocity-value" class="result-value">5.25 m/s</div>
-                                <div class="result-detail">Range: <span id="optimized-velocity-tolerance-range">4.99 - 5.51 m/s</span></div>
-                            </div>
-                            
-                            <div class="result-card">
-                                <div class="result-label">Expected Distance</div>
-                                <div id="optimized-actual-distance" class="result-value">0.00 m</div>
-                            </div>
-                            
-                            <div class="result-card">
-                                <div class="result-label">Error</div>
-                                <div id="optimized-error" class="result-value">0.00 m (0.00%)</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="result-card">
+                  <div class="result-label">Optimal Velocity</div>
+                  <div id="optimized-velocity-value" class="result-value">
+                    5.25 m/s
+                  </div>
+                  <div class="result-detail">
+                    Range:
+                    <span id="optimized-velocity-tolerance-range"
+                      >4.99 - 5.51 m/s</span
+                    >
+                  </div>
                 </div>
 
-                <button id="reset-btn" class="btn-secondary btn-full" onclick="resetSimulation()">
-                    <i class="fas fa-redo"></i>Reset All Settings
-                </button>
+                <div class="result-card">
+                  <div class="result-label">Expected Distance</div>
+                  <div id="optimized-actual-distance" class="result-value">
+                    0.00 m
+                  </div>
+                </div>
+
+                <div class="result-card">
+                  <div class="result-label">Error</div>
+                  <div id="optimized-error" class="result-value">
+                    0.00 m (0.00%)
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            <!-- Results Tab -->
-            <div id="results" class="tab-content">
-                <div class="card">
-                    <h2><i class="fas fa-chart-line"></i> Results</h2>
-                    <div class="results-grid">
-                        <div class="result-card">
-                            <div class="result-label">Landing Distance</div>
-                            <div id="landing-distance" class="result-value">0.00 m</div>
-                        </div>
-                        
-                        <div class="result-card">
-                            <div class="result-label">Target Zone</div>
-                            <div id="target-zone" class="result-value">None</div>
-                        </div>
-                        
-                        <div class="result-card">
-                            <div class="result-label">Strike Time</div>
-                            <div id="strike-time" class="result-value">0.00 s</div>
-                        </div>
-                        
-                        <div class="result-card ideal-result" style="display: none;">
-                            <div class="result-label">Ideal Landing</div>
-                            <div id="ideal-landing" class="result-value">0.00 m</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Trajectory Visualization -->
-                <div class="card">
-                    <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
-                    <div class="chart-container">
-                        <canvas id="trajectory-chart"></canvas>
-                    </div>
-                </div>
-                
-                <!-- Zone Testing Results -->
-                <div class="zone-table-container">
-                    <table class="zone-table">
-                        <!-- เนื้อหาตาราง -->
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Field Tab -->
-            <div id="field" class="tab-content">
-                <div class="card">
-                    <h2><i class="fas fa-th"></i> Field Layout</h2>
-                    <div class="chart-container">
-                        <canvas id="field-chart"></canvas>
-                    </div>
-                    <div id="field-info-text" class="help-text" style="margin-top: 16px;">
-                        <p><i class="fas fa-info-circle"></i> Click on any zone in the chart above to set it as your target.</p>
-                        <div class="field-info-details">
-                            <p>The colored zones represent the different target areas. Each zone is 38cm wide by default.</p>
-                            <p>The simulator will analyze how to hit the ball to land in your selected zone.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="field-type">Select Field Layout</label>
-                        <select id="field-type" onchange="handleFieldTypeChange()">
-                            <option value="standard" selected>Standard</option>
-                            <option value="extra1">Extended Range</option>
-                            <option value="extra2">Angle Features</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
-                    
-                    <button id="test-zones-btn" class="btn-secondary btn-full" onclick="testAllZones()">
-                        <i class="fas fa-tasks"></i>Test All Zones
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Settings Tab -->
-            <div id="settings" class="tab-content">
-                <!-- Custom Field Settings -->
-                <div class="card">
-                    <h2><i class="fas fa-ruler-combined"></i> Custom Field Settings</h2>
-                    <div class="control-group">
-                        <label for="min-distance">Min Distance (m)</label>
-                        <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" disabled>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="max-distance">Max Distance (m)</label>
-                        <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" disabled>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="zone-width">Zone Width (m)</label>
-                        <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" disabled>
-                    </div>
-                    
-                    <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>
-                        <i class="fas fa-save"></i>Apply Custom Settings
-                    </button>
-                </div>
-                
-                <!-- Advanced Physics Settings -->
-                <div class="card">
-                    <h2><i class="fas fa-atom"></i> Advanced Physics Settings</h2>
-                    <div class="control-group">
-                        <label for="gravity">Gravity (m/s²)</label>
-                        <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="ball-mass">Ball Mass (kg)</label>
-                        <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="air-density">Air Density (kg/m³)</label>
-                        <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="drag-coefficient">Drag Coefficient</label>
-                        <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5">
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="elasticity">Elasticity</label>
-                        <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4">
-                    </div>
-                </div>
-            </div>
+          </div>
+
+          <button
+            id="reset-btn"
+            class="btn-secondary btn-full"
+            onclick="resetSimulation()"
+          >
+            <i class="fas fa-redo"></i>Reset All Settings
+          </button>
         </div>
-        
-        <!-- Mobile Bottom Navigation -->
-        <div class="mobile-nav">
-            <button class="nav-btn active" onclick="openTab('simulator')">
-                <i class="fas fa-sliders-h"></i>
-                <span>Simulator</span>
-            </button>
-            <button class="nav-btn" onclick="openTab('results')">
-                <i class="fas fa-chart-line"></i>
-                <span>Results</span>
-            </button>
-            <button class="nav-btn" onclick="openTab('field')">
-                <i class="fas fa-map-marked-alt"></i>
-                <span>Field</span>
-            </button>
-            <button class="nav-btn" onclick="openTab('settings')">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </button>
+
+        <!-- Results Tab -->
+        <div id="results" class="tab-content">
+          <div class="card">
+            <h2><i class="fas fa-chart-line"></i> Results</h2>
+            <div class="results-grid">
+              <div class="result-card">
+                <div class="result-label">Landing Distance</div>
+                <div id="landing-distance" class="result-value">0.00 m</div>
+              </div>
+
+              <div class="result-card">
+                <div class="result-label">Target Zone</div>
+                <div id="target-zone" class="result-value">None</div>
+              </div>
+
+              <div class="result-card">
+                <div class="result-label">Strike Time</div>
+                <div id="strike-time" class="result-value">0.00 s</div>
+              </div>
+
+              <div class="result-card ideal-result" style="display: none">
+                <div class="result-label">Ideal Landing</div>
+                <div id="ideal-landing" class="result-value">0.00 m</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trajectory Visualization -->
+          <div class="card">
+            <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
+            <div class="chart-container">
+              <canvas id="trajectory-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- เพิ่มส่วน Debug Information -->
+          <div class="card">
+            <h2><i class="fas fa-bug"></i> Debug Information</h2>
+            <div class="debug-info">
+              <button onclick="toggleDebugInfo()" class="btn-secondary">
+                <i class="fas fa-code"></i> Show/Hide Debug Info
+              </button>
+              <div
+                id="debug-info-content"
+                style="
+                  display: none;
+                  margin-top: 16px;
+                  font-family: monospace;
+                  white-space: pre-wrap;
+                  overflow-x: auto;
+                  background: #222;
+                  padding: 16px;
+                  border-radius: 8px;
+                "
+              >
+                <!-- Debug info จะถูกเพิ่มโดย JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Zone Testing Results -->
+          <div id="test-zone-results" class="zone-table-container">
+            <!-- ผลการทดสอบโซนจะถูกเพิ่มโดย JavaScript -->
+          </div>
         </div>
+
+        <!-- Field Tab -->
+        <div id="field" class="tab-content">
+          <div class="card">
+            <h2><i class="fas fa-th"></i> Field Layout</h2>
+            <div class="chart-container">
+              <canvas id="field-chart"></canvas>
+            </div>
+            <div
+              id="field-info-text"
+              class="help-text"
+              style="margin-top: 16px"
+            >
+              <p>
+                <i class="fas fa-info-circle"></i> Click on any zone in the
+                chart above to set it as your target.
+              </p>
+              <div class="field-info-details">
+                <p>
+                  The colored zones represent the different target areas. Each
+                  zone is 38cm wide by default.
+                </p>
+                <p>
+                  The simulator will analyze how to hit the ball to land in your
+                  selected zone.
+                </p>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="field-type">Select Field Layout</label>
+              <select id="field-type" onchange="handleFieldTypeChange()">
+                <option value="standard" selected>Standard</option>
+                <option value="extra1">Extended Range</option>
+                <option value="extra2">Angle Features</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+
+            <button
+              id="test-zones-btn"
+              class="btn-secondary btn-full"
+              onclick="testAllZones()"
+            >
+              <i class="fas fa-tasks"></i>Test All Zones
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+          <!-- Custom Field Settings -->
+          <div class="card">
+            <h2><i class="fas fa-ruler-combined"></i> Custom Field Settings</h2>
+            <div class="control-group">
+              <label for="min-distance">Min Distance (m)</label>
+              <input
+                type="number"
+                id="min-distance"
+                min="0.1"
+                max="10"
+                step="0.01"
+                value="0.75"
+                disabled
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="max-distance">Max Distance (m)</label>
+              <input
+                type="number"
+                id="max-distance"
+                min="0.1"
+                max="10"
+                step="0.01"
+                value="2.65"
+                disabled
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="zone-width">Zone Width (m)</label>
+              <input
+                type="number"
+                id="zone-width"
+                min="0.1"
+                max="2"
+                step="0.01"
+                value="0.38"
+                disabled
+              />
+            </div>
+
+            <button
+              id="apply-field-btn"
+              onclick="applyFieldSettings()"
+              disabled
+            >
+              <i class="fas fa-save"></i>Apply Custom Settings
+            </button>
+          </div>
+
+          <!-- Advanced Physics Settings -->
+          <div class="card">
+            <h2><i class="fas fa-atom"></i> Advanced Physics Settings</h2>
+            <div class="control-group">
+              <label for="gravity">Gravity (m/s²)</label>
+              <input
+                type="number"
+                id="gravity"
+                min="1"
+                max="20"
+                step="0.01"
+                value="9.81"
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="ball-mass">Ball Mass (kg)</label>
+              <input
+                type="number"
+                id="ball-mass"
+                min="0.01"
+                max="0.1"
+                step="0.001"
+                value="0.024"
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="air-density">Air Density (kg/m³)</label>
+              <input
+                type="number"
+                id="air-density"
+                min="0.1"
+                max="5"
+                step="0.001"
+                value="1.225"
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="drag-coefficient">Drag Coefficient</label>
+              <input
+                type="number"
+                id="drag-coefficient"
+                min="0.1"
+                max="2"
+                step="0.01"
+                value="0.5"
+              />
+            </div>
+
+            <div class="control-group">
+              <label for="elasticity">Elasticity</label>
+              <input
+                type="number"
+                id="elasticity"
+                min="0.1"
+                max="1"
+                step="0.01"
+                value="0.4"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Bottom Navigation -->
+      <div class="mobile-nav">
+        <button class="nav-btn active" onclick="openTab('simulator')">
+          <i class="fas fa-sliders-h"></i>
+          <span>Simulator</span>
+        </button>
+        <button class="nav-btn" onclick="openTab('results')">
+          <i class="fas fa-chart-line"></i>
+          <span>Results</span>
+        </button>
+        <button class="nav-btn" onclick="openTab('field')">
+          <i class="fas fa-map-marked-alt"></i>
+          <span>Field</span>
+        </button>
+        <button class="nav-btn" onclick="openTab('settings')">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </button>
+      </div>
     </div>
-    
-    <!-- Add function to apply field settings -->
-    <script>
-        function applyFieldSettings() {
-            const minDistance = parseFloat(document.getElementById('min-distance').value);
-            const maxDistance = parseFloat(document.getElementById('max-distance').value);
-            const zoneWidth = parseFloat(document.getElementById('zone-width').value);
-            
-            if (minDistance >= maxDistance) {
-                showCustomMessage('Min distance must be less than max distance', 'error');
-                return;
-            }
-            
-            if (zoneWidth <= 0 || zoneWidth > (maxDistance - minDistance)) {
-                showCustomMessage('Invalid zone width', 'error');
-                return;
-            }
-            
-            // API call to apply custom field
-            fetch('/api/change_field', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    field_type: 'custom',
-                    min_distance: minDistance,
-                    max_distance: maxDistance,
-                    zone_width: zoneWidth
-                }),
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.zones) {
-                    currentZones = data.zones;
-                    updateFieldChart(data.zones);
-                    updateTargetZoneIndicator();
-                    showCustomMessage('Custom field settings applied', 'success');
-                }
-            })
-            .catch(error => {
-                console.error('Error applying field settings:', error);
-                showCustomMessage('Could not apply field settings', 'error');
-            });
-        }
 
-        // Update mobile tabs
-        function openTab(tabName) {
-            // Hide all tab contents
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all tab buttons
-            document.querySelectorAll('.tab-btn, .nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show the selected tab
-            document.getElementById(tabName).classList.add('active');
-            
-            // Add active class to the corresponding tab buttons
-            document.querySelectorAll(`.tab-btn[onclick*="${tabName}"], .nav-btn[onclick*="${tabName}"]`).forEach(btn => {
-                btn.classList.add('active');
-            });
-            
-            // Update charts if needed
-            if (typeof updateChartsIfNeeded === 'function') {
-                updateChartsIfNeeded(tabName);
-            }
-        }
-    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-</body>
+  </body>
 </html>

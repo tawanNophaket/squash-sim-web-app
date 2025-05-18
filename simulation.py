@@ -682,13 +682,13 @@ class Simulation:
         self.ideal_trajectory_x = []
         self.ideal_trajectory_y = []
         self.ideal_landing_distance = 0.0
-        
+
         # รีเซ็ตตัวชี้วัด
         self.target_indicator = None
         self.target_text_annotation = None
         self.zone_highlight = None
         self.zone_text = None
-        
+
         return True, "Simulation reset successfully"
 
     def calculate_optimal_angle(self, target_distance):
@@ -759,18 +759,18 @@ class Simulation:
                 f"Target distance must be between {self.target_area.min_distance} and {self.target_area.max_distance} meters",
             )
 
-        # Use fixed angle if provided, otherwise use current setting
+        # ใช้มุมปัจจุบันถ้าไม่มีการระบุมุมที่ต้องการ
         angle = (
             fixed_angle
             if fixed_angle is not None
             else self.striker_settings.strike_angle
         )
 
-        # Simple binary search to find the velocity
+        # ทำ binary search เพื่อหาความเร็วที่เหมาะสม
         min_velocity = self.striker_settings.velocity_min
         max_velocity = self.striker_settings.velocity_max
 
-        # Maximum iterations to prevent infinite loop
+        # จำนวนรอบสูงสุดเพื่อป้องกัน infinite loop
         max_iterations = 20
         best_velocity = min_velocity
         best_distance_error = float("inf")
@@ -778,7 +778,7 @@ class Simulation:
         for _ in range(max_iterations):
             mid_velocity = (min_velocity + max_velocity) / 2
 
-            # Calculate distance with this velocity
+            # คำนวณระยะทางด้วยความเร็วนี้
             distance = self.ball_physics.get_landing_distance(
                 self.striker_settings.release_height,
                 mid_velocity,
@@ -786,19 +786,19 @@ class Simulation:
                 self.striker_settings.strike_height,
             )
 
-            # Check if this is better than our current best
+            # ตรวจสอบว่าผลลัพธ์นี้ดีกว่าค่าที่ดีที่สุดปัจจุบันหรือไม่
             distance_error = abs(distance - target_distance)
             if distance_error < best_distance_error:
                 best_velocity = mid_velocity
                 best_distance_error = distance_error
 
-            # Update search range
+            # ปรับช่วงการค้นหา
             if distance < target_distance:
                 min_velocity = mid_velocity
             else:
                 max_velocity = mid_velocity
 
-            # If we're close enough, stop
+            # ถ้าใกล้เคียงพอแล้ว ให้หยุด
             if distance_error < 0.01:
                 break
 
@@ -807,131 +807,141 @@ class Simulation:
     def calculate_optimal_parameters(self, target_distance, fixed_params=None):
         """
         คำนวณหาค่าพารามิเตอร์ที่เหมาะสมที่สุด (มุมและความเร็ว) เพื่อให้ลูกตกที่ระยะเป้าหมาย
-        
+
         Args:
             target_distance (float): ระยะเป้าหมายที่ต้องการให้ลูกตก (เมตร)
             fixed_params (dict, optional): พารามิเตอร์ที่ต้องการให้คงที่ (ถ้าไม่กำหนดจะปรับทั้งมุมและความเร็ว)
                 - 'angle': กำหนดมุมคงที่และหาเฉพาะความเร็ว
                 - 'velocity': กำหนดความเร็วคงที่และหาเฉพาะมุม
-        
+
         Returns:
             tuple: (success, result) โดย result เป็น tuple ของ (angle, velocity)
         """
         # ตรวจสอบว่าระยะเป้าหมายอยู่ในช่วงที่เป็นไปได้หรือไม่
-        if not (self.target_area.min_distance <= target_distance <= self.target_area.max_distance):
-            return (False, f"Target distance must be between {self.target_area.min_distance} and {self.target_area.max_distance} meters")
-        
+        if not (
+            self.target_area.min_distance
+            <= target_distance
+            <= self.target_area.max_distance
+        ):
+            return (
+                False,
+                f"Target distance must be between {self.target_area.min_distance} and {self.target_area.max_distance} meters",
+            )
+
         # ถ้าไม่ได้ระบุพารามิเตอร์ที่ต้องการให้คงที่ จะทำการปรับทั้งมุมและความเร็ว
         if fixed_params is None:
             fixed_params = {}
-        
+
         # ตรวจสอบว่าต้องการปรับพารามิเตอร์ใดบ้าง
-        fix_angle = 'angle' in fixed_params
-        fix_velocity = 'velocity' in fixed_params
-        
+        fix_angle = "angle" in fixed_params
+        fix_velocity = "velocity" in fixed_params
+
         # ถ้ากำหนดให้ทั้งมุมและความเร็วคงที่ จะไม่สามารถหาค่าที่เหมาะสมได้
         if fix_angle and fix_velocity:
-            angle = fixed_params['angle']
-            velocity = fixed_params['velocity']
-            
+            angle = fixed_params["angle"]
+            velocity = fixed_params["velocity"]
+
             # คำนวณระยะที่จะตกด้วยพารามิเตอร์ที่กำหนด
             distance = self.ball_physics.get_landing_distance(
                 self.striker_settings.release_height,
                 velocity,
                 angle,
-                self.striker_settings.strike_height
+                self.striker_settings.strike_height,
             )
-            
+
             # ตรวจสอบว่าระยะที่คำนวณได้ใกล้เคียงกับเป้าหมายหรือไม่
             error = abs(distance - target_distance)
             if error < 0.1:  # ยอมรับความคลาดเคลื่อนไม่เกิน 10 cm
                 return (True, (angle, velocity))
             else:
-                return (False, f"Fixed parameters result in landing distance of {distance:.2f}m (error: {error:.2f}m)")
-        
+                return (
+                    False,
+                    f"Fixed parameters result in landing distance of {distance:.2f}m (error: {error:.2f}m)",
+                )
+
         # ถ้ากำหนดให้มุมคงที่ จะปรับเฉพาะความเร็ว
         elif fix_angle:
-            angle = fixed_params['angle']
+            angle = fixed_params["angle"]
             return self.calculate_optimal_velocity(target_distance, angle)
-        
+
         # ถ้ากำหนดให้ความเร็วคงที่ จะปรับเฉพาะมุม
         elif fix_velocity:
             # เก็บความเร็วเดิมไว้
             original_velocity = self.striker_settings.strike_velocity
-            
+
             # ตั้งค่าความเร็วตามที่กำหนด
-            self.striker_settings.strike_velocity = fixed_params['velocity']
-            
+            self.striker_settings.strike_velocity = fixed_params["velocity"]
+
             # หาค่ามุมที่เหมาะสม
             result = self.calculate_optimal_angle(target_distance)
-            
+
             # คืนค่าความเร็วเดิม
             self.striker_settings.strike_velocity = original_velocity
-            
+
             return result
-        
+
         # ถ้าไม่ได้กำหนดให้พารามิเตอร์ใดคงที่ จะปรับทั้งมุมและความเร็ว
         else:
             # พารามิเตอร์เริ่มต้น
             current_angle = self.striker_settings.strike_angle
             current_velocity = self.striker_settings.strike_velocity
-            
+
             # ช่วงของพารามิเตอร์
-            angle_min, angle_max = self.striker_settings.angle_min, self.striker_settings.angle_max
-            velocity_min, velocity_max = self.striker_settings.velocity_min, self.striker_settings.velocity_max
-            
-            # ปรับปรุง: ขยายช่วงการทดสอบให้กว้างขึ้นและเพิ่มจำนวนค่าที่ทดสอบ
-            if target_distance <= 1.0:
-                # สำหรับระยะใกล้มาก
-                test_angles = [15, 20, 25, 30, 35]
-                test_velocities = [2, 2.5, 3, 3.5, 4, 4.5, 5]
-            elif target_distance <= 1.5:
-                # สำหรับระยะใกล้
-                test_angles = [20, 25, 30, 35, 40]
-                test_velocities = [3, 3.5, 4, 4.5, 5, 5.5, 6]
+            angle_min, angle_max = (
+                self.striker_settings.angle_min,
+                self.striker_settings.angle_max,
+            )
+            velocity_min, velocity_max = (
+                self.striker_settings.velocity_min,
+                self.striker_settings.velocity_max,
+            )
+
+            # ประมาณค่าเริ่มต้นที่ดี: มุม 45 องศาให้ระยะไกลที่สุดในฟิสิกส์อุดมคติ
+            if target_distance <= 1.5:
+                # สำหรับระยะใกล้ ใช้มุมต่ำและความเร็วต่ำ
+                test_angles = [30, 25, 20, 15]
+                test_velocities = [3, 4, 5, 6]
             elif target_distance <= 2.0:
                 # สำหรับระยะกลาง
-                test_angles = [30, 35, 40, 45, 50, 55]
-                test_velocities = [4, 4.5, 5, 5.5, 6, 6.5, 7]
-            elif target_distance <= 2.5:
-                # สำหรับระยะไกลปานกลาง
-                test_angles = [35, 40, 45, 50, 55, 60]
-                test_velocities = [5, 5.5, 6, 6.5, 7, 7.5, 8]
+                test_angles = [35, 40, 45, 50]
+                test_velocities = [4, 5, 6, 7]
             else:
-                # สำหรับระยะไกลมาก
-                test_angles = [40, 45, 50, 55, 60, 65]
-                test_velocities = [6, 6.5, 7, 7.5, 8, 8.5, 9]
-            
+                # สำหรับระยะไกล ใช้มุมสูงและความเร็วสูง
+                test_angles = [40, 45, 50, 55]
+                test_velocities = [5, 6, 7, 8]
+
             # ทดลองใช้ชุดพารามิเตอร์ต่างๆ และเลือกชุดที่ให้ค่าความผิดพลาดน้อยที่สุด
             best_params = None
-            best_error = float('inf')
-            
+            best_error = float("inf")
+
             for angle in test_angles:
                 for velocity in test_velocities:
                     # ตรวจสอบว่าพารามิเตอร์อยู่ในช่วงที่กำหนดหรือไม่
-                    if not (angle_min <= angle <= angle_max) or not (velocity_min <= velocity <= velocity_max):
+                    if not (angle_min <= angle <= angle_max) or not (
+                        velocity_min <= velocity <= velocity_max
+                    ):
                         continue
-                        
+
                     # คำนวณระยะที่จะตกด้วยพารามิเตอร์นี้
                     distance = self.ball_physics.get_landing_distance(
                         self.striker_settings.release_height,
                         velocity,
                         angle,
-                        self.striker_settings.strike_height
+                        self.striker_settings.strike_height,
                     )
-                    
+
                     # คำนวณความผิดพลาด
                     error = abs(distance - target_distance)
-                    
+
                     # ถ้าความผิดพลาดน้อยกว่าค่าที่ดีที่สุดปัจจุบัน ให้บันทึกพารามิเตอร์นี้
                     if error < best_error:
                         best_error = error
                         best_params = (angle, velocity, distance)
-            
+
             # หลังจากหาค่าโดยประมาณแล้ว ให้ใช้การปรับละเอียด
             if best_params:
                 angle, velocity, _ = best_params
-                
+
                 # ปรับมุมเพื่อให้ได้ผลลัพธ์ที่ดีขึ้น
                 angle_step = 1.0
                 for _ in range(5):  # ปรับแต่งไม่เกิน 5 รอบ
@@ -940,22 +950,22 @@ class Simulation:
                         self.striker_settings.release_height,
                         velocity,
                         angle + angle_step,
-                        self.striker_settings.strike_height
+                        self.striker_settings.strike_height,
                     )
                     error_up = abs(distance_up - target_distance)
-                    
+
                     # ทดลองลดมุม
                     distance_down = self.ball_physics.get_landing_distance(
                         self.striker_settings.release_height,
                         velocity,
                         angle - angle_step,
-                        self.striker_settings.strike_height
+                        self.striker_settings.strike_height,
                     )
                     error_down = abs(distance_down - target_distance)
-                    
+
                     # เลือกทิศทางที่ให้ผลลัพธ์ดีที่สุด
                     current_error = abs(best_params[2] - target_distance)
-                    
+
                     if error_up < current_error and error_up <= error_down:
                         angle += angle_step
                         best_params = (angle, velocity, distance_up)
@@ -965,11 +975,11 @@ class Simulation:
                     else:
                         # ถ้าไม่มีการปรับปรุง ให้ลดขนาดการปรับ
                         angle_step /= 2
-                    
+
                     # ถ้าขนาดการปรับเล็กมาก ให้หยุด
                     if angle_step < 0.1:
                         break
-                
+
                 # ปรับความเร็วเพื่อให้ได้ผลลัพธ์ที่ดีขึ้น
                 velocity_step = 0.5
                 for _ in range(5):  # ปรับแต่งไม่เกิน 5 รอบ
@@ -978,22 +988,22 @@ class Simulation:
                         self.striker_settings.release_height,
                         velocity + velocity_step,
                         angle,
-                        self.striker_settings.strike_height
+                        self.striker_settings.strike_height,
                     )
                     error_up = abs(distance_up - target_distance)
-                    
-                    # ทดลองลดความเร็ว (แก้ไขข้อผิดพลาด: เพิ่มพารามิเตอร์ angle ที่หายไป)
+
+                    # ทดลองลดความเร็ว
                     distance_down = self.ball_physics.get_landing_distance(
                         self.striker_settings.release_height,
                         velocity - velocity_step,
                         angle,
-                        self.striker_settings.strike_height
+                        self.striker_settings.strike_height,
                     )
                     error_down = abs(distance_down - target_distance)
-                    
+
                     # เลือกทิศทางที่ให้ผลลัพธ์ดีที่สุด
                     current_error = abs(best_params[2] - target_distance)
-                    
+
                     if error_up < current_error and error_up <= error_down:
                         velocity += velocity_step
                         best_params = (angle, velocity, distance_up)
@@ -1003,15 +1013,15 @@ class Simulation:
                     else:
                         # ถ้าไม่มีการปรับปรุง ให้ลดขนาดการปรับ
                         velocity_step /= 2
-                    
+
                     # ถ้าขนาดการปรับเล็กมาก ให้หยุด
                     if velocity_step < 0.1:
                         break
-                
+
                 # ส่งคืนค่าพารามิเตอร์ที่เหมาะสมที่สุด
                 final_angle, final_velocity, _ = best_params
                 return (True, (final_angle, final_velocity))
-            
+
             # ถ้าไม่สามารถหาค่าที่เหมาะสมได้
             return (False, "Could not find optimal parameters")
 
