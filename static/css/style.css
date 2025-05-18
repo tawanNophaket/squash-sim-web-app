@@ -5,6 +5,9 @@
     --text-color: #FFFFFF;
     --accent-secondary: #FFD700;
     --contrast-color: #00e0ff;
+    --success-color: #33FF33;
+    --warning-color: #FFFF33;
+    --error-color: #FF3333;
 }
 
 body {
@@ -28,6 +31,7 @@ h1, h2, h3 {
 /* Tabs */
 .tabs {
     display: flex;
+    flex-wrap: wrap;
     margin-bottom: 20px;
     border-bottom: 1px solid var(--secondary-bg);
 }
@@ -64,7 +68,7 @@ h1, h2, h3 {
 }
 
 /* Settings panels */
-.settings-panel, .target-panel {
+.settings-panel, .target-panel, .field-dimensions {
     margin-bottom: 30px;
     padding: 20px;
     background-color: var(--dark-bg);
@@ -86,11 +90,45 @@ h1, h2, h3 {
 .setting input[type="range"] {
     flex: 1;
     margin-right: 10px;
+    height: 8px;
+    background: var(--secondary-bg);
+    border-radius: 5px;
+    -webkit-appearance: none;
+}
+
+.setting input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.setting input[type="number"], 
+.setting select {
+    background-color: var(--secondary-bg);
+    color: var(--text-color);
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    padding: 5px 10px;
+    width: 100px;
 }
 
 .setting span {
     width: 80px;
     text-align: right;
+}
+
+.setting-checkbox {
+    margin: 15px 0;
+    display: flex;
+    align-items: center;
+}
+
+.setting-checkbox label {
+    margin-left: 10px;
+    cursor: pointer;
 }
 
 /* Buttons */
@@ -100,6 +138,7 @@ button {
     border: 1px solid var(--accent-color);
     padding: 10px 20px;
     margin-right: 10px;
+    margin-bottom: 10px;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -107,6 +146,11 @@ button {
 
 button:hover {
     background-color: rgba(255, 32, 39, 0.3);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .primary-btn {
@@ -140,6 +184,25 @@ button:hover {
     margin-left: 10px;
 }
 
+.ideal-result {
+    display: none;
+}
+
+/* Zone badge */
+.zone-badge {
+    background-color: var(--accent-color);
+    color: var(--text-color);
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.target-zone-indicator {
+    margin: 10px 0 20px 0;
+}
+
 /* Charts */
 canvas {
     background-color: var(--dark-bg);
@@ -150,12 +213,31 @@ canvas {
     height: 400px !important;
 }
 
+/* Field visualization */
+.field-visualization {
+    margin-top: 30px;
+}
+
+/* Physics explanation panel */
+.physics-explanation {
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.physics-explanation h3 {
+    margin-top: 0;
+    color: var(--accent-secondary);
+}
+
 /* Sensitivity panel */
 .sensitivity-panel {
     margin-top: 20px;
     background-color: var(--dark-bg);
     padding: 15px;
     border-radius: 5px;
+    border: 1px solid var(--accent-color);
 }
 
 #sensitivity-results {
@@ -164,6 +246,80 @@ canvas {
     margin-top: 20px;
     border-radius: 5px;
     border: 1px solid var(--accent-color);
+}
+
+/* Test zone results table */
+#test-zone-results {
+    margin-top: 30px;
+}
+
+.zone-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    color: var(--text-color);
+}
+
+.zone-table th {
+    background-color: var(--accent-color);
+    padding: 10px;
+    text-align: left;
+}
+
+.zone-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+}
+
+.zone-table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.zone-table .tolerance-pass {
+    color: var(--success-color);
+}
+
+.zone-table .tolerance-fail {
+    color: var(--error-color);
+}
+
+.summary-box {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--accent-color);
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+}
+
+.summary-box h3 {
+    margin-top: 0;
+    color: var(--accent-secondary);
+}
+
+.stat-row {
+    display: flex;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    width: 200px;
+    color: var(--text-color);
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.stat-value.good {
+    color: var(--success-color);
+}
+
+.stat-value.medium {
+    color: var(--warning-color);
+}
+
+.stat-value.poor {
+    color: var(--error-color);
 }
 
 /* Popup */
