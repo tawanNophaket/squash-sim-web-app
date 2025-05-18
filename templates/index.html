@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squash Ball Striker Simulation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/minimal-style.css') }}">
+    <title>Squash Ball Striker Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-red-theme.css') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -21,7 +21,7 @@
 
     <div class="container">
         <h1>
-            <i class="fas fa-bolt" style="margin-right: 10px;"></i>
+            <i class="fas fa-bullseye" style="margin-right: 10px;"></i>
             Squash Ball Striker Simulator
         </h1>
         
@@ -29,7 +29,7 @@
             <!-- Left Column - Controls -->
             <div class="control-panel">
                 <div class="card">
-                    <h2>Main Settings</h2>
+                    <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
                     
                     <div class="control-group">
                         <label for="release-height">Release Height</label>
@@ -72,14 +72,14 @@
                     </div>
                     
                     <div class="button-group">
-                        <button id="start-btn" class="btn-primary btn-full" onclick="startSimulation()">
+                        <button id="start-btn" class="btn-primary btn-full pulse" onclick="startSimulation()">
                             <i class="fas fa-play" style="margin-right: 8px;"></i>Run Simulation
                         </button>
                     </div>
                 </div>
 
                 <div class="card">
-                    <h2>Target</h2>
+                    <h2><i class="fas fa-crosshairs"></i> Target</h2>
                     
                     <div class="control-group">
                         <label for="target-distance">Target Distance</label>
@@ -95,20 +95,20 @@
                     </div>
                     
                     <button id="optimize-btn" class="btn-accent btn-full" onclick="optimizeSettings()">
-                        <i class="fas fa-bullseye" style="margin-right: 8px;"></i>Find Optimal Settings
+                        <i class="fas fa-magic" style="margin-right: 8px;"></i>Find Optimal Settings
                     </button>
                     
                     <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
                         <div class="help-text">
-                            <p><strong>Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
+                            <p><strong class="highlight">Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
                             <p><strong>Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
-                            <p><strong>Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                            <p><strong class="highlight">Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="card">
-                    <h2>Field Type</h2>
+                    <h2><i class="fas fa-map-marked-alt"></i> Field Type</h2>
                     <div class="control-group">
                         <label for="field-type">Select Field Layout</label>
                         <select id="field-type" onchange="handleFieldTypeChange()">
@@ -134,7 +134,7 @@
             <div class="visualization-panel">
                 <!-- Results Summary -->
                 <div class="card">
-                    <h2>Results</h2>
+                    <h2><i class="fas fa-chart-line"></i> Results</h2>
                     <div class="results-grid">
                         <div class="result-card">
                             <div class="result-label">Landing Distance</div>
@@ -160,7 +160,7 @@
                 
                 <!-- Trajectory Visualization -->
                 <div class="card">
-                    <h2>Trajectory</h2>
+                    <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
                     <div class="chart-container">
                         <canvas id="trajectory-chart"></canvas>
                     </div>
@@ -168,12 +168,12 @@
                 
                 <!-- Field Visualization -->
                 <div class="card">
-                    <h2>Field Layout</h2>
+                    <h2><i class="fas fa-th"></i> Field Layout</h2>
                     <div class="chart-container">
                         <canvas id="field-chart"></canvas>
                     </div>
                     <div id="field-info-text" class="help-text" style="margin-top: 16px;">
-                        <p>Click on any zone in the chart above to set it as your target.</p>
+                        <p><i class="fas fa-info-circle"></i> Click on any zone in the chart above to set it as your target.</p>
                     </div>
                 </div>
                 
@@ -184,7 +184,7 @@
                 <div class="card">
                     <div class="accordion">
                         <div class="accordion-header" onclick="toggleAccordion('physics-settings')">
-                            <h3>Advanced Physics Settings</h3>
+                            <h3><i class="fas fa-atom"></i> Advanced Physics Settings</h3>
                             <i class="fas fa-chevron-down"></i>
                         </div>
                         <div id="physics-settings" class="accordion-content">
@@ -219,7 +219,7 @@
                 <div class="card">
                     <div class="accordion">
                         <div class="accordion-header" onclick="toggleAccordion('custom-field-settings')">
-                            <h3>Custom Field Settings</h3>
+                            <h3><i class="fas fa-cog"></i> Custom Field Settings</h3>
                             <i class="fas fa-chevron-down"></i>
                         </div>
                         <div id="custom-field-settings" class="accordion-content">
@@ -252,7 +252,7 @@
             const content = document.getElementById(id);
             content.classList.toggle('active');
             
-            const icon = content.previousElementSibling.querySelector('i');
+            const icon = content.previousElementSibling.querySelector('i.fa-chevron-down, i.fa-chevron-up');
             if (content.classList.contains('active')) {
                 icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
             } else {
@@ -273,17 +273,17 @@
             iconEl.className = 'notification-icon';
             switch(type) {
                 case 'success':
-                    iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i>';
+                    iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #00e676;"></i>';
                     break;
                 case 'error':
-                    iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i>';
+                    iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #ff5252;"></i>';
                     break;
                 case 'warning':
-                    iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i>';
+                    iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffab40;"></i>';
                     break;
                 case 'info':
                 default:
-                    iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #2196f3;"></i>';
+                    iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #64b5f6;"></i>';
                     break;
             }
             
@@ -296,12 +296,73 @@
             }, 3000);
         }
         
-        // Call original script
+        // Custom chart styles for dark theme
+        function updateChartTheme() {
+            // Global chart defaults
+            Chart.defaults.color = '#b0b0b0';
+            Chart.defaults.borderColor = '#333333';
+            Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
+            
+            // Custom colors for dark theme
+            const chartColors = {
+                primary: '#ff2027',
+                secondary: '#ff5252',
+                accent: '#ff9e80',
+                grid: '#333333',
+                text: '#ffffff',
+                background: '#1e1e1e'
+            };
+            
+            // Apply to existing charts
+            if (window.trajectoryChart) {
+                // Update colors
+                trajectoryChart.data.datasets[0].borderColor = chartColors.primary;
+                trajectoryChart.data.datasets[0].backgroundColor = chartColors.primary;
+                
+                trajectoryChart.data.datasets[1].borderColor = chartColors.accent;
+                trajectoryChart.data.datasets[1].backgroundColor = chartColors.accent;
+                
+                trajectoryChart.data.datasets[2].backgroundColor = '#ffab40';
+                trajectoryChart.data.datasets[2].borderColor = '#ffab40';
+                
+                // Update options
+                trajectoryChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
+                trajectoryChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
+                trajectoryChart.options.scales.x.ticks.color = '#b0b0b0';
+                trajectoryChart.options.scales.y.ticks.color = '#b0b0b0';
+                trajectoryChart.options.scales.x.title.color = '#ffffff';
+                trajectoryChart.options.scales.y.title.color = '#ffffff';
+                
+                trajectoryChart.update();
+            }
+            
+            if (window.fieldChart) {
+                // Update field chart colors
+                window.zoneColors = [
+                    '#ff2027', '#ff5252', '#ff9e80', '#ffab40', '#64b5f6',
+                    '#00e676', '#9575cd', '#f06292', '#4dd0e1', '#ffd54f'
+                ];
+                
+                fieldChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
+                fieldChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
+                fieldChart.options.scales.x.ticks.color = '#b0b0b0';
+                fieldChart.options.scales.y.ticks.color = '#b0b0b0';
+                fieldChart.options.scales.x.title.color = '#ffffff';
+                fieldChart.options.scales.y.title.color = '#ffffff';
+                
+                fieldChart.update();
+            }
+        }
+        
+        // Call original script with theme updates
         document.addEventListener('DOMContentLoaded', function() {
             // Call the init functions from the original script
             if (typeof setupTrajectoryChart === 'function') setupTrajectoryChart();
             if (typeof setupFieldChart === 'function') setupFieldChart();
             if (typeof fetchFieldInfo === 'function') fetchFieldInfo();
+            
+            // Apply dark theme to charts
+            setTimeout(updateChartTheme, 500);
             
             // Setup event listeners
             document.getElementById('strike-height').addEventListener('input', function() {

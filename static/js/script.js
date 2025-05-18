@@ -477,9 +477,114 @@ function updateFieldChart(zones) {
     fieldChart.update();
 }
 
-// ปรับปรุง script.js เพื่อให้ทำงานกับ UI ใหม่
+// =====================
+// DARK RED THEME ENHANCEMENTS (OVERRIDE)
+// =====================
 
-// ปรับปรุงฟังก์ชันแสดงข้อความแจ้งเตือนเพื่อใช้กับ notification UI ใหม่
+// Custom chart theme for dark mode with red highlights
+function setupDarkRedChartTheme() {
+    // Global chart defaults
+    Chart.defaults.color = '#b0b0b0';
+    Chart.defaults.borderColor = '#333333';
+    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
+    
+    // Update zone colors to match our dark red theme
+    window.zoneColors = [
+        '#ff2027', '#ff5252', '#ff9e80', '#ffab40', '#64b5f6',
+        '#00e676', '#9575cd', '#f06292', '#4dd0e1', '#ffd54f'
+    ];
+    
+    // Style modifications for trajectory chart
+    if (window.trajectoryChart) {
+        trajectoryChart.data.datasets[0].borderColor = '#ff2027';
+        trajectoryChart.data.datasets[0].backgroundColor = '#ff2027';
+        trajectoryChart.data.datasets[0].pointRadius = 2;
+        trajectoryChart.data.datasets[0].borderWidth = 2;
+        
+        trajectoryChart.data.datasets[1].borderColor = '#ff9e80';
+        trajectoryChart.data.datasets[1].backgroundColor = '#ff9e80';
+        trajectoryChart.data.datasets[1].borderDash = [5, 5];
+        
+        trajectoryChart.data.datasets[2].backgroundColor = '#ffab40';
+        trajectoryChart.data.datasets[2].borderColor = '#ffab40';
+        trajectoryChart.data.datasets[2].pointRadius = 8;
+        
+        // Update chart options for dark theme
+        trajectoryChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
+        trajectoryChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
+        trajectoryChart.options.scales.x.ticks.color = '#b0b0b0';
+        trajectoryChart.options.scales.y.ticks.color = '#b0b0b0';
+        trajectoryChart.options.scales.x.title.color = '#ffffff';
+        trajectoryChart.options.scales.y.title.color = '#ffffff';
+        
+        // Enhance tooltips
+        trajectoryChart.options.plugins.tooltip.backgroundColor = 'rgba(20, 20, 20, 0.9)';
+        trajectoryChart.options.plugins.tooltip.titleColor = '#ffffff';
+        trajectoryChart.options.plugins.tooltip.bodyColor = '#ffffff';
+        trajectoryChart.options.plugins.tooltip.borderColor = '#ff2027';
+        trajectoryChart.options.plugins.tooltip.borderWidth = 1;
+        trajectoryChart.options.plugins.tooltip.cornerRadius = 4;
+        
+        trajectoryChart.update();
+    }
+    
+    // Style modifications for field chart
+    if (window.fieldChart) {
+        // For the field chart gradient colors
+        if (fieldChart.data && fieldChart.data.datasets && fieldChart.data.datasets[0]) {
+            const dataset = fieldChart.data.datasets[0];
+            
+            // Create gradients for each zone
+            const backgroundColors = [];
+            const borderColors = [];
+            
+            for (let i = 0; i < window.zoneColors.length; i++) {
+                const baseColor = window.zoneColors[i % window.zoneColors.length];
+                borderColors.push(baseColor);
+                
+                // Create gradient
+                try {
+                    const ctx = document.createElement('canvas').getContext('2d');
+                    const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                    
+                    gradient.addColorStop(0, baseColor + '80');  // 50% transparent
+                    gradient.addColorStop(0.5, baseColor + 'B0'); // 70% opacity
+                    gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
+                    
+                    backgroundColors.push(gradient);
+                } catch (e) {
+                    // Fallback if gradient fails
+                    backgroundColors.push(baseColor + '99');
+                }
+            }
+            
+            dataset.backgroundColor = backgroundColors;
+            dataset.borderColor = borderColors;
+            dataset.borderWidth = 2;
+            dataset.borderRadius = 4;
+        }
+        
+        // Update chart options for dark theme
+        fieldChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
+        fieldChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
+        fieldChart.options.scales.x.ticks.color = '#b0b0b0';
+        fieldChart.options.scales.y.ticks.color = '#b0b0b0';
+        fieldChart.options.scales.x.title.color = '#ffffff';
+        fieldChart.options.scales.y.title.color = '#ffffff';
+        
+        // Enhance tooltips
+        fieldChart.options.plugins.tooltip.backgroundColor = 'rgba(20, 20, 20, 0.9)';
+        fieldChart.options.plugins.tooltip.titleColor = '#ffffff';
+        fieldChart.options.plugins.tooltip.bodyColor = '#ffffff';
+        fieldChart.options.plugins.tooltip.borderColor = '#ff2027';
+        fieldChart.options.plugins.tooltip.borderWidth = 1;
+        fieldChart.options.plugins.tooltip.cornerRadius = 4;
+        
+        fieldChart.update();
+    }
+}
+
+// Enhanced notification system
 function showNotification(message, type = 'info') {
     const notification = document.getElementById('notification');
     const messageEl = document.getElementById('notification-message');
@@ -492,21 +597,21 @@ function showNotification(message, type = 'info') {
     iconEl.className = 'notification-icon';
     switch(type) {
         case 'success':
-            iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i>';
+            iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #00e676;"></i>';
             break;
         case 'error':
-            iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i>';
+            iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #ff5252;"></i>';
             break;
         case 'warning':
-            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i>';
+            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffab40;"></i>';
             break;
         case 'info':
         default:
-            iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #2196f3;"></i>';
+            iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #64b5f6;"></i>';
             break;
     }
     
-    // Show notification
+    // Add animation class
     notification.classList.add('show');
     
     // Hide after 3 seconds
@@ -515,15 +620,120 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// แทนที่ฟังก์ชันเดิม
-window.showCustomMessage = showNotification;
+// Function to handle zone hover with enhanced visual effect
+function handleZoneHoverEnhanced(index) {
+    if (!fieldChart || !fieldChart.data || !fieldChart.data.datasets || !fieldChart.data.datasets[0]) {
+        return;
+    }
+    
+    const dataset = fieldChart.data.datasets[0];
+    const backgroundColor = [...dataset.backgroundColor];
+    const borderColor = [...dataset.borderColor];
+    const hoverBorderWidth = [...Array(backgroundColor.length)].fill(dataset.borderWidth);
+    
+    if (index >= 0 && index < backgroundColor.length) {
+        for (let i = 0; i < backgroundColor.length; i++) {
+            if (i === index) {
+                // Make selected zone more vibrant
+                const baseColor = window.zoneColors[i % window.zoneColors.length];
+                const ctx = document.createElement('canvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                
+                gradient.addColorStop(0, baseColor + 'CC');  // 80% opacity
+                gradient.addColorStop(0.5, baseColor + 'FF'); // Full opacity
+                gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
+                
+                backgroundColor[i] = gradient;
+                borderColor[i] = '#ffffff';  // White border for highlight
+                hoverBorderWidth[i] = 4;     // Thicker border
+            } else {
+                // Dim other zones
+                const baseColor = window.zoneColors[i % window.zoneColors.length];
+                const ctx = document.createElement('canvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                
+                gradient.addColorStop(0, baseColor + '33');  // 20% opacity
+                gradient.addColorStop(0.5, baseColor + '66'); // 40% opacity
+                gradient.addColorStop(1, baseColor + '88');  // 53% opacity
+                
+                backgroundColor[i] = gradient;
+                borderColor[i] = baseColor + '66';  // Semi-transparent border
+                hoverBorderWidth[i] = dataset.borderWidth;
+            }
+        }
+    } else {
+        // Reset all zones to normal
+        for (let i = 0; i < backgroundColor.length; i++) {
+            const baseColor = window.zoneColors[i % window.zoneColors.length];
+            const ctx = document.createElement('canvas').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+            
+            gradient.addColorStop(0, baseColor + '80');  // 50% opacity
+            gradient.addColorStop(0.5, baseColor + 'B0'); // 70% opacity
+            gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
+            
+            backgroundColor[i] = gradient;
+            borderColor[i] = baseColor;
+            hoverBorderWidth[i] = dataset.borderWidth;
+        }
+    }
+    
+    dataset.backgroundColor = backgroundColor;
+    dataset.borderColor = borderColor;
+    dataset.hoverBorderWidth = hoverBorderWidth;
+    fieldChart.update();
+}
 
-// ฟังก์ชันสำหรับ toggle accordion
+// Enhanced version of drawZonesOnTrajectoryChart
+function drawZonesOnTrajectoryChartEnhanced(zonesData) {
+    if (!trajectoryChart || !zonesData) return;
+
+    const annotations = {};
+    zonesData.forEach((zone, index) => {
+        const color = window.zoneColors[index % window.zoneColors.length];
+        annotations['zoneBox' + index] = {
+            type: 'box',
+            xMin: zone[0],
+            xMax: zone[1],
+            yMin: -0.05,
+            yMax: 0.05,
+            backgroundColor: color + '33', // More transparent
+            borderColor: color + '99',
+            borderWidth: 1,
+            borderDash: [3, 3], // Dashed line
+            drawTime: 'beforeDatasetsDraw',
+            borderRadius: 2
+        };
+        annotations['zoneLabel' + index] = {
+            type: 'label',
+            xValue: (zone[0] + zone[1]) / 2,
+            yValue: 0.1,
+            content: `Z${index + 1}`,
+            color: '#ffffff',
+            font: { 
+                size: 10, 
+                weight: 'bold',
+                family: "'Inter', sans-serif"
+            },
+            backgroundColor: 'rgba(30, 30, 30, 0.8)',
+            padding: 4,
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: color
+        };
+    });
+    
+    if (!trajectoryChart.options.plugins) trajectoryChart.options.plugins = {};
+    if (!trajectoryChart.options.plugins.annotation) trajectoryChart.options.plugins.annotation = {};
+    trajectoryChart.options.plugins.annotation.annotations = annotations;
+}
+
+// Function to toggle accordion sections
 function toggleAccordion(id) {
     const content = document.getElementById(id);
     content.classList.toggle('active');
     
-    const icon = content.previousElementSibling.querySelector('i');
+    const icon = content.previousElementSibling.querySelector('i.fa-chevron-down, i.fa-chevron-up');
     if (content.classList.contains('active')) {
         icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
     } else {
@@ -531,147 +741,29 @@ function toggleAccordion(id) {
     }
 }
 
-// อัปเดตการตั้งค่ากราฟให้เข้ากับธีมมินิมัล
-function updateChartStyles() {
-    // ตั้งค่าสีพื้นฐานสำหรับ Chart.js
-    Chart.defaults.color = '#212121';
-    Chart.defaults.borderColor = '#e0e0e0';
-    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
-    
-    // อัปเดต trajectory chart ถ้ามีอยู่แล้ว
-    if (window.trajectoryChart) {
-        // อัปเดตสีและสไตล์
-        trajectoryChart.options.plugins.legend.labels.color = '#212121';
-        trajectoryChart.options.plugins.legend.labels.font = {
-            family: "'Inter', 'Helvetica Neue', 'Arial', sans-serif",
-            size: 12
-        };
-        
-        trajectoryChart.options.scales.x.grid.color = '#f0f0f0';
-        trajectoryChart.options.scales.y.grid.color = '#f0f0f0';
-        trajectoryChart.options.scales.x.ticks.color = '#757575';
-        trajectoryChart.options.scales.y.ticks.color = '#757575';
-        
-        trajectoryChart.options.plugins.tooltip.backgroundColor = 'rgba(33, 33, 33, 0.9)';
-        trajectoryChart.options.plugins.tooltip.titleColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.borderColor = '#3f51b5';
-        trajectoryChart.options.plugins.tooltip.borderWidth = 1;
-        
-        trajectoryChart.update();
-    }
-    
-    // อัปเดต field chart ถ้ามีอยู่แล้ว
-    if (window.fieldChart) {
-        // อัปเดตสีและสไตล์
-        fieldChart.options.scales.x.grid.color = '#f0f0f0';
-        fieldChart.options.scales.y.grid.color = '#f0f0f0';
-        fieldChart.options.scales.x.ticks.color = '#757575';
-        fieldChart.options.scales.y.ticks.color = '#757575';
-        
-        fieldChart.options.plugins.tooltip.backgroundColor = 'rgba(33, 33, 33, 0.9)';
-        fieldChart.options.plugins.tooltip.titleColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.borderColor = '#3f51b5';
-        fieldChart.options.plugins.tooltip.borderWidth = 1;
-        
-        fieldChart.update();
-    }
-}
-
-// แทนที่ฟังก์ชันเดิมสำหรับ setupTrajectoryChart
-function setupTrajectoryChart_Minimal() {
-    // เรียกฟังก์ชันเดิมก่อน
-    if (typeof window.setupTrajectoryChart === 'function') {
-        window.setupTrajectoryChart();
-    } else {
-        console.error('Original setupTrajectoryChart function not found');
-        return;
-    }
-    
-    // ปรับแต่งเพิ่มเติม
-    if (window.trajectoryChart) {
-        // ปรับสีของชุดข้อมูล
-        trajectoryChart.data.datasets[0].borderColor = '#3f51b5';
-        trajectoryChart.data.datasets[0].backgroundColor = '#3f51b5';
-        
-        trajectoryChart.data.datasets[1].borderColor = '#f44336';
-        trajectoryChart.data.datasets[1].backgroundColor = '#f44336';
-        
-        trajectoryChart.data.datasets[2].backgroundColor = '#ff4081';
-        trajectoryChart.data.datasets[2].borderColor = '#ff4081';
-        
-        trajectoryChart.update();
-    }
-}
-
-// แทนที่ฟังก์ชันเดิมสำหรับ setupFieldChart
-function setupFieldChart_Minimal() {
-    // เรียกฟังก์ชันเดิมก่อน
-    if (typeof window.setupFieldChart === 'function') {
-        window.setupFieldChart();
-    } else {
-        console.error('Original setupFieldChart function not found');
-        return;
-    }
-    
-    // ปรับแต่งเพิ่มเติม
-    if (window.fieldChart) {
-        // ปรับแต่งสีของโซน
-        const minimalZoneColors = [
-            '#3f51b5', '#f44336', '#4caf50', '#ff9800', '#9c27b0',
-            '#03a9f4', '#e91e63', '#ffc107', '#795548', '#607d8b'
-        ];
-        
-        // อัปเดตสีโซน
-        window.zoneColors = minimalZoneColors;
-        
-        fieldChart.update();
-    }
-}
-
-// ปรับแต่งค่า UI เมื่อหน้าเว็บโหลดเสร็จ
+// Setup on document load
+// (Override/Enhance behaviors for dark red theme)
 document.addEventListener('DOMContentLoaded', function() {
-    // เก็บฟังก์ชันเดิมไว้
+    // Save original functions to override
     const originalShowCustomMessage = window.showCustomMessage;
-    const originalSetupTrajectoryChart = window.setupTrajectoryChart;
-    const originalSetupFieldChart = window.setupFieldChart;
+    const originalHandleZoneHover = window.handleZoneHover;
+    const originalDrawZonesOnTrajectoryChart = window.drawZonesOnTrajectoryChart;
     
-    // แทนที่ด้วยฟังก์ชันใหม่
+    // Override with enhanced functions
     window.showCustomMessage = showNotification;
     
-    // อัปเดตฟังก์ชัน setup charts
-    if (originalSetupTrajectoryChart) {
-        window.setupTrajectoryChart = function() {
-            originalSetupTrajectoryChart();
-            updateChartStyles();
-        };
+    if (originalHandleZoneHover) {
+        window.handleZoneHover = handleZoneHoverEnhanced;
     }
     
-    if (originalSetupFieldChart) {
-        window.setupFieldChart = function() {
-            originalSetupFieldChart();
-            updateChartStyles();
-        };
+    if (originalDrawZonesOnTrajectoryChart) {
+        window.drawZonesOnTrajectoryChart = drawZonesOnTrajectoryChartEnhanced;
     }
     
-    // ติดตั้ง event handlers สำหรับ accordion
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', function() {
-            const content = this.nextElementSibling;
-            content.classList.toggle('active');
-            
-            const icon = this.querySelector('i');
-            if (content.classList.contains('active')) {
-                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-            } else {
-                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-            }
-        });
-    });
+    // Apply dark red theme to charts after a slight delay to ensure they're initialized
+    setTimeout(setupDarkRedChartTheme, 500);
     
-    // ตั้งค่า UI values ที่แสดงผลให้ตรงกับค่าปัจจุบัน
+    // Make sure value displays have correct values
     const heightSlider = document.getElementById('strike-height');
     if (heightSlider) {
         document.getElementById('height-value').textContent = heightSlider.value + 'm';
@@ -691,378 +783,58 @@ document.addEventListener('DOMContentLoaded', function() {
     if (targetSlider) {
         document.getElementById('target-value').textContent = targetSlider.value + 'm';
     }
-});
-
-function showOptimizedValuesPopup(targetDistance, angle, velocity, angleMin, angleMax) {
-    const popup = document.createElement('div');
-    popup.className = 'popup'; 
     
-    const popupContent = document.createElement('div');
-    popupContent.className = 'popup-content'; 
-    
-    popupContent.innerHTML = `
-        <h2><span class="popup-icon fas fa-check-circle" style="color:var(--success-color); margin-right:10px;"></span>พบการตั้งค่าที่เหมาะสมที่สุด</h2>
-        <p style="text-align:center; font-size: 1.1em; color: #e0e0e0;">สำหรับระยะเป้าหมาย: <strong>${parseFloat(targetDistance).toFixed(2)} m</strong></p>
-        <hr>
-        <div class="popup-params">
-            <div class="param-row">
-                <span class="param-label">มุมที่ตีที่เหมาะสม:</span>
-                <span class="param-value">${angle.toFixed(2)}°</span>
-            </div>
-            <div class="param-row">
-                <span class="param-label">ช่วงค่าที่ยอมรับได้ (±5%):</span>
-                <span class="param-range">${angleMin.toFixed(2)}° - ${angleMax.toFixed(2)}°</span>
-            </div>
-            <div class="param-row">
-                <span class="param-label">ความเร็วที่ตีที่เหมาะสม:</span>
-                <span class="param-value" style="color: var(--contrast-color);">${velocity.toFixed(2)} m/s</span>
-            </div>
-        </div>
-        <hr>
-        <div class="popup-instructions">
-            <p>คำแนะนำในการตั้งค่าเครื่อง:</p>
-            <ol>
-                <li>ตั้งค่ามุมเป็น <strong>${angle.toFixed(2)}°</strong>. (ช่วง: ${angleMin.toFixed(2)}° ถึง ${angleMax.toFixed(2)}°)</li>
-                <li>ตั้งค่าความเร็วเป็น <strong>${velocity.toFixed(2)} m/s</strong>.</li>
-                <li>ตรวจสอบให้แน่ใจว่าพารามิเตอร์อื่นๆ (ความสูงปล่อย/ตี) ตรงกับการตั้งค่าปัจจุบัน</li>
-            </ol>
-        </div>
-        <div class="popup-buttons">
-            <button class="close-btn primary-btn">ปิด</button>
-        </div>
-    `;
-    
-    popup.appendChild(popupContent);
-    document.body.appendChild(popup);
-    
-    setTimeout(() => popup.classList.add('show'), 10);
-
-    popup.querySelector('.close-btn').addEventListener('click', function() {
-        popup.classList.remove('show');
-        setTimeout(() => document.body.removeChild(popup), 300);
-    });
-    popup.addEventListener('click', function(event) {
-        if (event.target === popup) {
-            popup.classList.remove('show');
-            setTimeout(() => document.body.removeChild(popup), 300);
-        }
-    });
-}
-
-function testAllZones() {
-    const releaseHeight = document.getElementById('release-height').value;
-    const strikeHeight = document.getElementById('strike-height').value;
-
-    setButtonDisabled('test-zones-btn', true);
-    document.getElementById('test-zone-results').innerHTML = '<p style="text-align:center; color: var(--text-muted-color);">กำลังทดสอบทุกโซนสำหรับสนามปัจจุบัน...</p>';
-    
-    fetch('/api/test_all_zones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            release_height: releaseHeight,
-            strike_height: strikeHeight,
-            field_type: currentFieldType
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(errData => {
-                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+    // Set up accordion for advanced settings
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+    if (accordionHeaders.length > 0) {
+        accordionHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const contentId = this.getAttribute('data-target') || 
+                                 this.nextElementSibling.id;
+                toggleAccordion(contentId);
             });
-        }
-        return response.json();
-    })
-    .then(data => {
-        let html = `
-            <h3>ผลการทดสอบการหาค่าที่เหมาะสมที่สุดสำหรับโซน - สนาม ${currentFieldType.charAt(0).toUpperCase() + currentFieldType.slice(1)}</h3>
-            <table class="zone-table">
-                <thead>
-                    <tr>
-                        <th>โซน</th><th>ช่วง (m)</th><th>เป้าหมาย (m)</th>
-                        <th>มุมที่เหมาะสม (°)</th><th>ความเร็วที่เหมาะสม (m/s)</th>
-                        <th>ระยะทางจริง (m)</th><th>ค่าคลาดเคลื่อน (m)</th><th>ค่าคลาดเคลื่อน (%)</th><th>ผ่าน (±5%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        data.results.forEach(result => {
-            if (typeof result.error === 'string') {
-                html += `
-                    <tr>
-                        <td>${result.zone}</td>
-                        <td>${result.range[0].toFixed(2)} - ${result.range[1].toFixed(2)}</td>
-                        <td>${result.target.toFixed(2)}</td>
-                        <td colspan="6" style="color: var(--error-color);">${result.error}</td>
-                    </tr>
-                `;
-            } else {
-                const toleranceClass = result.within_tolerance ? 'tolerance-pass' : 'tolerance-fail';
-                const toleranceText = result.within_tolerance ? '✓ ใช่' : '✗ ไม่';
-                html += `
-                    <tr>
-                        <td>${result.zone}</td>
-                        <td>${result.range[0].toFixed(2)} - ${result.range[1].toFixed(2)}</td>
-                        <td>${result.target.toFixed(2)}</td>
-                        <td>${result.angle.toFixed(2)}</td>
-                        <td>${result.velocity.toFixed(2)}</td>
-                        <td>${result.actual_distance.toFixed(3)}</td>
-                        <td>${result.error.toFixed(3)}</td>
-                        <td>${result.error_percent.toFixed(1)}%</td>
-                        <td class="${toleranceClass}">${toleranceText}</td>
-                    </tr>
-                `;
-            }
         });
-        html += `</tbody></table>`;
-        
-        const summary = data.summary;
-        let toleranceClassOverall = '';
-        if (summary.tolerance_percent >= 90) toleranceClassOverall = 'good';
-        else if (summary.tolerance_percent >= 75) toleranceClassOverall = 'medium';
-        else toleranceClassOverall = 'poor';
-        
-        html += `
-            <div class="summary-box">
-                <h3>สรุปผลการหาค่าที่เหมาะสมที่สุดโดยรวม</h3>
-                <div class="stat-row"><span class="stat-label">การหาค่าที่เหมาะสมสำเร็จ:</span><span class="stat-value">${summary.successful_zones}/${summary.total_zones} (${(summary.successful_zones/summary.total_zones*100).toFixed(1)}%)</span></div>
-                <div class="stat-row"><span class="stat-label">ค่าคลาดเคลื่อนเฉลี่ย:</span><span class="stat-value">${summary.avg_error.toFixed(3)} m</span></div>
-                <div class="stat-row"><span class="stat-label">ค่าคลาดเคลื่อนสูงสุด:</span><span class="stat-value">${summary.max_error.toFixed(3)} m</span></div>
-                <div class="stat-row"><span class="stat-label">โซนที่อยู่ในช่วงค่าที่ยอมรับได้ ±5%:</span><span class="stat-value ${toleranceClassOverall}">${summary.within_tolerance_count}/${summary.total_zones} (${summary.tolerance_percent.toFixed(1)}%)</span></div>
-            </div>
-        `;
-        
-        let recommendation = '';
-        if (summary.tolerance_percent < 75) recommendation = `<p class="stat-value poor" style="text-align:center; margin-top:15px;">คำแนะนำ: ความแม่นยำในการหาค่าที่เหมาะสมต่ำ ควรตรวจสอบพารามิเตอร์ทางฟิสิกส์หรือตรรกะการหาค่าที่เหมาะสม</p>`;
-        else if (summary.tolerance_percent < 90) recommendation = `<p class="stat-value medium" style="text-align:center; margin-top:15px;">คำแนะนำ: การหาค่าที่เหมาะสมอยู่ในเกณฑ์ที่ยอมรับได้ การปรับจูนเพิ่มเติมอาจช่วยให้ผลลัพธ์ดีขึ้น</p>`;
-        else recommendation = `<p class="stat-value good" style="text-align:center; margin-top:15px;">คำแนะนำ: การหาค่าที่เหมาะสมทำงานได้ดีมาก!</p>`;
-        html += recommendation;
-        
-        document.getElementById('test-zone-results').innerHTML = html;
-        openTab('results');
-        showCustomMessage('ทดสอบทุกโซนเสร็จสิ้น', 'success');
-    })
-    .catch(error => {
-        console.error('Error testing zones:', error);
-        document.getElementById('test-zone-results').innerHTML = `<p style="color:var(--error-color);">เกิดข้อผิดพลาด: ${error.message}</p>`;
-        showCustomMessage(`เกิดข้อผิดพลาดในการทดสอบโซน: ${error.message}`, 'error');
-    })
-    .finally(() => {
-        setButtonDisabled('test-zones-btn', false);
-    });
-}
-
-// ปรับปรุงฟังก์ชันแสดงข้อความแจ้งเตือนเพื่อใช้กับ notification UI ใหม่
-function showNotification(message, type = 'info') {
-    const notification = document.getElementById('notification');
-    const messageEl = document.getElementById('notification-message');
-    const iconEl = notification.querySelector('.notification-icon');
-    
-    // Set message
-    messageEl.textContent = message;
-    
-    // Set icon based on type
-    iconEl.className = 'notification-icon';
-    switch(type) {
-        case 'success':
-            iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i>';
-            break;
-        case 'error':
-            iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i>';
-            break;
-        case 'warning':
-            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i>';
-            break;
-        case 'info':
-        default:
-            iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #2196f3;"></i>';
-            break;
     }
     
-    // Show notification
-    notification.classList.add('show');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
-
-// แทนที่ฟังก์ชันเดิม
-window.showCustomMessage = showNotification;
-
-// ฟังก์ชันสำหรับ toggle accordion
-function toggleAccordion(id) {
-    const content = document.getElementById(id);
-    content.classList.toggle('active');
-    
-    const icon = content.previousElementSibling.querySelector('i');
-    if (content.classList.contains('active')) {
-        icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-    } else {
-        icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-    }
-}
-
-// อัปเดตการตั้งค่ากราฟให้เข้ากับธีมมินิมัล
-function updateChartStyles() {
-    // ตั้งค่าสีพื้นฐานสำหรับ Chart.js
-    Chart.defaults.color = '#212121';
-    Chart.defaults.borderColor = '#e0e0e0';
-    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
-    
-    // อัปเดต trajectory chart ถ้ามีอยู่แล้ว
-    if (window.trajectoryChart) {
-        // อัปเดตสีและสไตล์
-        trajectoryChart.options.plugins.legend.labels.color = '#212121';
-        trajectoryChart.options.plugins.legend.labels.font = {
-            family: "'Inter', 'Helvetica Neue', 'Arial', sans-serif",
-            size: 12
-        };
-        
-        trajectoryChart.options.scales.x.grid.color = '#f0f0f0';
-        trajectoryChart.options.scales.y.grid.color = '#f0f0f0';
-        trajectoryChart.options.scales.x.ticks.color = '#757575';
-        trajectoryChart.options.scales.y.ticks.color = '#757575';
-        
-        trajectoryChart.options.plugins.tooltip.backgroundColor = 'rgba(33, 33, 33, 0.9)';
-        trajectoryChart.options.plugins.tooltip.titleColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.borderColor = '#3f51b5';
-        trajectoryChart.options.plugins.tooltip.borderWidth = 1;
-        
-        trajectoryChart.update();
-    }
-    
-    // อัปเดต field chart ถ้ามีอยู่แล้ว
-    if (window.fieldChart) {
-        // อัปเดตสีและสไตล์
-        fieldChart.options.scales.x.grid.color = '#f0f0f0';
-        fieldChart.options.scales.y.grid.color = '#f0f0f0';
-        fieldChart.options.scales.x.ticks.color = '#757575';
-        fieldChart.options.scales.y.ticks.color = '#757575';
-        
-        fieldChart.options.plugins.tooltip.backgroundColor = 'rgba(33, 33, 33, 0.9)';
-        fieldChart.options.plugins.tooltip.titleColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.borderColor = '#3f51b5';
-        fieldChart.options.plugins.tooltip.borderWidth = 1;
-        
-        fieldChart.update();
-    }
-}
-
-// แทนที่ฟังก์ชันเดิมสำหรับ setupTrajectoryChart
-function setupTrajectoryChart_Minimal() {
-    // เรียกฟังก์ชันเดิมก่อน
-    if (typeof window.setupTrajectoryChart === 'function') {
-        window.setupTrajectoryChart();
-    } else {
-        console.error('Original setupTrajectoryChart function not found');
-        return;
-    }
-    
-    // ปรับแต่งเพิ่มเติม
-    if (window.trajectoryChart) {
-        // ปรับสีของชุดข้อมูล
-        trajectoryChart.data.datasets[0].borderColor = '#3f51b5';
-        trajectoryChart.data.datasets[0].backgroundColor = '#3f51b5';
-        
-        trajectoryChart.data.datasets[1].borderColor = '#f44336';
-        trajectoryChart.data.datasets[1].backgroundColor = '#f44336';
-        
-        trajectoryChart.data.datasets[2].backgroundColor = '#ff4081';
-        trajectoryChart.data.datasets[2].borderColor = '#ff4081';
-        
-        trajectoryChart.update();
-    }
-}
-
-// แทนที่ฟังก์ชันเดิมสำหรับ setupFieldChart
-function setupFieldChart_Minimal() {
-    // เรียกฟังก์ชันเดิมก่อน
-    if (typeof window.setupFieldChart === 'function') {
-        window.setupFieldChart();
-    } else {
-        console.error('Original setupFieldChart function not found');
-        return;
-    }
-    
-    // ปรับแต่งเพิ่มเติม
-    if (window.fieldChart) {
-        // ปรับแต่งสีของโซน
-        const minimalZoneColors = [
-            '#3f51b5', '#f44336', '#4caf50', '#ff9800', '#9c27b0',
-            '#03a9f4', '#e91e63', '#ffc107', '#795548', '#607d8b'
-        ];
-        
-        // อัปเดตสีโซน
-        window.zoneColors = minimalZoneColors;
-        
-        fieldChart.update();
-    }
-}
-
-// ปรับแต่งค่า UI เมื่อหน้าเว็บโหลดเสร็จ
-document.addEventListener('DOMContentLoaded', function() {
-    // เก็บฟังก์ชันเดิมไว้
-    const originalShowCustomMessage = window.showCustomMessage;
-    const originalSetupTrajectoryChart = window.setupTrajectoryChart;
-    const originalSetupFieldChart = window.setupFieldChart;
-    
-    // แทนที่ด้วยฟังก์ชันใหม่
-    window.showCustomMessage = showNotification;
-    
-    // อัปเดตฟังก์ชัน setup charts
-    if (originalSetupTrajectoryChart) {
-        window.setupTrajectoryChart = function() {
-            originalSetupTrajectoryChart();
-            updateChartStyles();
-        };
-    }
-    
-    if (originalSetupFieldChart) {
-        window.setupFieldChart = function() {
-            originalSetupFieldChart();
-            updateChartStyles();
-        };
-    }
-    
-    // ติดตั้ง event handlers สำหรับ accordion
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', function() {
-            const content = this.nextElementSibling;
-            content.classList.toggle('active');
+    // Add pulsing effect to results after simulation
+    const originalStartSimulation = window.startSimulation;
+    if (originalStartSimulation) {
+        window.startSimulation = function() {
+            // Call original function
+            const result = originalStartSimulation.apply(this, arguments);
             
-            const icon = this.querySelector('i');
-            if (content.classList.contains('active')) {
-                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-            } else {
-                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-            }
-        });
-    });
-    
-    // ตั้งค่า UI values ที่แสดงผลให้ตรงกับค่าปัจจุบัน
-    const heightSlider = document.getElementById('strike-height');
-    if (heightSlider) {
-        document.getElementById('height-value').textContent = heightSlider.value + 'm';
+            // Add pulse effect to results
+            setTimeout(() => {
+                const resultCards = document.querySelectorAll('.result-card');
+                resultCards.forEach(card => {
+                    card.classList.add('pulse');
+                    setTimeout(() => card.classList.remove('pulse'), 2000);
+                });
+            }, 1000);
+            
+            return result;
+        };
     }
     
-    const angleSlider = document.getElementById('strike-angle');
-    if (angleSlider) {
-        document.getElementById('angle-value').textContent = angleSlider.value + '°';
-    }
-    
-    const velocitySlider = document.getElementById('strike-velocity');
-    if (velocitySlider) {
-        document.getElementById('velocity-value').textContent = velocitySlider.value + ' m/s';
-    }
-    
-    const targetSlider = document.getElementById('target-distance');
-    if (targetSlider) {
-        document.getElementById('target-value').textContent = targetSlider.value + 'm';
+    // Enhance test zone results display
+    const originalTestAllZones = window.testAllZones;
+    if (originalTestAllZones) {
+        window.testAllZones = function() {
+            // Call original function
+            const result = originalTestAllZones.apply(this, arguments);
+            
+            // Add smooth scroll to results
+            setTimeout(() => {
+                const resultsElem = document.getElementById('test-zone-results');
+                if (resultsElem) {
+                    resultsElem.scrollIntoView({ 
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            }, 1000);
+            
+            return result;
+        };
     }
 });
