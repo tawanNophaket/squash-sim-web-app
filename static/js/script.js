@@ -72,30 +72,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const strikeHeight = document.getElementById('strike-height');
     if (strikeHeight) {
         strikeHeight.addEventListener('input', function() {
-            document.getElementById('height-value').textContent = this.value + ' m';
-        });
+        document.getElementById('height-value').textContent = this.value + ' m';
+    });
     }
     
     const strikeAngle = document.getElementById('strike-angle');
     if (strikeAngle) {
         strikeAngle.addEventListener('input', function() {
-            document.getElementById('angle-value').textContent = this.value + '°';
-        });
+        document.getElementById('angle-value').textContent = this.value + '°';
+    });
     }
     
     const strikeVelocity = document.getElementById('strike-velocity');
     if (strikeVelocity) {
         strikeVelocity.addEventListener('input', function() {
-            document.getElementById('velocity-value').textContent = this.value + ' m/s';
-        });
+        document.getElementById('velocity-value').textContent = this.value + ' m/s';
+    });
     }
     
     const targetDistance = document.getElementById('target-distance');
     if (targetDistance) {
         targetDistance.addEventListener('input', function() {
-            document.getElementById('target-value').textContent = this.value + ' m';
-            updateTargetZoneIndicator();
-        });
+        document.getElementById('target-value').textContent = this.value + ' m';
+        updateTargetZoneIndicator();
+    });
     }
     
     const fieldType = document.getElementById('field-type');
@@ -499,7 +499,16 @@ function optimizeSettings() {
             toleranceDisplay.style.display = 'block';
         }
         
-        showCustomMessage('ได้ค่าที่เหมาะสมแล้ว', 'success');
+        // สำคัญ: รัน simulation ทันทีหลังจากได้ค่าที่เหมาะสม
+        setTimeout(() => {
+            showCustomMessage('กำลังจำลองด้วยค่าที่เหมาะสม...', 'info');
+            startSimulation(); // รัน simulation อัตโนมัติ
+            
+            // เปลี่ยนไปที่หน้า Results เพื่อแสดงผลลัพธ์
+            setTimeout(() => {
+                openTab('results');
+            }, 500);
+        }, 500);
     })
     .catch(error => {
         console.error('Error optimizing settings:', error);
@@ -710,12 +719,12 @@ function updateChartsIfNeeded(tabName) {
     if (tabName === 'field' && fieldChart) {
         setTimeout(() => {
             if (fieldChart.resize) fieldChart.resize();
-            fieldChart.update();
+        fieldChart.update();
         }, 0);
     } else if (tabName === 'results' && trajectoryChart) {
         setTimeout(() => {
             if (trajectoryChart.resize) trajectoryChart.resize();
-            trajectoryChart.update();
+        trajectoryChart.update();
         }, 0);
     }
 }
@@ -1047,7 +1056,7 @@ function updateFieldChart(zones) {
 // ตั้งค่าการใช้งานเมื่อโหลดหน้าเว็บ
 document.addEventListener('DOMContentLoaded', function() {
     // แสดงข้อความต้อนรับ
-    setTimeout(() => {
+        setTimeout(() => {
         showCustomMessage('ยินดีต้อนรับสู่โปรแกรมจำลองการตีลูกสควอช', 'info');
     }, 1000);
     
