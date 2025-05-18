@@ -80,6 +80,12 @@
     </style>
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+      <h1 class="loading-title">Group 11 Simulation</h1>
+      <div class="loading-spinner"></div>
+    </div>
+
     <!-- Notification System -->
     <div id="notification" class="notification">
       <div class="notification-icon"></div>
@@ -257,7 +263,51 @@
             <i class="fas fa-magic"></i>Find Optimal Settings
           </button>
 
-          <!-- แก้ไขส่วนแสดงผลค่าที่เหมาะสม -->
+          <button
+            id="reset-btn"
+            class="btn-secondary btn-full"
+            onclick="resetSimulation()"
+          >
+            <i class="fas fa-redo"></i>Reset All Settings
+          </button>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="results" class="tab-content">
+          <div class="card">
+            <h2><i class="fas fa-chart-line"></i> Results</h2>
+            <div class="results-grid">
+              <div class="result-card">
+                <div class="result-label">Landing Distance</div>
+                <div id="landing-distance" class="result-value">0.00 m</div>
+              </div>
+
+              <div class="result-card">
+                <div class="result-label">Target Zone</div>
+                <div id="target-zone" class="result-value">None</div>
+              </div>
+
+              <div class="result-card">
+                <div class="result-label">Strike Time</div>
+                <div id="strike-time" class="result-value">0.00 s</div>
+              </div>
+
+              <div class="result-card ideal-result" style="display: none">
+                <div class="result-label">Ideal Landing</div>
+                <div id="ideal-landing" class="result-value">0.00 m</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Trajectory Visualization -->
+          <div class="card">
+            <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
+            <div class="chart-container">
+              <canvas id="trajectory-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- Optimal Result Display moved here -->
           <div
             id="optimal-angle-tolerance-display"
             style="display: none; margin-top: 16px"
@@ -305,50 +355,6 @@
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <button
-            id="reset-btn"
-            class="btn-secondary btn-full"
-            onclick="resetSimulation()"
-          >
-            <i class="fas fa-redo"></i>Reset All Settings
-          </button>
-        </div>
-
-        <!-- Results Tab -->
-        <div id="results" class="tab-content">
-          <div class="card">
-            <h2><i class="fas fa-chart-line"></i> Results</h2>
-            <div class="results-grid">
-              <div class="result-card">
-                <div class="result-label">Landing Distance</div>
-                <div id="landing-distance" class="result-value">0.00 m</div>
-              </div>
-
-              <div class="result-card">
-                <div class="result-label">Target Zone</div>
-                <div id="target-zone" class="result-value">None</div>
-              </div>
-
-              <div class="result-card">
-                <div class="result-label">Strike Time</div>
-                <div id="strike-time" class="result-value">0.00 s</div>
-              </div>
-
-              <div class="result-card ideal-result" style="display: none">
-                <div class="result-label">Ideal Landing</div>
-                <div id="ideal-landing" class="result-value">0.00 m</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Trajectory Visualization -->
-          <div class="card">
-            <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
-            <div class="chart-container">
-              <canvas id="trajectory-chart"></canvas>
             </div>
           </div>
 
@@ -570,7 +576,14 @@
         </button>
       </div>
     </div>
-
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+      // Loading screen handler
+      window.addEventListener("load", function () {
+        setTimeout(function () {
+          document.getElementById("loading-screen").classList.add("fade-out");
+        }, 1500); // Show loading screen for 1.5 seconds
+      });
+    </script>
   </body>
 </html>

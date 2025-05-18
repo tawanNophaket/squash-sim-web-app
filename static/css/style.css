@@ -284,7 +284,7 @@ button:active {
 }
 
 button:disabled {
-  background-color: #555 !important; 
+  background-color: #555 !important;
   color: #999 !important;
   cursor: not-allowed !important;
   box-shadow: none !important;
@@ -730,153 +730,214 @@ button i {
 
 /* สไตล์สำหรับส่วนแสดงผลค่าที่เหมาะสม */
 .result-detail {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: var(--spacing-xs);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-xs);
 }
 
 /* ปรับแต่ง checkbox */
 .checkbox-control input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    margin-right: var(--spacing-sm);
+  width: 20px;
+  height: 20px;
+  margin-right: var(--spacing-sm);
 }
 
 .checkbox-control label {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0;
-    font-weight: 500;
-    color: var(--text-primary);
-    cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
 }
 
 /* ปรับแต่ง help text */
 .help-text {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-top: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    background-color: rgba(0, 0, 0, 0.1);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--primary-dark);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid var(--primary-dark);
 }
 
 .help-text i {
-    color: var(--primary);
-    margin-right: var(--spacing-xs);
+  color: var(--primary);
+  margin-right: var(--spacing-xs);
 }
 
 /* สไตล์สำหรับการแจ้งเตือน */
 .highlight {
-    color: var(--primary-light);
-    font-weight: 600;
+  color: var(--primary-light);
+  font-weight: 600;
 }
 
 /* สไตล์ปุ่มเมื่อถูก disable */
 button:disabled {
-    background-color: #555 !important; 
-    color: #999 !important;
-    cursor: not-allowed !important;
-    box-shadow: none !important;
-    transform: none !important;
-    opacity: 0.7;
+  background-color: #555 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.7;
 }
 
 /* ปรับแต่งกรอบผลลัพธ์ */
 .results-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-sm);
-    margin: var(--spacing-md) 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
 }
 
 @media (min-width: 768px) {
-    .results-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
+  .results-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* สไตล์สำหรับ Debug Info */
 .debug-info {
-    margin-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
 #debug-info-content {
-    font-family: 'Courier New', monospace;
-    white-space: pre-wrap;
-    overflow-x: auto;
-    background-color: #1a1a1a;
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    margin-top: var(--spacing-md);
-    border: 1px solid var(--border-color);
-    color: #e0e0e0;
-    max-height: 500px;
-    overflow-y: auto;
+  font-family: "Courier New", monospace;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  background-color: #1a1a1a;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  color: #e0e0e0;
+  max-height: 500px;
+  overflow-y: auto;
 }
 
 /* สไตล์สำหรับการผ่าน/ไม่ผ่านการทดสอบ */
 .tolerance-pass {
-    color: var(--success);
-    font-weight: 600;
+  color: var(--success);
+  font-weight: 600;
 }
 
 .tolerance-fail {
-    color: var(--error);
-    font-weight: 600;
+  color: var(--error);
+  font-weight: 600;
 }
 
 /* สไตล์สำหรับสรุปผลการทดสอบ */
 .summary-box {
-    margin-top: var(--spacing-lg);
-    padding: var(--spacing-md);
-    background-color: rgba(0, 0, 0, 0.1);
-    border-radius: var(--radius-md);
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius-md);
 }
 
 .stat-row {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--spacing-xs) 0;
-    border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px dashed var(--border-color);
 }
 
 .stat-label {
-    font-weight: 500;
-    color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .stat-value {
-    font-weight: 600;
-    color: var(--text-primary);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .stat-value.good {
-    color: var(--success);
+  color: var(--success);
 }
 
 .stat-value.medium {
-    color: var(--warning);
+  color: var(--warning);
 }
 
 .stat-value.poor {
-    color: var(--error);
+  color: var(--error);
 }
 
 /* สไตล์สำหรับ field info toggle */
 .field-info-toggle {
-    display: inline-block;
-    margin-left: var(--spacing-sm);
-    cursor: pointer;
+  display: inline-block;
+  margin-left: var(--spacing-sm);
+  cursor: pointer;
 }
 
 .field-info-details {
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.3s ease;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.3s ease;
 }
 
 .field-info-details.expanded {
-    max-height: 200px;
+  max-height: 200px;
+}
+
+/* Loading Screen */
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease-out;
+}
+
+.loading-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading-title {
+  font-size: 2.5rem;
+  color: var(--primary);
+  margin-bottom: var(--spacing-xl);
+  text-shadow: 0 0 10px var(--primary-dark);
+  animation: glow 2s ease-in-out infinite;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--primary-dark);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes glow {
+  0% {
+    text-shadow: 0 0 10px var(--primary-dark);
+  }
+  50% {
+    text-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary-light);
+  }
+  100% {
+    text-shadow: 0 0 10px var(--primary-dark);
+  }
 }
