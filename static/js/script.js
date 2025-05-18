@@ -1,31 +1,89 @@
 // Global variables
 let trajectoryChart = null;
-let angleChart = null;
 let fieldChart = null;
 let currentZones = [];
 let currentFieldType = 'standard';
+let fieldInfoExpanded = false;
+
+// Define a more appealing color palette for zones
+const zoneColors = [
+    '#4CAF50', '#2196F3', '#FFC107', '#E91E63', '#9C27B0',
+    '#00BCD4', '#FF5722', '#795548', '#607D8B', '#8BC34A'
+];
+
+// DOM Elements for Message Box
+const messageBox = document.getElementById('custom-message-box');
+const messageBoxIcon = document.getElementById('message-box-icon');
+const messageBoxText = document.getElementById('message-box-text');
+const messageBoxCloseBtn = document.getElementById('message-box-close-btn');
+const messageBoxContent = messageBox.querySelector('.message-box-content');
+
+
+// Function to show custom message box
+function showCustomMessage(message, type = 'info') { // type can be 'success', 'error', 'warning', 'info'
+    messageBoxText.textContent = message;
+    messageBoxContent.className = 'message-box-content ' + type; // Reset and add type class
+
+    switch (type) {
+        case 'success':
+            messageBoxIcon.className = 'fas fa-check-circle';
+            break;
+        case 'error':
+            messageBoxIcon.className = 'fas fa-times-circle';
+            break;
+        case 'warning':
+            messageBoxIcon.className = 'fas fa-exclamation-triangle';
+            break;
+        case 'info':
+        default:
+            messageBoxIcon.className = 'fas fa-info-circle';
+            break;
+    }
+    messageBox.classList.remove('message-box-hidden');
+    messageBox.classList.add('message-box-visible');
+}
+
+// Close message box
+if (messageBoxCloseBtn) {
+    messageBoxCloseBtn.addEventListener('click', () => {
+        messageBox.classList.add('message-box-hidden');
+        messageBox.classList.remove('message-box-visible');
+    });
+}
+if (messageBox) {
+    messageBox.addEventListener('click', (event) => {
+        if (event.target === messageBox) {
+            messageBox.classList.add('message-box-hidden');
+            messageBox.classList.remove('message-box-visible');
+        }
+    });
+}
+
+
+// Helper function to toggle disabled state on buttons
+function setButtonDisabled(buttonId, isDisabled) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = isDisabled;
+    }
+}
+
 
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Set up charts
     setupTrajectoryChart();
-    setupAngleChart();
     setupFieldChart();
     
-    // เพิ่ม event listeners สำหรับสไลเดอร์และค่าอื่นๆ
     document.getElementById('strike-height').addEventListener('input', function() {
         document.getElementById('height-value').textContent = this.value + ' m';
-        updateTargetZoneIndicator();
     });
     
     document.getElementById('strike-angle').addEventListener('input', function() {
         document.getElementById('angle-value').textContent = this.value + '°';
-        updateTargetZoneIndicator();
     });
     
     document.getElementById('strike-velocity').addEventListener('input', function() {
         document.getElementById('velocity-value').textContent = this.value + ' m/s';
-        updateTargetZoneIndicator();
     });
     
     document.getElementById('target-distance').addEventListener('input', function() {
@@ -33,36 +91,47 @@ document.addEventListener('DOMContentLoaded', function() {
         updateTargetZoneIndicator();
     });
     
-    document.getElementById('field-type').addEventListener('change', function() {
-        const isCustom = this.value === 'custom';
-        document.getElementById('min-distance').disabled = !isCustom;
-        document.getElementById('max-distance').disabled = !isCustom;
-        document.getElementById('zone-width').disabled = !isCustom;
-        document.getElementById('apply-field-btn').disabled = !isCustom;
-    });
+    document.getElementById('field-type').addEventListener('change', handleFieldTypeChange);
     
-    // Load initial field info
+    // Setup field info toggle
+    const fieldInfoElem = document.getElementById('field-info-text');
+    if(fieldInfoElem) {
+        fieldInfoElem.addEventListener('click', toggleFieldInfo);
+        // เพิ่มไอคอนที่มุมขวาบนเพื่อบ่งบอกว่าสามารถคลิกได้
+        fieldInfoElem.innerHTML = fieldInfoElem.innerHTML + 
+          '<div class="field-info-toggle"><i class="fas fa-chevron-down"></i></div>';
+    }
+    
     fetchFieldInfo();
 });
 
+function handleFieldTypeChange() {
+    const fieldType = document.getElementById('field-type').value;
+    const isCustom = fieldType === 'custom';
+    document.getElementById('min-distance').disabled = !isCustom;
+    document.getElementById('max-distance').disabled = !isCustom;
+    document.getElementById('zone-width').disabled = !isCustom;
+    document.getElementById('apply-field-btn').disabled = !isCustom;
+    if (!isCustom) {
+        changeFieldType(fieldType); 
+    }
+}
+
+
 // Tab functionality
 function openTab(tabName) {
-    // Hide all tab contents
     const tabContents = document.getElementsByClassName('tab-content');
     for (let i = 0; i < tabContents.length; i++) {
         tabContents[i].classList.remove('active');
     }
     
-    // Remove active class from all tab buttons
     const tabButtons = document.getElementsByClassName('tab-btn');
     for (let i = 0; i < tabButtons.length; i++) {
         tabButtons[i].classList.remove('active');
     }
     
-    // Show the selected tab content and mark button as active
     document.getElementById(tabName).classList.add('active');
     
-    // Find the button that opens this tab and mark it as active
     for (let i = 0; i < tabButtons.length; i++) {
         if (tabButtons[i].getAttribute('onclick').includes(tabName)) {
             tabButtons[i].classList.add('active');
@@ -70,54 +139,55 @@ function openTab(tabName) {
         }
     }
     
-    // Update charts on tab change
     updateChartsIfNeeded(tabName);
 }
 
-// Update charts based on the active tab
 function updateChartsIfNeeded(tabName) {
     if (tabName === 'field' && fieldChart) {
+        setTimeout(() => fieldChart.resize(), 0);
         fieldChart.update();
-    } else if (tabName === 'analysis' && angleChart) {
-        angleChart.update();
     } else if (tabName === 'results' && trajectoryChart) {
+        setTimeout(() => trajectoryChart.resize(), 0);
         trajectoryChart.update();
     }
 }
 
-// Setup trajectory chart
 function setupTrajectoryChart() {
     const ctx = document.getElementById('trajectory-chart').getContext('2d');
-    
+    Chart.defaults.color = '#e0e0e0';
+
     trajectoryChart = new Chart(ctx, {
         type: 'scatter',
         data: {
             datasets: [
                 {
-                    label: 'Ball Trajectory',
+                    label: 'Ball Trajectory', // วิถีลูกบอล
                     data: [],
-                    backgroundColor: '#00e0ff',
-                    borderColor: '#00e0ff',
+                    borderColor: '#03a9f4',
+                    backgroundColor: '#03a9f4',
                     showLine: true,
-                    pointRadius: 3
+                    pointRadius: 3,
+                    tension: 0.1
                 },
                 {
-                    label: 'Ideal Trajectory',
+                    label: 'Ideal Trajectory', // วิถีในอุดมคติ
                     data: [],
-                    backgroundColor: '#ff2027',
-                    borderColor: '#ff2027',
+                    borderColor: '#e53935',
+                    backgroundColor: '#e53935',
                     showLine: true,
                     pointRadius: 0,
                     borderDash: [5, 5],
-                    hidden: true
+                    hidden: true,
+                    tension: 0.1
                 },
                 {
-                    label: 'Target',
+                    label: 'Target Landing', // จุดตกเป้าหมาย
                     data: [],
-                    backgroundColor: '#FFD700',
-                    borderColor: '#FFD700',
-                    pointRadius: 8,
-                    pointStyle: 'star'
+                    backgroundColor: '#ffc107',
+                    borderColor: '#ffc107',
+                    pointRadius: 10,
+                    pointStyle: 'star',
+                    showLine: false
                 }
             ]
         },
@@ -126,171 +196,152 @@ function setupTrajectoryChart() {
             maintainAspectRatio: false,
             scales: {
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Distance (m)',
-                        color: '#FFFFFF'
-                    },
-                    ticks: {
-                        color: '#FFFFFF'
-                    },
-                    grid: {
-                        color: '#333333'
-                    }
+                    title: { display: true, text: 'Distance (m)', color: '#e0e0e0', font: {size: 14} }, // ระยะทาง (เมตร)
+                    ticks: { color: '#9e9e9e' },
+                    grid: { color: '#424242', borderColor: '#424242' }
                 },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Height (m)',
-                        color: '#FFFFFF'
-                    },
-                    ticks: {
-                        color: '#FFFFFF'
-                    },
-                    grid: {
-                        color: '#333333'
-                    }
+                    title: { display: true, text: 'Height (m)', color: '#e0e0e0', font: {size: 14} }, // ความสูง (เมตร)
+                    ticks: { color: '#9e9e9e' },
+                    grid: { color: '#424242', borderColor: '#424242' },
+                    beginAtZero: true
                 }
             },
             plugins: {
-                legend: {
-                    labels: {
-                        color: '#FFFFFF'
-                    }
-                },
+                legend: { labels: { color: '#e0e0e0', font: {size: 12} } },
                 tooltip: {
+                    backgroundColor: 'rgba(42, 42, 42, 0.9)',
+                    titleColor: '#e0e0e0',
+                    bodyColor: '#e0e0e0',
                     callbacks: {
                         label: function(context) {
                             return `(${context.parsed.x.toFixed(2)}m, ${context.parsed.y.toFixed(2)}m)`;
                         }
                     }
-                }
-            }
-        }
-    });
-}
-
-// Setup angle chart
-function setupAngleChart() {
-    const ctx = document.getElementById('angle-chart').getContext('2d');
-    
-    angleChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Landing Distance',
-                data: [],
-                borderColor: '#ff2027',
-                backgroundColor: 'rgba(255, 32, 39, 0.1)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Strike Angle (°)',
-                        color: '#FFFFFF'
-                    },
-                    ticks: {
-                        color: '#FFFFFF'
-                    },
-                    grid: {
-                        color: '#333333'
-                    }
                 },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Landing Distance (m)',
-                        color: '#FFFFFF'
-                    },
-                    ticks: {
-                        color: '#FFFFFF'
-                    },
-                    grid: {
-                        color: '#333333'
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    labels: {
-                        color: '#FFFFFF'
-                    }
-                }
+                annotation: { annotations: {} }
             }
         }
     });
 }
 
-// Setup field chart
 function setupFieldChart() {
     const ctx = document.getElementById('field-chart').getContext('2d');
-    
     fieldChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'],
+            labels: [], // ชื่อโซน
             datasets: [{
-                label: 'Target Zones',
-                data: [0.38, 0.38, 0.38, 0.38, 0.38], // จะถูกอัปเดตหลังจาก fetchFieldInfo
-                backgroundColor: [
-                    '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-                    '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-                ]
+                label: 'Target Zones (m)', // โซนเป้าหมาย (เมตร)
+                data: [],
+                backgroundColor: [],
+                borderColor: [],
+                borderWidth: 2,
+                borderRadius: 6,
+                borderSkipped: false,
+                barPercentage: 0.95,
+                categoryPercentage: 0.9,
+                hoverBackgroundColor: [],
+                hoverBorderColor: [],
+                hoverBorderWidth: 3,
             }]
         },
         options: {
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
-            indexAxis: 'y',
+            animations: {
+                tension: {
+                    duration: 1000,
+                    easing: 'easeOutQuart',
+                    from: 0.8,
+                    to: 0.2,
+                    loop: false
+                }
+            },
+            onHover: (event, chartElements) => {
+                const chart = event.chart;
+                const canvas = chart.canvas;
+                
+                if (chartElements && chartElements.length > 0) {
+                    canvas.style.cursor = 'pointer';
+                    // ไฮไลท์โซนที่เลื่อนเมาส์ไป
+                    const index = chartElements[0].index;
+                    handleZoneHover(index);
+                } else {
+                    canvas.style.cursor = 'default';
+                    // ยกเลิกไฮไลท์
+                    handleZoneHover(-1);
+                }
+            },
+            onClick: (event, chartElements) => {
+                if (chartElements && chartElements.length > 0) {
+                    const index = chartElements[0].index;
+                    // เมื่อคลิกที่โซน ตั้งค่า target distance เป็นค่ากลางของโซนนั้น
+                    if (currentZones[index]) {
+                        const zoneMiddle = (currentZones[index][0] + currentZones[index][1]) / 2;
+                        const targetSlider = document.getElementById('target-distance');
+                        targetSlider.value = zoneMiddle.toFixed(2);
+                        document.getElementById('target-value').textContent = zoneMiddle.toFixed(2) + ' m';
+                        updateTargetZoneIndicator();
+                        showCustomMessage(`ตั้งค่าระยะเป้าหมายเป็นกึ่งกลางของโซน ${index + 1} (${zoneMiddle.toFixed(2)}m)`, 'info');
+                    }
+                }
+            },
             scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Distance (m)',
-                        color: '#FFFFFF'
+                x: { 
+                    title: { 
+                        display: true, 
+                        text: 'Distance from Striker (m)', 
+                        color: '#e0e0e0',
+                        font: {size: 16, weight: 'bold'} 
+                    }, // ระยะห่างจากเครื่องตี (เมตร)
+                    ticks: { 
+                        color: '#9e9e9e',
+                        font: {size: 14}
                     },
-                    ticks: {
-                        color: '#FFFFFF'
+                    grid: { 
+                        color: 'rgba(66, 66, 66, 0.5)',
+                        drawBorder: true,
+                        drawTicks: true
                     },
-                    grid: {
-                        color: '#333333'
-                    },
-                    stacked: true,
-                    offset: true
+                    min: 0
                 },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Zones',
-                        color: '#FFFFFF'
+                    title: { 
+                        display: true, 
+                        text: 'Zones', 
+                        color: '#e0e0e0', 
+                        font: {size: 16, weight: 'bold'} 
+                    }, // โซน
+                    ticks: { 
+                        color: '#e0e0e0',
+                        font: {size: 14, weight: 'bold'},
+                        padding: 10,
+                        z: 10
                     },
-                    ticks: {
-                        color: '#FFFFFF'
-                    },
-                    grid: {
-                        color: '#333333'
-                    },
-                    stacked: true
+                    grid: { display: false }
                 }
             },
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
+                    backgroundColor: 'rgba(42, 42, 42, 0.9)',
+                    titleColor: '#e0e0e0',
+                    bodyColor: '#e0e0e0',
+                    titleFont: {size: 16, weight: 'bold'},
+                    bodyFont: {size: 14},
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: false,
                     callbacks: {
+                        title: function(tooltipItem) {
+                            return tooltipItem[0].label;
+                        },
                         label: function(context) {
-                            const zone = context.datasetIndex;
-                            const zoneInfo = currentZones[context.dataIndex];
-                            if (zoneInfo) {
-                                return `Range: ${zoneInfo[0].toFixed(2)}m - ${zoneInfo[1].toFixed(2)}m`;
+                            const raw = context.raw;
+                            if (raw && typeof raw[0] !== 'undefined' && typeof raw[1] !== 'undefined') {
+                                return `${raw[0].toFixed(2)}m - ${raw[1].toFixed(2)}m (ความกว้าง: ${(raw[1] - raw[0]).toFixed(2)}m)`;
                             }
                             return '';
                         }
@@ -301,199 +352,382 @@ function setupFieldChart() {
     });
 }
 
-// Update the field chart with zone data
-function updateFieldChart(zones) {
-    if (!fieldChart) return;
+// ฟังก์ชันสำหรับไฮไลท์โซน
+function handleZoneHover(index) {
+    if (!fieldChart || !fieldChart.data || !fieldChart.data.datasets || !fieldChart.data.datasets[0]) {
+        return;
+    }
     
-    const zoneLabels = zones.map((_, index) => `Zone ${index + 1}`);
-    const zoneWidths = zones.map(zone => zone[1] - zone[0]);
+    const dataset = fieldChart.data.datasets[0];
+    const backgroundColor = [...dataset.backgroundColor];
+    const borderColor = [...dataset.borderColor];
+    const hoverBorderWidth = [...Array(backgroundColor.length)].fill(dataset.borderWidth);
     
-    fieldChart.data.labels = zoneLabels;
-    fieldChart.data.datasets[0].data = zoneWidths;
+    if (index >= 0 && index < backgroundColor.length) {
+        for (let i = 0; i < backgroundColor.length; i++) {
+            if (i === index) {
+                // ทำให้แถบที่เลือกสว่างขึ้น
+                const baseColor = zoneColors[i % zoneColors.length];
+                const ctx = document.createElement('canvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                
+                gradient.addColorStop(0, baseColor + 'CC'); // ความโปร่งใส 80%
+                gradient.addColorStop(0.5, baseColor + 'FF'); // สีเต็ม
+                gradient.addColorStop(1, baseColor + 'FF'); // สีเต็ม
+                
+                backgroundColor[i] = gradient;
+                borderColor[i] = '#ffffff'; // ขอบสีขาวเมื่อไฮไลท์
+                hoverBorderWidth[i] = 4; // เพิ่มความหนาขอบ
+            } else {
+                // ทำให้แถบอื่นจางลง
+                const baseColor = zoneColors[i % zoneColors.length];
+                const ctx = document.createElement('canvas').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+                
+                gradient.addColorStop(0, baseColor + '44'); // ความโปร่งใส 27%
+                gradient.addColorStop(0.5, baseColor + '88'); // ความโปร่งใส 53%
+                gradient.addColorStop(1, baseColor + 'AA'); // ความโปร่งใส 67%
+                
+                backgroundColor[i] = gradient;
+                borderColor[i] = zoneColors[i % zoneColors.length] + '88';
+                hoverBorderWidth[i] = dataset.borderWidth;
+            }
+        }
+    } else {
+        // ตั้งค่าสีปกติสำหรับทุกแถบ
+        for (let i = 0; i < backgroundColor.length; i++) {
+            const baseColor = zoneColors[i % zoneColors.length];
+            const ctx = document.createElement('canvas').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+            
+            gradient.addColorStop(0, baseColor + '99'); // ความโปร่งใส 60%
+            gradient.addColorStop(0.5, baseColor + 'CC'); // ความโปร่งใส 80%
+            gradient.addColorStop(1, baseColor + 'FF'); // สีเต็ม
+            
+            backgroundColor[i] = gradient;
+            borderColor[i] = zoneColors[i % zoneColors.length];
+            hoverBorderWidth[i] = dataset.borderWidth;
+        }
+    }
     
-    // Set the x-axis scale
-    const minDistance = zones[0][0];
-    const maxDistance = zones[zones.length - 1][1];
-    
-    fieldChart.options.scales.x.min = minDistance - 0.1;
-    fieldChart.options.scales.x.max = maxDistance + 0.1;
-    
+    dataset.backgroundColor = backgroundColor;
+    dataset.borderColor = borderColor;
+    dataset.hoverBorderWidth = hoverBorderWidth;
     fieldChart.update();
 }
 
-// Fetch field information
+function updateFieldChart(zones) {
+    if (!fieldChart || !zones || zones.length === 0) {
+        if(fieldChart) {
+            fieldChart.data.labels = [];
+            fieldChart.data.datasets[0].data = [];
+            fieldChart.data.datasets[0].backgroundColor = [];
+            fieldChart.data.datasets[0].borderColor = [];
+            fieldChart.update();
+        }
+        return;
+    }
+    
+    const zoneLabels = zones.map((_, index) => `Zone ${index + 1}`); // โซน 1, โซน 2, ...
+    const floatingBarData = zones.map(zone => [zone[0], zone[1]]); 
+    
+    // ทำให้สีมีความสวยงามยิ่งขึ้นด้วยการใช้ความโปร่งใสและลักษณะของแถบสีที่หลากหลาย
+    const backgroundColors = zones.map((_, index) => {
+        const baseColor = zoneColors[index % zoneColors.length];
+        const ctx = document.createElement('canvas').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 400, 0);
+        
+        // สร้าง gradient จากสีพื้นหลังไปยังสีหลัก
+        gradient.addColorStop(0, baseColor + '99'); // ความโปร่งใส 60%
+        gradient.addColorStop(0.5, baseColor + 'CC'); // ความโปร่งใส 80% 
+        gradient.addColorStop(1, baseColor + 'FF'); // สีเต็ม
+        
+        return gradient;
+    });
+    
+    const borderColors = zones.map((_, index) => zoneColors[index % zoneColors.length]);
+    
+    // ตั้งค่าข้อมูลและสีให้กับกราฟ
+    fieldChart.data.labels = zoneLabels;
+    fieldChart.data.datasets[0].data = floatingBarData;
+    fieldChart.data.datasets[0].backgroundColor = backgroundColors;
+    fieldChart.data.datasets[0].borderColor = borderColors;
+    fieldChart.data.datasets[0].hoverBackgroundColor = backgroundColors.map((_, index) => {
+        const baseColor = zoneColors[index % zoneColors.length];
+        return baseColor + 'FF'; // สีเต็มเมื่อ hover
+    });
+    fieldChart.data.datasets[0].hoverBorderColor = borderColors.map((_, index) => '#ffffff');
+    
+    // ปรับช่วงการแสดงผลให้มีความสวยงาม
+    const allDistances = zones.flat();
+    const overallMinDistance = Math.min(...allDistances, 0);
+    const overallMaxDistance = Math.max(...allDistances);
+    
+    fieldChart.options.scales.x.min = overallMinDistance > 0 ? Math.floor(overallMinDistance * 0.9) : 0;
+    fieldChart.options.scales.x.max = Math.ceil(overallMaxDistance * 1.1);
+    
+    // เพิ่มการตกแต่ง
+    fieldChart.options.plugins.tooltip.callbacks.beforeLabel = function(context) {
+        const index = context.dataIndex;
+        const width = zones[index][1] - zones[index][0];
+        return `ความกว้างของโซน: ${width.toFixed(2)}m`;
+    };
+    
+    // อัปเดตกราฟ
+    fieldChart.update();
+}
+
 function fetchFieldInfo() {
+    setButtonDisabled('reset-btn', true); 
     fetch('/api/field_info')
         .then(response => response.json())
         .then(data => {
-            // Update current zones
             currentZones = data.zones;
             currentFieldType = data.dimensions.field_type;
             
-            // Update slider range for target distance
             const minDistance = data.dimensions.min_distance;
             const maxDistance = data.dimensions.max_distance;
             
             const targetSlider = document.getElementById('target-distance');
             targetSlider.min = minDistance;
             targetSlider.max = maxDistance;
-            
-            // Set field inputs
+            if (parseFloat(targetSlider.value) < minDistance) targetSlider.value = minDistance;
+            if (parseFloat(targetSlider.value) > maxDistance) targetSlider.value = maxDistance;
+            document.getElementById('target-value').textContent = parseFloat(targetSlider.value).toFixed(2) + ' m';
+
             document.getElementById('field-type').value = currentFieldType;
-            document.getElementById('min-distance').value = minDistance;
-            document.getElementById('max-distance').value = maxDistance;
-            document.getElementById('zone-width').value = data.dimensions.zone_width;
+            document.getElementById('min-distance').value = minDistance.toFixed(2);
+            document.getElementById('max-distance').value = maxDistance.toFixed(2);
+            document.getElementById('zone-width').value = data.dimensions.zone_width.toFixed(2);
             
-            // Update field chart
             updateFieldChart(currentZones);
-            
-            // Update target zone indicator
             updateTargetZoneIndicator();
+
+            const fieldInfoElem = document.getElementById('field-info-text');
+            if (fieldInfoElem) {
+                 fieldInfoElem.innerHTML = `
+                    <p><strong>Field Type:</strong> ${currentFieldType.charAt(0).toUpperCase() + currentFieldType.slice(1)}</p> 
+                    <p><strong>Total Range:</strong> ${minDistance.toFixed(2)}m - ${maxDistance.toFixed(2)}m</p> 
+                    <p><strong>Number of Zones:</strong> ${currentZones.length}</p>
+                    <div class="field-info-toggle"><i class="fas fa-chevron-down"></i></div>
+                    <div class="field-info-details">
+                        <p><strong>Robot Area:</strong> 0.0m - 0.5m (approx.)</p>
+                        <p><strong>Average Zone Width:</strong> ${data.dimensions.zone_width.toFixed(2)}m</p>
+                        <p><strong>Zone Distribution:</strong> ${data.dimensions.distribution || 'Even'}</p>
+                    </div>
+                 `;
+                 
+                 // เพิ่ม event listener สำหรับการคลิก
+                 fieldInfoElem.addEventListener('click', toggleFieldInfo);
+                 
+                 // ซ่อนรายละเอียดเพิ่มเติมเมื่อโหลดครั้งแรก
+                 const detailsElem = fieldInfoElem.querySelector('.field-info-details');
+                 if (detailsElem) {
+                     detailsElem.style.display = 'none';
+                 }
+            }
         })
         .catch(error => {
             console.error('Error fetching field info:', error);
+            showCustomMessage('ไม่สามารถโหลดข้อมูลสนามได้ กรุณาลองใหม่อีกครั้ง', 'error');
+        })
+        .finally(() => {
+            setButtonDisabled('reset-btn', false);
         });
 }
 
-// Update target zone indicator
+function toggleFieldInfo(event) {
+    const fieldInfoElem = document.getElementById('field-info-text');
+    if (!fieldInfoElem) return;
+    
+    const detailsElem = fieldInfoElem.querySelector('.field-info-details');
+    const toggleIcon = fieldInfoElem.querySelector('.field-info-toggle i');
+    
+    if (!detailsElem || !toggleIcon) return;
+    
+    fieldInfoExpanded = !fieldInfoExpanded;
+    
+    if (fieldInfoExpanded) {
+        detailsElem.style.display = 'block';
+        toggleIcon.className = 'fas fa-chevron-up';
+        // เลื่อนลงทีละน้อยเพื่อการเปลี่ยนแปลงที่นุ่มนวล
+        detailsElem.style.opacity = '0';
+        detailsElem.style.maxHeight = '0';
+        setTimeout(() => {
+            detailsElem.style.transition = 'all 0.3s ease';
+            detailsElem.style.opacity = '1';
+            detailsElem.style.maxHeight = '200px';
+        }, 10);
+    } else {
+        detailsElem.style.opacity = '0';
+        detailsElem.style.maxHeight = '0';
+        toggleIcon.className = 'fas fa-chevron-down';
+        setTimeout(() => {
+            detailsElem.style.display = 'none';
+        }, 300);
+    }
+}
+
+function updateFieldInfoAfterChange(fieldType, minVal, maxVal, zoneWidth, zoneCount) {
+    const fieldInfoElem = document.getElementById('field-info-text');
+    if (fieldInfoElem) {
+         fieldInfoElem.innerHTML = `
+            <p><strong>Field Type:</strong> ${fieldType.charAt(0).toUpperCase() + fieldType.slice(1)}</p>
+            <p><strong>Total Range:</strong> ${minVal.toFixed(2)}m - ${maxVal.toFixed(2)}m</p>
+            <p><strong>Number of Zones:</strong> ${zoneCount}</p>
+            <div class="field-info-toggle"><i class="fas fa-chevron-${fieldInfoExpanded ? 'up' : 'down'}"></i></div>
+            <div class="field-info-details" style="${fieldInfoExpanded ? '' : 'display: none;'}">
+                <p><strong>Robot Area:</strong> 0.0m - 0.5m (approx.)</p>
+                <p><strong>Average Zone Width:</strong> ${zoneWidth.toFixed(2)}m</p>
+                <p><strong>Zone Distribution:</strong> ${fieldType === 'custom' ? 'Custom' : 'Standard'}</p>
+            </div>
+         `;
+         
+         // เพิ่ม event listener สำหรับการคลิก
+         fieldInfoElem.addEventListener('click', toggleFieldInfo);
+    }
+}
+
 function updateTargetZoneIndicator() {
     const targetDistance = parseFloat(document.getElementById('target-distance').value);
-    
-    // Find which zone this distance belongs to
     let zoneIndex = -1;
+
     for (let i = 0; i < currentZones.length; i++) {
         const [min, max] = currentZones[i];
         if (targetDistance >= min && targetDistance < max) {
             zoneIndex = i;
             break;
         }
+        if (i === currentZones.length - 1 && targetDistance === max) {
+            zoneIndex = i;
+            break;
+        }
     }
     
-    // Update indicator
     const indicatorElem = document.getElementById('indicator-zone');
     if (zoneIndex >= 0) {
-        const zoneColors = [
-            '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-            '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-        ];
-        
-        const color = zoneColors[zoneIndex % zoneColors.length];
-        indicatorElem.textContent = `Zone ${zoneIndex + 1}`;
-        indicatorElem.style.backgroundColor = color;
+        indicatorElem.textContent = `Zone ${zoneIndex + 1}`; // โซน X
+        indicatorElem.style.backgroundColor = zoneColors[zoneIndex % zoneColors.length];
     } else {
-        indicatorElem.textContent = 'Outside Zones';
-        indicatorElem.style.backgroundColor = '#777777';
+        indicatorElem.textContent = 'Outside'; // นอกโซน
+        indicatorElem.style.backgroundColor = '#757575';
     }
 }
 
-// Change field type
-function changeFieldType() {
-    const fieldType = document.getElementById('field-type').value;
-    
-    // If not custom, fetch the field configuration
-    if (fieldType !== 'custom') {
-        fetch('/api/change_field', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                field_type: fieldType
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update current zones
-            currentZones = data.zones;
-            currentFieldType = fieldType;
-            
-            // Update inputs
-            document.getElementById('min-distance').value = data.dimensions.min_distance;
-            document.getElementById('max-distance').value = data.dimensions.max_distance;
-            document.getElementById('zone-width').value = data.dimensions.zone_width;
-            
-            // Update target slider range
-            const targetSlider = document.getElementById('target-distance');
-            targetSlider.min = data.dimensions.min_distance;
-            targetSlider.max = data.dimensions.max_distance;
-            
-            // If current value is outside new range, update it
-            if (parseFloat(targetSlider.value) < data.dimensions.min_distance) {
-                targetSlider.value = data.dimensions.min_distance;
-                document.getElementById('target-value').textContent = targetSlider.value + ' m';
-            } else if (parseFloat(targetSlider.value) > data.dimensions.max_distance) {
-                targetSlider.value = data.dimensions.max_distance;
-                document.getElementById('target-value').textContent = targetSlider.value + ' m';
-            }
-            
-            // Update field chart
-            updateFieldChart(currentZones);
-            
-            // Update target zone indicator
-            updateTargetZoneIndicator();
-        })
-        .catch(error => {
-            console.error('Error changing field type:', error);
-        });
-    }
+function changeFieldType(fieldType) { 
+    setButtonDisabled('apply-field-btn', true); 
+    fetch('/api/change_field', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field_type: fieldType })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showCustomMessage('เกิดข้อผิดพลาดในการเปลี่ยนประเภทสนาม: ' + data.error, 'error');
+            return;
+        }
+        currentZones = data.zones;
+        currentFieldType = fieldType;
+        
+        const minVal = data.dimensions.min_distance;
+        const maxVal = data.dimensions.max_distance;
+        const zoneWidth = data.dimensions.zone_width;
+
+        document.getElementById('min-distance').value = minVal.toFixed(2);
+        document.getElementById('max-distance').value = maxVal.toFixed(2);
+        document.getElementById('zone-width').value = zoneWidth.toFixed(2);
+        
+        const targetSlider = document.getElementById('target-distance');
+        targetSlider.min = minVal;
+        targetSlider.max = maxVal;
+        if (parseFloat(targetSlider.value) < minVal) targetSlider.value = minVal;
+        if (parseFloat(targetSlider.value) > maxVal) targetSlider.value = maxVal;
+        document.getElementById('target-value').textContent = parseFloat(targetSlider.value).toFixed(2) + ' m';
+        
+        updateFieldChart(currentZones);
+        updateTargetZoneIndicator();
+        updateFieldInfoAfterChange(fieldType, minVal, maxVal, zoneWidth, currentZones.length);
+
+        showCustomMessage(`เปลี่ยนประเภทสนามเป็น ${fieldType} แล้ว`, 'success');
+        
+        // เพิ่มการเคลื่อนไหวเพื่อดึงดูดความสนใจไปยังการเปลี่ยนแปลง
+        const fieldChartCanvas = document.getElementById('field-chart');
+        if (fieldChartCanvas) {
+            fieldChartCanvas.style.transition = 'all 0.3s ease';
+            fieldChartCanvas.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                fieldChartCanvas.style.transform = 'scale(1)';
+            }, 300);
+        }
+    })
+    .catch(error => {
+        console.error('Error changing field type:', error);
+        showCustomMessage('ไม่สามารถเปลี่ยนประเภทสนามได้ กรุณาลองใหม่อีกครั้ง', 'error');
+    })
+    .finally(() => {
+        setButtonDisabled('apply-field-btn', false);
+    });
 }
 
-// Apply custom field settings
 function applyFieldSettings() {
     const minDistance = parseFloat(document.getElementById('min-distance').value);
     const maxDistance = parseFloat(document.getElementById('max-distance').value);
     const zoneWidth = parseFloat(document.getElementById('zone-width').value);
     
-    // Validate inputs
+    if (isNaN(minDistance) || isNaN(maxDistance) || isNaN(zoneWidth)) {
+        showCustomMessage('กรุณาใส่ตัวเลขที่ถูกต้องสำหรับขนาดสนามที่กำหนดเอง', 'warning');
+        return;
+    }
     if (minDistance >= maxDistance) {
-        alert('Min distance must be less than max distance');
+        showCustomMessage('ระยะทางต่ำสุดต้องน้อยกว่าระยะทางสูงสุด', 'warning');
         return;
     }
-    
     if (zoneWidth <= 0) {
-        alert('Zone width must be positive');
+        showCustomMessage('ความกว้างของโซนต้องเป็นค่าบวก', 'warning');
         return;
     }
     
-    // Set field type to custom
+    setButtonDisabled('apply-field-btn', true);
     currentFieldType = 'custom';
-    document.getElementById('field-type').value = 'custom';
     
-    // Calculate zones
-    const zones = [];
+    const newZones = [];
     let current = minDistance;
-    
     while (current < maxDistance) {
         const next = Math.min(current + zoneWidth, maxDistance);
-        zones.push([current, next]);
+        newZones.push([current, next]);
         current = next;
+        if (newZones.length >= 20) break;
     }
+    currentZones = newZones;
     
-    // Update current zones
-    currentZones = zones;
-    
-    // Update target slider range
     const targetSlider = document.getElementById('target-distance');
     targetSlider.min = minDistance;
     targetSlider.max = maxDistance;
+    if (parseFloat(targetSlider.value) < minDistance) targetSlider.value = minDistance;
+    if (parseFloat(targetSlider.value) > maxDistance) targetSlider.value = maxDistance;
+    document.getElementById('target-value').textContent = parseFloat(targetSlider.value).toFixed(2) + ' m';
     
-    // If current value is outside new range, update it
-    if (parseFloat(targetSlider.value) < minDistance) {
-        targetSlider.value = minDistance;
-        document.getElementById('target-value').textContent = targetSlider.value + ' m';
-    } else if (parseFloat(targetSlider.value) > maxDistance) {
-        targetSlider.value = maxDistance;
-        document.getElementById('target-value').textContent = targetSlider.value + ' m';
-    }
-    
-    // Update field chart
     updateFieldChart(currentZones);
-    
-    // Update target zone indicator
     updateTargetZoneIndicator();
+    updateFieldInfoAfterChange('custom', minDistance, maxDistance, zoneWidth, newZones.length);
+
+    // เพิ่มภาพเคลื่อนไหวให้กับการเปลี่ยนแปลง
+    const fieldVisual = document.querySelector('#field .field-visualization');
+    if (fieldVisual) {
+        fieldVisual.style.transition = 'all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55)';
+        fieldVisual.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            fieldVisual.style.transform = 'translateY(0)';
+        }, 500);
+    }
+
+    setTimeout(() => {
+        setButtonDisabled('apply-field-btn', false);
+        showCustomMessage('ใช้การตั้งค่าสนามที่กำหนดเองสำหรับการแสดงผลแล้ว', 'success');
+    }, 500);
 }
 
-// Start simulation
 function startSimulation() {
     const releaseHeight = document.getElementById('release-height').value;
     const strikeHeight = document.getElementById('strike-height').value;
@@ -501,7 +735,15 @@ function startSimulation() {
     const strikeVelocity = document.getElementById('strike-velocity').value;
     const showIdeal = document.getElementById('ideal-comparison').checked;
     
-    // Get physics parameters
+    if (parseFloat(strikeAngle) < 10 || parseFloat(strikeAngle) > 80) {
+        showCustomMessage('มุมที่ตีต้องอยู่ระหว่าง 10 ถึง 80 องศา', 'warning');
+        return;
+    }
+     if (parseFloat(strikeVelocity) < 1 || parseFloat(strikeVelocity) > 20) {
+        showCustomMessage('ความเร็วในการตีต้องอยู่ระหว่าง 1 ถึง 20 m/s', 'warning');
+        return;
+    }
+
     const physics = {
         gravity: parseFloat(document.getElementById('gravity').value),
         ball_mass: parseFloat(document.getElementById('ball-mass').value),
@@ -510,714 +752,115 @@ function startSimulation() {
         elasticity: parseFloat(document.getElementById('elasticity').value)
     };
     
-    // Show loading state
-    document.getElementById('start-btn').textContent = 'Calculating...';
-    document.getElementById('start-btn').disabled = true;
+    setButtonDisabled('start-btn', true);
     
-    // Send request to backend
     fetch('/api/calculate', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             release_height: releaseHeight,
             strike_height: strikeHeight,
             strike_angle: strikeAngle,
             strike_velocity: strikeVelocity,
             show_ideal: showIdeal,
-            physics: physics
+            physics: physics,
+            field_type: currentFieldType
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert('Error: ' + data.error);
-            return;
-        }
-        
-        // Update results display
-        document.getElementById('landing-distance').textContent = data.landing_distance.toFixed(2) + ' m';
-        
-        // Update target zone display
-        if (data.target_zone) {
-            const zoneColors = [
-                '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-                '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-            ];
-            
-            const zoneColor = zoneColors[(data.target_zone - 1) % zoneColors.length];
-            document.getElementById('target-zone').textContent = 'Zone ' + data.target_zone;
-            document.getElementById('target-zone').style.color = zoneColor;
-        } else {
-            document.getElementById('target-zone').textContent = 'None (Outside)';
-            document.getElementById('target-zone').style.color = '#FFFFFF';
-        }
-        
-        // Update strike time
-        document.getElementById('strike-time').textContent = data.strike_time.toFixed(3) + ' s';
-        
-        // Update trajectory chart
-        const trajectoryData = [];
-        for (let i = 0; i < data.trajectory_x.length; i++) {
-            trajectoryData.push({
-                x: data.trajectory_x[i],
-                y: data.trajectory_y[i]
+    .then(response => {
+        if (!response.ok) { 
+            return response.json().then(errData => {
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
             });
         }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('landing-distance').textContent = data.landing_distance.toFixed(2) + ' m';
+        const targetZoneElem = document.getElementById('target-zone');
+        if (data.target_zone) {
+            targetZoneElem.textContent = 'Zone ' + data.target_zone;
+            targetZoneElem.style.color = zoneColors[(data.target_zone - 1) % zoneColors.length];
+        } else {
+            targetZoneElem.textContent = 'None (Outside)';
+            targetZoneElem.style.color = '#9e9e9e';
+        }
         
+        document.getElementById('strike-time').textContent = data.strike_time.toFixed(3) + ' s';
+        
+        const trajectoryData = data.trajectory_x.map((x, i) => ({ x: x, y: data.trajectory_y[i] }));
         trajectoryChart.data.datasets[0].data = trajectoryData;
         
-        // Add target indicator based on the target_distance
-        const targetDistance = document.getElementById('target-distance').value;
-        trajectoryChart.data.datasets[2].data = [{
-            x: parseFloat(targetDistance),
-            y: 0
-        }];
+        const targetDistance = parseFloat(document.getElementById('target-distance').value);
+        trajectoryChart.data.datasets[2].data = [{ x: targetDistance, y: 0 }];
         
-        // Update ideal trajectory if available
-        if (showIdeal && data.ideal_trajectory_x && data.ideal_trajectory_y) {
-            const idealData = [];
-            for (let i = 0; i < data.ideal_trajectory_x.length; i++) {
-                idealData.push({
-                    x: data.ideal_trajectory_x[i],
-                    y: data.ideal_trajectory_y[i]
-                });
-            }
-            
+        const idealResults = document.querySelectorAll('.ideal-result');
+        if (showIdeal && data.ideal_trajectory_x) {
+            const idealData = data.ideal_trajectory_x.map((x, i) => ({ x: x, y: data.ideal_trajectory_y[i] }));
             trajectoryChart.data.datasets[1].data = idealData;
             trajectoryChart.data.datasets[1].hidden = false;
             
-            // Show ideal landing distance
             document.getElementById('ideal-landing').textContent = data.ideal_landing_distance.toFixed(2) + ' m';
-            
-            // Calculate difference
             const difference = data.ideal_landing_distance - data.landing_distance;
             document.getElementById('landing-difference').textContent = difference.toFixed(2) + ' m';
-            
-            // Show ideal result elements
-            document.querySelectorAll('.ideal-result').forEach(el => {
-                el.style.display = 'block';
-            });
+            idealResults.forEach(el => el.style.display = 'block');
         } else {
-            // Hide ideal trajectory
-            trajectoryChart.data.datasets[1].hidden = true;
             trajectoryChart.data.datasets[1].data = [];
-            
-            // Hide ideal result elements
-            document.querySelectorAll('.ideal-result').forEach(el => {
-                el.style.display = 'none';
-            });
+            trajectoryChart.data.datasets[1].hidden = true;
+            idealResults.forEach(el => el.style.display = 'none');
         }
         
-        // Draw zone areas
         drawZonesOnTrajectoryChart(data.target_zones);
-        
         trajectoryChart.update();
-        
-        // Switch to results tab
         openTab('results');
+        showCustomMessage('การจำลองเสร็จสมบูรณ์!', 'success');
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while running the simulation');
+        showCustomMessage(`เกิดข้อผิดพลาดในการจำลอง: ${error.message}`, 'error');
     })
     .finally(() => {
-        // Reset button state
-        document.getElementById('start-btn').textContent = 'Start Simulation';
-        document.getElementById('start-btn').disabled = false;
+        setButtonDisabled('start-btn', false);
     });
 }
 
-// Draw zones on trajectory chart
-function drawZonesOnTrajectoryChart(zones) {
-    if (!trajectoryChart || !zones) return;
-    
-    // Remove existing annotations
-    if (trajectoryChart.options.plugins.annotation) {
-        trajectoryChart.options.plugins.annotation.annotations = {};
-    } else {
-        trajectoryChart.options.plugins.annotation = {
-            annotations: {}
-        };
-    }
-    
-    // Add zone areas as boxes
-    const zoneColors = [
-        '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-        '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-    ];
-    
+function drawZonesOnTrajectoryChart(zonesData) {
+    if (!trajectoryChart || !zonesData) return;
+
     const annotations = {};
-    
-    zones.forEach((zone, index) => {
+    zonesData.forEach((zone, index) => {
         const color = zoneColors[index % zoneColors.length];
-        
-        annotations['zone' + index] = {
+        annotations['zoneBox' + index] = {
             type: 'box',
             xMin: zone[0],
             xMax: zone[1],
-            yMin: 0,
+            yMin: -0.05,
             yMax: 0.05,
-            backgroundColor: color + '80',
-            borderColor: color,
-            borderWidth: 1
+            backgroundColor: color + '4D',
+            borderColor: color + '99',
+            borderWidth: 1,
+            drawTime: 'beforeDatasetsDraw'
         };
-        
-        // Add label for each zone
-        annotations['label' + index] = {
+        annotations['zoneLabel' + index] = {
             type: 'label',
             xValue: (zone[0] + zone[1]) / 2,
-            yValue: 0.025,
-            content: 'Zone ' + (index + 1),
-            font: {
-                size: 12,
-                weight: 'bold'
-            },
-            color: 'black'
+            yValue: 0.1,
+            content: `Z${index + 1}`,
+            color: '#e0e0e0',
+            font: { size: 10, weight: 'bold' },
+            backgroundColor: 'rgba(42, 42, 42, 0.7)',
+            padding: 2,
+            borderRadius: 3
         };
     });
     
+    if (!trajectoryChart.options.plugins) trajectoryChart.options.plugins = {};
+    if (!trajectoryChart.options.plugins.annotation) trajectoryChart.options.plugins.annotation = {};
     trajectoryChart.options.plugins.annotation.annotations = annotations;
 }
 
-// Draw field canvas
-const drawFieldCanvas = function(ctx, fieldSettings, targetZones) {
-    // ล้างแคนวาส
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // ขนาดและตำแหน่ง
-    const canvas = ctx.canvas;
-    const width = canvas.width;
-    const height = canvas.height;
-    
-    // ตั้งค่าสี
-    const colors = {
-        background: '#000000',       // พื้นหลังดำ
-        grid: '#333333',             // เส้นกริดเทาเข้ม
-        gridMain: '#555555',         // เส้นกริดหลักเทาสว่าง
-        text: '#FFFFFF',             // ข้อความสีขาว
-        robotArea: '#ff2027',        // พื้นที่หุ่นยนต์สีแดง
-        swingArea: '#00e0ff',        // พื้นที่ตีสีฟ้า
-        releasePoint: '#FFD700',     // จุดปล่อยลูกสีเหลืองทอง
-        zonesBase: '#1a1a1a',        // พื้นฐานโซนสีเทาเข้ม
-        zones: [
-            '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-            '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-        ]
-    };
-    
-    // ขอบเขตพื้นที่วาด (margin)
-    const margin = {
-        top: 40,
-        right: 40,
-        bottom: 60,
-        left: 100
-    };
-    
-    // พื้นที่วาดที่ใช้งานได้
-    const plotWidth = width - margin.left - margin.right;
-    const plotHeight = height - margin.top - margin.bottom;
-    
-    // คำนวณ scale ตามความกว้างจริงของกราฟ
-    const maxDistance = fieldSettings.max_distance + 0.3; // เพิ่มขอบ 0.3 เมตร
-    const drawHeight = 3.0; // ความสูงในการวาด (เมตร)
-    
-    const xScale = plotWidth / maxDistance;
-    const yScale = plotHeight / drawHeight;
-    
-    // ฟังก์ชันแปลงพิกัด
-    const toPixelX = (x) => margin.left + x * xScale;
-    const toPixelY = (y) => margin.top + y * yScale;
-    
-    // วาดพื้นหลังทั้งหมด
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, width, height);
-    
-    // วาดเส้นกรอบพื้นที่วาด
-    ctx.strokeStyle = colors.gridMain;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(margin.left, margin.top, plotWidth, plotHeight);
-    
-    // วาดเส้นกริดแนวตั้ง
-    ctx.lineWidth = 1;
-    const gridXStep = maxDistance > 5 ? 0.5 : 0.25;
-    for (let x = 0; x <= maxDistance; x += gridXStep) {
-        ctx.strokeStyle = x % 1 === 0 ? colors.gridMain : colors.grid;
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(x), margin.top);
-        ctx.lineTo(toPixelX(x), margin.top + plotHeight);
-        ctx.stroke();
-        
-        // แสดงค่าระยะทางที่จุดเต็มเมตร
-        if (x % 1 === 0 || x === maxDistance - gridXStep) {
-            ctx.fillStyle = colors.text;
-            ctx.font = 'bold 12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${x.toFixed(1)}`, toPixelX(x), margin.top + plotHeight + 20);
-        }
-    }
-    
-    // ป้ายกำกับแกน X
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('ระยะทาง (เมตร)', toPixelX(maxDistance/2), height - 15);
-    
-    // ป้ายกำกับแกน Y (โซน)
-    ctx.save();
-    ctx.translate(20, margin.top + plotHeight/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.textAlign = 'center';
-    ctx.fillText('โซนเป้าหมาย', 0, 0);
-    ctx.restore();
-    
-    // ข้อมูลสนาม
-    const zoneCount = targetZones.length;
-    const zoneHeight = plotHeight / Math.max(6, zoneCount); // ต้องมีอย่างน้อย 6 โซน
-    
-    // วาดพื้นหลังพื้นที่โซน (เป็นสีเทาเข้ม)
-    ctx.fillStyle = colors.zonesBase;
-    ctx.fillRect(toPixelX(0), margin.top, toPixelX(maxDistance) - margin.left, plotHeight);
-    
-    // วาดโซนต่างๆ
-    if (targetZones && targetZones.length > 0) {
-        targetZones.forEach((zone, index) => {
-            const [min, max] = zone;
-            const color = colors.zones[index % colors.zones.length];
-            
-            // คำนวณตำแหน่งและขนาดของโซน
-            const zoneY = margin.top + index * zoneHeight;
-            
-            // วาดพื้นหลังโซน
-            ctx.fillStyle = color + '40'; // โปร่งใส 25%
-            ctx.fillRect(toPixelX(min), zoneY, (max - min) * xScale, zoneHeight);
-            
-            // วาดกรอบโซน
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(toPixelX(min), zoneY, (max - min) * xScale, zoneHeight);
-            
-            // ป้ายชื่อโซน
-            ctx.fillStyle = colors.text;
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'right';
-            ctx.fillText(`โซน ${index + 1}`, toPixelX(min) - 10, zoneY + zoneHeight/2 + 5);
-            
-            // แสดงช่วงระยะทางของโซน
-            ctx.fillStyle = colors.text;
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${min.toFixed(2)} - ${max.toFixed(2)} m`, toPixelX((min + max) / 2), zoneY + zoneHeight - 10);
-        });
-    }
-    
-    // วาดพื้นที่หุ่นยนต์ (Robot Area)
-    const robotAreaWidth = 0.5;  // กว้าง 0.5 เมตร
-    const robotAreaHeight = 0.5; // สูง 0.5 เมตร
-    const robotAreaY = margin.top + plotHeight - robotAreaHeight * yScale;
-    
-    ctx.fillStyle = colors.robotArea + '60';  // โปร่งใส 60%
-    ctx.fillRect(toPixelX(0), robotAreaY, robotAreaWidth * xScale, robotAreaHeight * yScale);
-    
-    ctx.strokeStyle = colors.robotArea;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(toPixelX(0), robotAreaY, robotAreaWidth * xScale, robotAreaHeight * yScale);
-    
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Robot Area', toPixelX(robotAreaWidth / 2), robotAreaY + robotAreaHeight * yScale / 2);
-    
-    // วาดพื้นที่ตี (Swing Area)
-    const swingAreaWidth = 0.5;  // กว้าง 0.5 เมตร
-    const swingAreaHeight = 0.5; // สูง 0.5 เมตร
-    
-    ctx.fillStyle = colors.swingArea + '60';  // โปร่งใส 60%
-    ctx.fillRect(toPixelX(robotAreaWidth), robotAreaY, swingAreaWidth * xScale, swingAreaHeight * yScale);
-    
-    ctx.strokeStyle = colors.swingArea;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(toPixelX(robotAreaWidth), robotAreaY, swingAreaWidth * xScale, swingAreaHeight * yScale);
-    
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Swing Area', toPixelX(robotAreaWidth + swingAreaWidth / 2), robotAreaY + swingAreaHeight * yScale / 2);
-    
-    // วาดจุดปล่อยลูก (Release Point)
-    // ในมุมมองด้านบน เราจะวาดเป็นเส้นตรงในแนวดิ่งที่มาจากความสูงที่กำหนด
-    const releaseHeight = fieldSettings.release_height || 2.0;
-    
-    ctx.strokeStyle = colors.releasePoint;
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 3]); // เส้นประ
-    
-    ctx.beginPath();
-    ctx.moveTo(toPixelX(0), margin.top);
-    ctx.lineTo(toPixelX(0), margin.top + plotHeight);
-    ctx.stroke();
-    
-    ctx.setLineDash([]); // กลับเป็นเส้นทึบ
-    
-    // วาดวงกลมที่จุดปล่อย
-    ctx.fillStyle = colors.releasePoint;
-    ctx.beginPath();
-    ctx.arc(toPixelX(0), margin.top, 8, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // ข้อความจุดปล่อยลูก
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Release Point (${releaseHeight} m)`, toPixelX(0) + 15, margin.top + 20);
-    
-    // เพิ่มคำอธิบายสนาม
-    ctx.font = 'bold 18px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = colors.text;
-    ctx.fillText(`${fieldSettings.field_type.toUpperCase()} FIELD`, width / 2, 25);
-    
-    // วาดแถบสี (Color Legend) สำหรับโซนต่างๆ
-    if (targetZones.length > 0) {
-        const legendWidth = 20;
-        const legendHeight = 20;
-        const legendSpacing = 8;
-        const legendY = height - 30;
-        const legendStartX = margin.left;
-        
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'left';
-        
-        targetZones.forEach((zone, index) => {
-            if (index < 6) { // แสดงโซนแรก 6 โซนเท่านั้น เพื่อความสวยงาม
-                const legendX = legendStartX + index * (legendWidth + 80);
-                const color = colors.zones[index % colors.zones.length];
-                
-                // วาดกล่องสี
-                ctx.fillStyle = color;
-                ctx.fillRect(legendX, legendY, legendWidth, legendHeight);
-                
-                ctx.strokeStyle = '#FFFFFF';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(legendX, legendY, legendWidth, legendHeight);
-                
-                // ชื่อโซน
-                ctx.fillStyle = colors.text;
-                ctx.fillText(`Zone ${index + 1}`, legendX + legendWidth + legendSpacing, legendY + legendHeight/2 + 4);
-            }
-        });
-    }
-    
-    // เพิ่มหัวข้อย่อยในมุมล่างซ้าย
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#AAAAAA';
-    ctx.fillText(`Min: ${fieldSettings.min_distance}m | Max: ${fieldSettings.max_distance}m | Width: ${fieldSettings.zone_width}m`, margin.left, height - 5);
-};
-
-// Draw trajectory canvas
-const drawTrajectoryCanvas = function(ctx, data, targetDistance) {
-    // ล้างแคนวาส
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // ตั้งค่าสี
-    const colors = {
-        background: '#1a1a1a',
-        grid: '#333333',
-        axis: '#FFFFFF',
-        trajectory: '#00e0ff',
-        idealTrajectory: '#ff2027',
-        target: '#FFD700',
-        landingPoint: '#33FF33',
-        idealLandingPoint: '#FF33FF',
-        text: '#FFFFFF',
-        zones: [
-            '#FF3333', '#33FF33', '#3333FF', '#FFFF33', '#FF33FF',
-            '#33FFFF', '#FF9933', '#9933FF', '#33FF99', '#FF3399'
-        ]
-    };
-    
-    // คำนวณขนาดและตำแหน่ง
-    const canvas = ctx.canvas;
-    const width = canvas.width;
-    const height = canvas.height;
-    
-    const margin = {
-        top: 40,
-        right: 40,
-        bottom: 60,
-        left: 60
-    };
-    
-    // ขนาดกราฟที่ใช้งานได้
-    const plotWidth = width - margin.left - margin.right;
-    const plotHeight = height - margin.top - margin.bottom;
-    
-    // พิจารณาค่า min/max จากข้อมูล
-    let xMax = 3.0;  // ค่าเริ่มต้น
-    let yMax = 2.5;  // ค่าเริ่มต้น
-    
-    if (data.trajectory_x && data.trajectory_x.length > 0) {
-        xMax = Math.max(xMax, Math.max(...data.trajectory_x) * 1.1);
-        yMax = Math.max(yMax, Math.max(...data.trajectory_y) * 1.2);
-    }
-    
-    if (data.ideal_trajectory_x && data.ideal_trajectory_x.length > 0) {
-        xMax = Math.max(xMax, Math.max(...data.ideal_trajectory_x) * 1.1);
-        yMax = Math.max(yMax, Math.max(...data.ideal_trajectory_y) * 1.2);
-    }
-    
-    if (targetDistance) {
-        xMax = Math.max(xMax, targetDistance * 1.1);
-    }
-    
-    // สเกลสำหรับการแปลงค่า
-    const xScale = plotWidth / xMax;
-    const yScale = plotHeight / yMax;
-    
-    // ฟังก์ชันแปลงพิกัด
-    const toPixelX = (x) => margin.left + x * xScale;
-    const toPixelY = (y) => height - margin.bottom - y * yScale;
-    
-    // วาดพื้นหลัง
-    ctx.fillStyle = colors.background;
-    ctx.fillRect(0, 0, width, height);
-    
-    // วาดเส้นกริด
-    ctx.strokeStyle = colors.grid;
-    ctx.lineWidth = 1;
-    
-    // เส้นกริดแนวนอน
-    const yStep = yMax > 3 ? 0.5 : 0.25;
-    for (let y = 0; y <= yMax; y += yStep) {
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(0), toPixelY(y));
-        ctx.lineTo(toPixelX(xMax), toPixelY(y));
-        ctx.stroke();
-        
-        // แสดงค่าความสูง
-        ctx.fillStyle = colors.text;
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(`${y.toFixed(1)} m`, toPixelX(0) - 5, toPixelY(y) + 4);
-    }
-    
-    // เส้นกริดแนวตั้ง
-    const xStep = xMax > 5 ? 1.0 : 0.5;
-    for (let x = 0; x <= xMax; x += xStep) {
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(x), toPixelY(0));
-        ctx.lineTo(toPixelX(x), toPixelY(yMax));
-        ctx.stroke();
-        
-        // แสดงค่าระยะทาง
-        ctx.fillStyle = colors.text;
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${x.toFixed(1)} m`, toPixelX(x), toPixelY(0) + 20);
-    }
-    
-    // วาดพื้นที่โซนเป้าหมาย
-    if (data.target_zones && data.target_zones.length > 0) {
-        const zoneHeight = 0.1;  // ความสูงของโซน (เมตร)
-        
-        data.target_zones.forEach((zone, index) => {
-            const [min, max] = zone;
-            const color = colors.zones[index % colors.zones.length];
-            
-            // วาดโซน
-            ctx.fillStyle = color + '80';  // เพิ่มความโปร่งใส
-            ctx.fillRect(toPixelX(min), toPixelY(0), (max - min) * xScale, zoneHeight * yScale);
-            
-            // ขอบโซน
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(toPixelX(min), toPixelY(0), (max - min) * xScale, zoneHeight * yScale);
-            
-            // ชื่อโซน
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Zone ${index + 1}`, toPixelX((min + max) / 2), toPixelY(0) - 5);
-        });
-    }
-    
-    // วาดเส้นทางอุดมคติ (ถ้ามี)
-    if (data.ideal_trajectory_x && data.ideal_trajectory_x.length > 0 && 
-        data.ideal_trajectory_y && data.ideal_trajectory_y.length > 0) {
-        
-        ctx.strokeStyle = colors.idealTrajectory;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);  // เส้นประ
-        
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(data.ideal_trajectory_x[0]), toPixelY(data.ideal_trajectory_y[0]));
-        
-        for (let i = 1; i < data.ideal_trajectory_x.length; i++) {
-            ctx.lineTo(toPixelX(data.ideal_trajectory_x[i]), toPixelY(data.ideal_trajectory_y[i]));
-        }
-        
-        ctx.stroke();
-        ctx.setLineDash([]);  // กลับไปเป็นเส้นทึบ
-        
-        // วาดจุดตกอุดมคติ
-        if (data.ideal_landing_distance) {
-            ctx.fillStyle = colors.idealLandingPoint;
-            ctx.beginPath();
-            ctx.arc(toPixelX(data.ideal_landing_distance), toPixelY(0), 8, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            
-            // แสดงระยะตกอุดมคติ
-            ctx.fillStyle = colors.idealLandingPoint;
-            ctx.font = 'bold 12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Ideal: ${data.ideal_landing_distance.toFixed(2)} m`, toPixelX(data.ideal_landing_distance), toPixelY(0) - 25);
-        }
-    }
-    
-    // วาดเส้นทางจริง
-    if (data.trajectory_x && data.trajectory_x.length > 0 && 
-        data.trajectory_y && data.trajectory_y.length > 0) {
-        
-        ctx.strokeStyle = colors.trajectory;
-        ctx.lineWidth = 3;
-        
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(data.trajectory_x[0]), toPixelY(data.trajectory_y[0]));
-        
-        for (let i = 1; i < data.trajectory_x.length; i++) {
-            ctx.lineTo(toPixelX(data.trajectory_x[i]), toPixelY(data.trajectory_y[i]));
-        }
-        
-        ctx.stroke();
-        
-        // วาดจุดตกจริง
-        if (data.landing_distance) {
-            ctx.fillStyle = colors.landingPoint;
-            ctx.beginPath();
-            ctx.arc(toPixelX(data.landing_distance), toPixelY(0), 8, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            
-            // แสดงระยะตกจริง
-            ctx.fillStyle = colors.landingPoint;
-            ctx.font = 'bold 12px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Actual: ${data.landing_distance.toFixed(2)} m`, toPixelX(data.landing_distance), toPixelY(0) - 10);
-        }
-    }
-    
-    // วาดเป้าหมาย (ถ้ามี)
-    if (targetDistance) {
-        ctx.fillStyle = colors.target;
-        ctx.beginPath();
-        ctx.arc(toPixelX(targetDistance), toPixelY(0), 7, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // วาดเส้นเป้าหมาย
-        ctx.setLineDash([5, 5]);
-        ctx.strokeStyle = colors.target;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(toPixelX(targetDistance), toPixelY(0));
-        ctx.lineTo(toPixelX(targetDistance), toPixelY(yMax * 0.8));
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        // ข้อความเป้าหมาย
-        ctx.fillStyle = colors.target;
-        ctx.font = 'bold 14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`Target: ${parseFloat(targetDistance).toFixed(2)} m`, toPixelX(targetDistance), toPixelY(yMax * 0.85));
-    }
-    
-    // วาดชื่อแกน
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Distance (m)', toPixelX(xMax / 2), height - 15);
-    
-    ctx.textAlign = 'center';
-    ctx.save();
-    ctx.translate(15, toPixelY(yMax / 2));
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Height (m)', 0, 0);
-    ctx.restore();
-    
-    // วาดชื่อกราฟ
-    ctx.fillStyle = colors.text;
-    ctx.font = 'bold 16px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('Ball Trajectory Simulation', toPixelX(xMax / 2), margin.top / 2);
-    
-    // วาดคำอธิบาย (Legend)
-    const legendX = margin.left;
-    const legendY = margin.top / 2;
-    const legendSpacing = 120;
-    
-    // Actual Trajectory
-    ctx.strokeStyle = colors.trajectory;
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(legendX, legendY);
-    ctx.lineTo(legendX + 30, legendY);
-    ctx.stroke();
-    
-    ctx.fillStyle = colors.text;
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'left';
-    ctx.fillText('Actual Trajectory', legendX + 40, legendY + 4);
-    
-    // Ideal Trajectory (ถ้ามี)
-    if (data.ideal_trajectory_x) {
-        ctx.strokeStyle = colors.idealTrajectory;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.moveTo(legendX + legendSpacing, legendY);
-        ctx.lineTo(legendX + legendSpacing + 30, legendY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        ctx.fillStyle = colors.text;
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText('Ideal Trajectory', legendX + legendSpacing + 40, legendY + 4);
-    }
-    
-    // Target
-    if (targetDistance) {
-        ctx.fillStyle = colors.target;
-        ctx.beginPath();
-        ctx.arc(legendX + legendSpacing * 2, legendY, 5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        
-        ctx.fillStyle = colors.text;
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'left';
-        ctx.fillText('Target', legendX + legendSpacing * 2 + 10, legendY + 4);
-    }
-};
-
-// Reset simulation
 function resetSimulation() {
-    // Reset UI elements to default values
+    setButtonDisabled('reset-btn', true);
     document.getElementById('release-height').value = '2.0';
     document.getElementById('strike-height').value = '0.35';
     document.getElementById('height-value').textContent = '0.35 m';
@@ -1227,269 +870,200 @@ function resetSimulation() {
     document.getElementById('velocity-value').textContent = '5.25 m/s';
     document.getElementById('ideal-comparison').checked = false;
     
-    // Reset physics settings
     document.getElementById('gravity').value = '9.81';
     document.getElementById('ball-mass').value = '0.024';
     document.getElementById('air-density').value = '1.225';
     document.getElementById('drag-coefficient').value = '0.5';
     document.getElementById('elasticity').value = '0.4';
     
-    // Clear results
     document.getElementById('landing-distance').textContent = '0.00 m';
     document.getElementById('target-zone').textContent = 'None';
+    document.getElementById('target-zone').style.color = '#9e9e9e';
     document.getElementById('strike-time').textContent = '0.00 s';
     document.getElementById('ideal-landing').textContent = '0.00 m';
     document.getElementById('landing-difference').textContent = '0.00 m';
+    document.querySelectorAll('.ideal-result').forEach(el => el.style.display = 'none');
     
-    // Hide ideal result elements
-    document.querySelectorAll('.ideal-result').forEach(el => {
-        el.style.display = 'none';
-    });
-    
-    // Clear charts
+    const optAngleDisplay = document.getElementById('optimal-angle-tolerance-display');
+    if (optAngleDisplay) optAngleDisplay.style.display = 'none';
+
     if (trajectoryChart) {
-        trajectoryChart.data.datasets[0].data = [];
-        trajectoryChart.data.datasets[1].data = [];
-        trajectoryChart.data.datasets[2].data = [];
+        trajectoryChart.data.datasets.forEach(dataset => dataset.data = []);
+        if (trajectoryChart.options.plugins.annotation) {
+             trajectoryChart.options.plugins.annotation.annotations = {};
+        }
         trajectoryChart.update();
     }
     
-    if (angleChart) {
-        angleChart.data.labels = [];
-        angleChart.data.datasets[0].data = [];
-        angleChart.update();
-    }
-    
-    // Clear test zone results
+    document.getElementById('field-type').value = 'standard';
+    handleFieldTypeChange(); 
+
     document.getElementById('test-zone-results').innerHTML = '';
     
-    // Clear sensitivity results
-    document.getElementById('sensitivity-results').innerHTML = '';
-    
-    // Update target zone indicator
-    updateTargetZoneIndicator();
+    // fetchFieldInfo has its own finally block to re-enable the reset button.
+    // If fetchFieldInfo is not called by handleFieldTypeChange, enable here.
+    // For now, assuming fetchFieldInfo will handle it.
+    showCustomMessage('รีเซ็ตการจำลองเป็นค่าเริ่มต้นแล้ว', 'info');
 }
 
-// Find optimal settings
 function optimizeSettings() {
     const targetDistance = document.getElementById('target-distance').value;
-    
-    // Show loading state
-    document.getElementById('optimize-btn').textContent = 'Optimizing...';
-    document.getElementById('optimize-btn').disabled = true;
-    
-    // Send request to backend
+    const releaseHeight = document.getElementById('release-height').value;
+    const strikeHeight = document.getElementById('strike-height').value;
+
+    setButtonDisabled('optimize-btn', true);
+    const optAngleDisplay = document.getElementById('optimal-angle-tolerance-display');
+    if (optAngleDisplay) optAngleDisplay.style.display = 'none';
+
     fetch('/api/optimize', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            target_distance: targetDistance
+            target_distance: targetDistance,
+            release_height: releaseHeight,
+            strike_height: strikeHeight
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            alert('Error: ' + data.error);
-            return;
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errData => {
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            });
         }
-        
-        // Update UI with optimal settings
-        document.getElementById('strike-angle').value = data.angle;
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('strike-angle').value = data.angle.toFixed(1);
         document.getElementById('angle-value').textContent = data.angle.toFixed(1) + '°';
-        document.getElementById('strike-velocity').value = data.velocity;
+        document.getElementById('strike-velocity').value = data.velocity.toFixed(2);
         document.getElementById('velocity-value').textContent = data.velocity.toFixed(2) + ' m/s';
         
-        // Show popup with results including tolerance
-        showOptimizedValuesPopup(targetDistance, data.angle, data.velocity, data.angle_min, data.angle_max);
-        
-        // Start simulation with new settings
+        if (optAngleDisplay) {
+            document.getElementById('optimized-angle-value').textContent = `${data.angle.toFixed(2)}°`;
+            document.getElementById('optimized-angle-tolerance-range').textContent = `${data.angle_min.toFixed(2)}° - ${data.angle_max.toFixed(2)}°`;
+            document.getElementById('optimized-velocity-value').textContent = `${data.velocity.toFixed(2)} m/s`;
+            optAngleDisplay.style.display = 'block';
+        }
+        showCustomMessage(`พบการตั้งค่าที่เหมาะสมที่สุดสำหรับ ${targetDistance}m และนำไปใช้แล้ว มุม: ${data.angle.toFixed(2)}°, ความเร็ว: ${data.velocity.toFixed(2)} m/s.`, 'success');
         startSimulation();
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred during optimization');
+        showCustomMessage(`เกิดข้อผิดพลาดในการค้นหาค่าที่เหมาะสม: ${error.message}`, 'error');
+         if (optAngleDisplay) optAngleDisplay.style.display = 'none';
     })
     .finally(() => {
-        // Reset button state
-        document.getElementById('optimize-btn').textContent = 'Find Optimal Settings';
-        document.getElementById('optimize-btn').disabled = false;
+        setButtonDisabled('optimize-btn', false);
     });
 }
 
-// Show popup with optimized values
 function showOptimizedValuesPopup(targetDistance, angle, velocity, angleMin, angleMax) {
-    // Create popup elements
     const popup = document.createElement('div');
-    popup.className = 'popup';
+    popup.className = 'popup'; 
     
     const popupContent = document.createElement('div');
-    popupContent.className = 'popup-content';
+    popupContent.className = 'popup-content'; 
     
-    // Add content
     popupContent.innerHTML = `
-        <h2>✅ OPTIMAL SETTINGS FOUND</h2>
-        <p>Target Distance: ${parseFloat(targetDistance).toFixed(2)} m</p>
+        <h2><span class="popup-icon fas fa-check-circle" style="color:var(--success-color); margin-right:10px;"></span>พบการตั้งค่าที่เหมาะสมที่สุด</h2>
+        <p style="text-align:center; font-size: 1.1em; color: #e0e0e0;">สำหรับระยะเป้าหมาย: <strong>${parseFloat(targetDistance).toFixed(2)} m</strong></p>
         <hr>
         <div class="popup-params">
             <div class="param-row">
-                <span class="param-label">Strike Angle:</span>
+                <span class="param-label">มุมที่ตีที่เหมาะสม:</span>
                 <span class="param-value">${angle.toFixed(2)}°</span>
             </div>
             <div class="param-row">
-                <span class="param-label">±5% Tolerance:</span>
+                <span class="param-label">ช่วงค่าที่ยอมรับได้ (±5%):</span>
                 <span class="param-range">${angleMin.toFixed(2)}° - ${angleMax.toFixed(2)}°</span>
             </div>
             <div class="param-row">
-                <span class="param-label">Strike Velocity:</span>
-                <span class="param-value">${velocity.toFixed(2)} m/s</span>
+                <span class="param-label">ความเร็วที่ตีที่เหมาะสม:</span>
+                <span class="param-value" style="color: var(--contrast-color);">${velocity.toFixed(2)} m/s</span>
             </div>
         </div>
         <hr>
         <div class="popup-instructions">
-            <p><strong>MACHINE SETUP INSTRUCTIONS</strong></p>
+            <p>คำแนะนำในการตั้งค่าเครื่อง:</p>
             <ol>
-                <li>Set the angle to exactly ${angle.toFixed(2)}° if possible</li>
-                <li>If precise adjustment is difficult, any angle between ${angleMin.toFixed(2)}° and ${angleMax.toFixed(2)}° (±5%) should work</li>
-                <li>Remember to keep velocity at ${velocity.toFixed(2)} m/s</li>
+                <li>ตั้งค่ามุมเป็น <strong>${angle.toFixed(2)}°</strong>. (ช่วง: ${angleMin.toFixed(2)}° ถึง ${angleMax.toFixed(2)}°)</li>
+                <li>ตั้งค่าความเร็วเป็น <strong>${velocity.toFixed(2)} m/s</strong>.</li>
+                <li>ตรวจสอบให้แน่ใจว่าพารามิเตอร์อื่นๆ (ความสูงปล่อย/ตี) ตรงกับการตั้งค่าปัจจุบัน</li>
             </ol>
         </div>
         <div class="popup-buttons">
-            <button class="close-btn">Close</button>
+            <button class="close-btn primary-btn">ปิด</button>
         </div>
     `;
     
-    // Add to DOM
     popup.appendChild(popupContent);
     document.body.appendChild(popup);
     
-    // Add close button event
+    setTimeout(() => popup.classList.add('show'), 10);
+
     popup.querySelector('.close-btn').addEventListener('click', function() {
-        document.body.removeChild(popup);
+        popup.classList.remove('show');
+        setTimeout(() => document.body.removeChild(popup), 300);
     });
-}
-
-// Run sensitivity analysis
-function runSensitivityAnalysis() {
-    const baseAngle = parseFloat(document.getElementById('base-angle').value);
-    const variation = parseFloat(document.getElementById('angle-variation').value);
-    const releaseHeight = document.getElementById('release-height').value;
-    const strikeVelocity = document.getElementById('strike-velocity').value;
-    
-    // Show loading
-    document.getElementById('sensitivity-results').innerHTML = '<p>Calculating sensitivity...</p>';
-    
-    // Call API
-    fetch('/api/sensitivity_analysis', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            base_angle: baseAngle,
-            variation: variation,
-            release_height: releaseHeight,
-            strike_velocity: strikeVelocity
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Update angle chart
-        angleChart.data.labels = data.angles.map(a => a.toFixed(1));
-        angleChart.data.datasets[0].data = data.distances;
-        angleChart.update();
-        
-        // Display results
-        let html = `
-            <h3>Sensitivity Results</h3>
-            <p>Base Angle: ${baseAngle.toFixed(2)}° → Distance: ${data.base_distance.toFixed(3)}m</p>
-            <p>±5% Angle Range: ${data.minus_5_percent.angle.toFixed(2)}° to ${data.plus_5_percent.angle.toFixed(2)}°</p>
-            <p>Expected Distance Range: ${Math.min(data.minus_5_percent.distance, data.plus_5_percent.distance).toFixed(3)}m to ${Math.max(data.minus_5_percent.distance, data.plus_5_percent.distance).toFixed(3)}m</p>
-            <p>Distance Variation: ${data.distance_range.toFixed(3)}m (${data.distance_percent.toFixed(1)}% of base distance)</p>
-        `;
-        
-        // Add tolerance indicator
-        let toleranceClass = '';
-        let toleranceMessage = '';
-        
-        if (data.distance_percent <= 5) {
-            toleranceClass = 'good';
-            toleranceMessage = 'Excellent! The sensitivity is within 5% tolerance.';
-        } else if (data.distance_percent <= 10) {
-            toleranceClass = 'medium';
-            toleranceMessage = 'Acceptable. The sensitivity is within 10% tolerance.';
-        } else {
-            toleranceClass = 'poor';
-            toleranceMessage = 'High sensitivity! Consider using a more stable angle setting.';
+    popup.addEventListener('click', function(event) {
+        if (event.target === popup) {
+            popup.classList.remove('show');
+            setTimeout(() => document.body.removeChild(popup), 300);
         }
-        
-        html += `<p class="stat-value ${toleranceClass}">${toleranceMessage}</p>`;
-        
-        document.getElementById('sensitivity-results').innerHTML = html;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('sensitivity-results').innerHTML = '<p>Error calculating sensitivity analysis</p>';
     });
 }
 
-// Test all zones
 function testAllZones() {
     const releaseHeight = document.getElementById('release-height').value;
+    const strikeHeight = document.getElementById('strike-height').value;
+
+    setButtonDisabled('test-zones-btn', true);
+    document.getElementById('test-zone-results').innerHTML = '<p style="text-align:center; color: var(--text-muted-color);">กำลังทดสอบทุกโซนสำหรับสนามปัจจุบัน...</p>';
     
-    // Show loading
-    document.getElementById('test-zone-results').innerHTML = '<p>Testing all zones...</p>';
-    
-    // Call API
     fetch('/api/test_all_zones', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            release_height: releaseHeight
+            release_height: releaseHeight,
+            strike_height: strikeHeight,
+            field_type: currentFieldType
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errData => {
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
-        // Create results table
         let html = `
-            <h3>Zone Testing Results - ${currentFieldType.toUpperCase()} Field</h3>
+            <h3>ผลการทดสอบการหาค่าที่เหมาะสมที่สุดสำหรับโซน - สนาม ${currentFieldType.charAt(0).toUpperCase() + currentFieldType.slice(1)}</h3>
             <table class="zone-table">
                 <thead>
                     <tr>
-                        <th>Zone</th>
-                        <th>Range (m)</th>
-                        <th>Target (m)</th>
-                        <th>Optimal Angle (°)</th>
-                        <th>Optimal Velocity (m/s)</th>
-                        <th>Actual Distance (m)</th>
-                        <th>Error (m)</th>
-                        <th>Error (%)</th>
-                        <th>Within ±5%</th>
+                        <th>โซน</th><th>ช่วง (m)</th><th>เป้าหมาย (m)</th>
+                        <th>มุมที่เหมาะสม (°)</th><th>ความเร็วที่เหมาะสม (m/s)</th>
+                        <th>ระยะทางจริง (m)</th><th>ค่าคลาดเคลื่อน (m)</th><th>ค่าคลาดเคลื่อน (%)</th><th>ผ่าน (±5%)</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
         
-        // Add rows for each zone
         data.results.forEach(result => {
             if (typeof result.error === 'string') {
-                // Error occurred for this zone
                 html += `
                     <tr>
                         <td>${result.zone}</td>
                         <td>${result.range[0].toFixed(2)} - ${result.range[1].toFixed(2)}</td>
                         <td>${result.target.toFixed(2)}</td>
-                        <td colspan="6">${result.error}</td>
+                        <td colspan="6" style="color: var(--error-color);">${result.error}</td>
                     </tr>
                 `;
             } else {
-                // Success
                 const toleranceClass = result.within_tolerance ? 'tolerance-pass' : 'tolerance-fail';
-                const toleranceText = result.within_tolerance ? '✓ Yes' : '✗ No';
-                
+                const toleranceText = result.within_tolerance ? '✓ ใช่' : '✗ ไม่';
                 html += `
                     <tr>
                         <td>${result.zone}</td>
@@ -1505,82 +1079,40 @@ function testAllZones() {
                 `;
             }
         });
+        html += `</tbody></table>`;
         
-        html += `
-                </tbody>
-            </table>
-        `;
-        
-        // Add summary box
         const summary = data.summary;
-        let toleranceClass = '';
-        
-        if (summary.tolerance_percent >= 90) {
-            toleranceClass = 'good';
-        } else if (summary.tolerance_percent >= 75) {
-            toleranceClass = 'medium';
-        } else {
-            toleranceClass = 'poor';
-        }
+        let toleranceClassOverall = '';
+        if (summary.tolerance_percent >= 90) toleranceClassOverall = 'good';
+        else if (summary.tolerance_percent >= 75) toleranceClassOverall = 'medium';
+        else toleranceClassOverall = 'poor';
         
         html += `
             <div class="summary-box">
-                <h3>Summary Statistics</h3>
-                <div class="stat-row">
-                    <span class="stat-label">Success Rate:</span>
-                    <span class="stat-value">${summary.successful_zones}/${summary.total_zones} zones (${(summary.successful_zones/summary.total_zones*100).toFixed(1)}%)</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Average Error:</span>
-                    <span class="stat-value">${summary.avg_error.toFixed(3)} m</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Maximum Error:</span>
-                    <span class="stat-value">${summary.max_error.toFixed(3)} m</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">Within ±5% Tolerance:</span>
-                    <span class="stat-value ${toleranceClass}">${summary.within_tolerance_count}/${summary.total_zones} zones (${summary.tolerance_percent.toFixed(1)}%)</span>
-                </div>
+                <h3>สรุปผลการหาค่าที่เหมาะสมที่สุดโดยรวม</h3>
+                <div class="stat-row"><span class="stat-label">การหาค่าที่เหมาะสมสำเร็จ:</span><span class="stat-value">${summary.successful_zones}/${summary.total_zones} (${(summary.successful_zones/summary.total_zones*100).toFixed(1)}%)</span></div>
+                <div class="stat-row"><span class="stat-label">ค่าคลาดเคลื่อนเฉลี่ย:</span><span class="stat-value">${summary.avg_error.toFixed(3)} m</span></div>
+                <div class="stat-row"><span class="stat-label">ค่าคลาดเคลื่อนสูงสุด:</span><span class="stat-value">${summary.max_error.toFixed(3)} m</span></div>
+                <div class="stat-row"><span class="stat-label">โซนที่อยู่ในช่วงค่าที่ยอมรับได้ ±5%:</span><span class="stat-value ${toleranceClassOverall}">${summary.within_tolerance_count}/${summary.total_zones} (${summary.tolerance_percent.toFixed(1)}%)</span></div>
             </div>
         `;
         
-        // Add recommendation based on results
-        if (summary.tolerance_percent < 75) {
-            html += `
-                <p class="stat-value poor">
-                    RECOMMENDATION: Optimization accuracy is below acceptable levels. 
-                    Consider refining physics parameters or improving the optimization algorithm.
-                </p>
-            `;
-        } else if (summary.tolerance_percent < 90) {
-            html += `
-                <p class="stat-value medium">
-                    RECOMMENDATION: Optimization is acceptable but could be improved. 
-                    Fine-tune physics parameters for better accuracy.
-                </p>
-            `;
-        } else {
-            html += `
-                <p class="stat-value good">
-                    RECOMMENDATION: Optimization is performing well! 
-                    The simulation is accurately predicting ball trajectories.
-                </p>
-            `;
-        }
+        let recommendation = '';
+        if (summary.tolerance_percent < 75) recommendation = `<p class="stat-value poor" style="text-align:center; margin-top:15px;">คำแนะนำ: ความแม่นยำในการหาค่าที่เหมาะสมต่ำ ควรตรวจสอบพารามิเตอร์ทางฟิสิกส์หรือตรรกะการหาค่าที่เหมาะสม</p>`;
+        else if (summary.tolerance_percent < 90) recommendation = `<p class="stat-value medium" style="text-align:center; margin-top:15px;">คำแนะนำ: การหาค่าที่เหมาะสมอยู่ในเกณฑ์ที่ยอมรับได้ การปรับจูนเพิ่มเติมอาจช่วยให้ผลลัพธ์ดีขึ้น</p>`;
+        else recommendation = `<p class="stat-value good" style="text-align:center; margin-top:15px;">คำแนะนำ: การหาค่าที่เหมาะสมทำงานได้ดีมาก!</p>`;
+        html += recommendation;
         
-        // Display results
         document.getElementById('test-zone-results').innerHTML = html;
-        
-        // Switch to results tab
         openTab('results');
+        showCustomMessage('ทดสอบทุกโซนเสร็จสิ้น', 'success');
     })
     .catch(error => {
-        console.error('Error:', error);
-        document.getElementById('test-zone-results').innerHTML = '<p>Error testing zones: ' + error.message + '</p>';
+        console.error('Error testing zones:', error);
+        document.getElementById('test-zone-results').innerHTML = `<p style="color:var(--error-color);">เกิดข้อผิดพลาด: ${error.message}</p>`;
+        showCustomMessage(`เกิดข้อผิดพลาดในการทดสอบโซน: ${error.message}`, 'error');
+    })
+    .finally(() => {
+        setButtonDisabled('test-zones-btn', false);
     });
 }
-
-const canvas = document.getElementById('field-canvas');
-const ctx = canvas.getContext('2d');
-drawFieldCanvas(ctx, fieldSettings, currentZones);

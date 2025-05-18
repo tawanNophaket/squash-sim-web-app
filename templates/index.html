@@ -6,17 +6,26 @@
     <title>Squash Ball Striker Simulation</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" xintegrity="sha512-H0P9NzU6GfNxHShL3gD6cG3rL6sAYECyOIBG3s/E3W3sD/FhHw93zS/LCEr3eSsKOTUvNBSS8LwQCTh62Rz3gA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
+    <div id="custom-message-box" class="message-box-hidden">
+        <div class="message-box-content">
+            <span id="message-box-icon"></span>
+            <p id="message-box-text"></p>
+            <button id="message-box-close-btn">Close</button>
+        </div>
+    </div>
+
     <div class="container">
         <h1>Squash Ball Striker Simulation</h1>
         
         <div class="tabs">
-            <button class="tab-btn active" onclick="openTab('basic')">Basic Settings</button>
-            <button class="tab-btn" onclick="openTab('advanced')">Advanced Physics</button>
-            <button class="tab-btn" onclick="openTab('field')">Field Setup</button>
-            <button class="tab-btn" onclick="openTab('analysis')">Angle Analysis</button>
-            <button class="tab-btn" onclick="openTab('results')">Results</button>
+            <button class="tab-btn active" onclick="openTab('basic')"><i class="fas fa-cogs tab-icon"></i>Basic Settings</button>
+            <button class="tab-btn" onclick="openTab('advanced')"><i class="fas fa-atom tab-icon"></i>Advanced Physics</button>
+            <button class="tab-btn" onclick="openTab('field')"><i class="fas fa-map-marked-alt tab-icon"></i>Field Setup</button>
+            <button class="tab-btn" onclick="openTab('results')"><i class="fas fa-clipboard-check tab-icon"></i>Results</button>
         </div>
         
         <div id="basic" class="tab-content active">
@@ -74,6 +83,13 @@
                 </div>
                 
                 <button id="optimize-btn" class="primary-btn" onclick="optimizeSettings()">Find Optimal Settings</button>
+
+                <div id="optimal-angle-tolerance-display" class="optimization-result-display" style="display: none;">
+                    <h4>Optimal Settings Applied:</h4>
+                    <p><strong>Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
+                    <p><strong>Angle Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
+                    <p><strong>Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                </div>
             </div>
         </div>
         
@@ -116,66 +132,56 @@
         </div>
         
         <div id="field" class="tab-content">
-            <h2>Field Settings</h2>
-            
-            <div class="settings-panel">
-                <div class="setting">
-                    <label for="field-type">Field Type:</label>
-                    <select id="field-type" onchange="changeFieldType()">
-                        <option value="standard" selected>Standard</option>
-                        <option value="extra1">Extra 1 (Extended Range)</option>
-                        <option value="extra2">Extra 2 (Angle Features)</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </div>
-                
-                <div class="field-dimensions">
-                    <div class="setting">
-                        <label for="min-distance">Min Distance (m):</label>
-                        <input type="number" id="min-distance" min="0.1" max="5" step="0.01" value="0.75" disabled>
+            <div class="field-layout-container">
+                <div class="field-settings-column">
+                    <h2>Field Configuration</h2>
+                    <div class="settings-panel">
+                        <div class="setting">
+                            <label for="field-type">Field Type:</label>
+                            <select id="field-type" onchange="handleFieldTypeChange()">
+                                <option value="standard" selected>Standard</option>
+                                <option value="extra1">Extra 1 (Extended Range)</option>
+                                <option value="extra2">Extra 2 (Angle Features)</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        
+                        <div class="field-dimensions">
+                            <p class="field-dimensions-title">Current Field Dimensions:</p>
+                            <div class="setting">
+                                <label for="min-distance">Min Distance (m):</label>
+                                <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" disabled>
+                            </div>
+                            
+                            <div class="setting">
+                                <label for="max-distance">Max Distance (m):</label>
+                                <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" disabled>
+                            </div>
+                            
+                            <div class="setting">
+                                <label for="zone-width">Avg. Zone Width (m):</label>
+                                <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" disabled>
+                            </div>
+                        </div>
+                        
+                        <div class="field-actions">
+                            <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>Apply Custom Settings</button>
+                            <button id="test-zones-btn" class="secondary-btn" onclick="testAllZones()">Test All Zones</button>
+                        </div>
                     </div>
-                    
-                    <div class="setting">
-                        <label for="max-distance">Max Distance (m):</label>
-                        <input type="number" id="max-distance" min="0.1" max="5" step="0.01" value="2.65" disabled>
+                </div>
+
+                <div class="field-visualization-column">
+                    <h3>Field Zone Layout</h3>
+                    <div class="field-visualization">
+                        <canvas id="field-chart"></canvas>
+                        <div id="field-info-text" class="field-info-text">
+                            <p><strong>Robot Area:</strong> 0.0m - 0.5m (approx.)</p>
+                            <p><strong>Release Point:</strong> At 0.0m distance.</p>
+                        </div>
                     </div>
-                    
-                    <div class="setting">
-                        <label for="zone-width">Zone Width (m):</label>
-                        <input type="number" id="zone-width" min="0.1" max="1" step="0.01" value="0.38" disabled>
-                    </div>
                 </div>
-                
-                <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>Apply Field Settings</button>
-                <button id="test-zones-btn" onclick="testAllZones()">Test All Zones</button>
             </div>
-            
-            <div class="field-visualization">
-                <h3>Field Visualization</h3>
-                <canvas id="field-chart"></canvas>
-            </div>
-        </div>
-        
-        <div id="analysis" class="tab-content">
-            <h2>Angle Analysis</h2>
-            <canvas id="angle-chart"></canvas>
-            
-            <div class="sensitivity-panel">
-                <h3>Sensitivity Analysis</h3>
-                <div class="setting">
-                    <label for="base-angle">Base Angle (°):</label>
-                    <input type="number" id="base-angle" min="10" max="80" step="0.1" value="45">
-                </div>
-                
-                <div class="setting">
-                    <label for="angle-variation">Variation (°):</label>
-                    <input type="number" id="angle-variation" min="0.1" max="10" step="0.1" value="5">
-                </div>
-                
-                <button onclick="runSensitivityAnalysis()">Run Analysis</button>
-            </div>
-            
-            <div id="sensitivity-results"></div>
         </div>
         
         <div id="results" class="tab-content">
