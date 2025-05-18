@@ -286,7 +286,12 @@ function startSimulation() {
     .then(result => {
         // อัปเดต UI ด้วยผลลัพธ์
         updateSimulationResults(result);
-        showCustomMessage('การจำลองเสร็จสิ้น', 'success');
+        
+        // เพิ่มโค้ดส่วนนี้: เปลี่ยนไปที่หน้า Results ทันที
+        setTimeout(() => {
+            openTab('results');
+            showCustomMessage('การจำลองเสร็จสิ้น', 'success');
+        }, 200);
     })
     .catch(error => {
         console.error('Error running simulation:', error);
