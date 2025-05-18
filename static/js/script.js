@@ -13,52 +13,47 @@ const zoneColors = [
 
 // DOM Elements for Message Box
 const messageBox = document.getElementById('custom-message-box');
-const messageBoxIcon = document.getElementById('message-box-icon');
-const messageBoxText = document.getElementById('message-box-text');
-const messageBoxCloseBtn = document.getElementById('message-box-close-btn');
-const messageBoxContent = messageBox.querySelector('.message-box-content');
-
+const messageBoxText = messageBox ? document.getElementById('message-box-text') : null;
+const messageBoxCloseBtn = messageBox ? document.getElementById('message-box-close-btn') : null;
+const messageBoxContent = messageBox ? messageBox.querySelector('.message-box-content') : null;
 
 // Function to show custom message box
 function showCustomMessage(message, type = 'info') { // type can be 'success', 'error', 'warning', 'info'
-    messageBoxText.textContent = message;
-    messageBoxContent.className = 'message-box-content ' + type; // Reset and add type class
-
-    switch (type) {
+    const notification = document.getElementById('notification');
+    if (!notification) return;
+    
+    const messageEl = document.getElementById('notification-message');
+    const iconEl = notification.querySelector('.notification-icon');
+    
+    // Set message
+    messageEl.textContent = message;
+    
+    // Set icon based on type
+    iconEl.innerHTML = '';
+    switch(type) {
         case 'success':
-            messageBoxIcon.className = 'fas fa-check-circle';
+            iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #00e676;"></i>';
             break;
         case 'error':
-            messageBoxIcon.className = 'fas fa-times-circle';
+            iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #ff5252;"></i>';
             break;
         case 'warning':
-            messageBoxIcon.className = 'fas fa-exclamation-triangle';
+            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffab40;"></i>';
             break;
         case 'info':
         default:
-            messageBoxIcon.className = 'fas fa-info-circle';
+            iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #64b5f6;"></i>';
             break;
     }
-    messageBox.classList.remove('message-box-hidden');
-    messageBox.classList.add('message-box-visible');
+    
+    // Show notification
+    notification.classList.add('show');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 3000);
 }
-
-// Close message box
-if (messageBoxCloseBtn) {
-    messageBoxCloseBtn.addEventListener('click', () => {
-        messageBox.classList.add('message-box-hidden');
-        messageBox.classList.remove('message-box-visible');
-    });
-}
-if (messageBox) {
-    messageBox.addEventListener('click', (event) => {
-        if (event.target === messageBox) {
-            messageBox.classList.add('message-box-hidden');
-            messageBox.classList.remove('message-box-visible');
-        }
-    });
-}
-
 
 // Helper function to toggle disabled state on buttons
 function setButtonDisabled(buttonId, isDisabled) {
@@ -68,57 +63,624 @@ function setButtonDisabled(buttonId, isDisabled) {
     }
 }
 
-
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     setupTrajectoryChart();
     setupFieldChart();
     
-    document.getElementById('strike-height').addEventListener('input', function() {
-        document.getElementById('height-value').textContent = this.value + ' m';
-    });
+    // เพิ่ม event listener สำหรับค่าต่างๆ
+    const strikeHeight = document.getElementById('strike-height');
+    if (strikeHeight) {
+        strikeHeight.addEventListener('input', function() {
+            document.getElementById('height-value').textContent = this.value + ' m';
+        });
+    }
     
-    document.getElementById('strike-angle').addEventListener('input', function() {
-        document.getElementById('angle-value').textContent = this.value + '°';
-    });
+    const strikeAngle = document.getElementById('strike-angle');
+    if (strikeAngle) {
+        strikeAngle.addEventListener('input', function() {
+            document.getElementById('angle-value').textContent = this.value + '°';
+        });
+    }
     
-    document.getElementById('strike-velocity').addEventListener('input', function() {
-        document.getElementById('velocity-value').textContent = this.value + ' m/s';
-    });
+    const strikeVelocity = document.getElementById('strike-velocity');
+    if (strikeVelocity) {
+        strikeVelocity.addEventListener('input', function() {
+            document.getElementById('velocity-value').textContent = this.value + ' m/s';
+        });
+    }
     
-    document.getElementById('target-distance').addEventListener('input', function() {
-        document.getElementById('target-value').textContent = this.value + ' m';
-        updateTargetZoneIndicator();
-    });
+    const targetDistance = document.getElementById('target-distance');
+    if (targetDistance) {
+        targetDistance.addEventListener('input', function() {
+            document.getElementById('target-value').textContent = this.value + ' m';
+            updateTargetZoneIndicator();
+        });
+    }
     
-    document.getElementById('field-type').addEventListener('change', handleFieldTypeChange);
+    const fieldType = document.getElementById('field-type');
+    if (fieldType) {
+        fieldType.addEventListener('change', handleFieldTypeChange);
+    }
     
     // Setup field info toggle
     const fieldInfoElem = document.getElementById('field-info-text');
-    if(fieldInfoElem) {
+    if (fieldInfoElem) {
         fieldInfoElem.addEventListener('click', toggleFieldInfo);
         // เพิ่มไอคอนที่มุมขวาบนเพื่อบ่งบอกว่าสามารถคลิกได้
         fieldInfoElem.innerHTML = fieldInfoElem.innerHTML + 
           '<div class="field-info-toggle"><i class="fas fa-chevron-down"></i></div>';
     }
     
+    // เรียกดึงข้อมูลสนามตอนเริ่มต้น
     fetchFieldInfo();
 });
+
+// สร้างฟังก์ชัน fetchFieldInfo ที่หายไป
+function fetchFieldInfo() {
+    fetch('/api/field_info')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // อัปเดตข้อมูลสนาม
+            if (data.dimensions) {
+                document.getElementById('min-distance').value = data.dimensions.min_distance;
+                document.getElementById('max-distance').value = data.dimensions.max_distance;
+                document.getElementById('zone-width').value = data.dimensions.zone_width;
+                currentFieldType = data.dimensions.field_type;
+            }
+            
+            // อัปเดตโซน
+            if (data.zones) {
+                currentZones = data.zones;
+                updateFieldChart(data.zones);
+                updateTargetZoneIndicator(); // อัปเดตไฮไลท์โซนที่เลือก
+            }
+            
+            // อัปเดตเลือกประเภทสนาม
+            const fieldTypeSelect = document.getElementById('field-type');
+            if (fieldTypeSelect) {
+                fieldTypeSelect.value = currentFieldType;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching field info:', error);
+            showCustomMessage('ไม่สามารถโหลดข้อมูลสนามได้', 'error');
+        });
+}
 
 function handleFieldTypeChange() {
     const fieldType = document.getElementById('field-type').value;
     const isCustom = fieldType === 'custom';
+    
+    // เปิด/ปิดการแก้ไขค่าสนาม
     document.getElementById('min-distance').disabled = !isCustom;
     document.getElementById('max-distance').disabled = !isCustom;
     document.getElementById('zone-width').disabled = !isCustom;
     document.getElementById('apply-field-btn').disabled = !isCustom;
+    
     if (!isCustom) {
         changeFieldType(fieldType); 
     }
 }
 
+// เพิ่มฟังก์ชันเปลี่ยนประเภทสนาม
+function changeFieldType(fieldType) {
+    fetch('/api/change_field', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ field_type: fieldType }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.zones) {
+            currentZones = data.zones;
+            updateFieldChart(data.zones);
+            updateTargetZoneIndicator();
+            
+            // อัปเดตค่าในช่อง input
+            if (data.dimensions) {
+                document.getElementById('min-distance').value = data.dimensions.min_distance;
+                document.getElementById('max-distance').value = data.dimensions.max_distance;
+                document.getElementById('zone-width').value = data.dimensions.zone_width;
+                currentFieldType = data.dimensions.field_type;
+            }
+            
+            showCustomMessage(`เปลี่ยนสนามเป็น ${fieldType} สำเร็จ`, 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error changing field type:', error);
+        showCustomMessage('ไม่สามารถเปลี่ยนประเภทสนามได้', 'error');
+    });
+}
 
-// Tab functionality
+// เพิ่มฟังก์ชัน toggle field info
+function toggleFieldInfo() {
+    const details = document.querySelector('.field-info-details');
+    if (!details) return;
+    
+    fieldInfoExpanded = !fieldInfoExpanded;
+    if (fieldInfoExpanded) {
+        details.classList.add('expanded');
+    } else {
+        details.classList.remove('expanded');
+    }
+    
+    // หมุนไอคอน
+    const toggle = document.querySelector('.field-info-toggle i');
+    if (toggle) {
+        if (fieldInfoExpanded) {
+            toggle.classList.replace('fa-chevron-down', 'fa-chevron-up');
+        } else {
+            toggle.classList.replace('fa-chevron-up', 'fa-chevron-down');
+        }
+    }
+}
+
+// เพิ่มฟังก์ชัน startSimulation ที่หายไป
+function startSimulation() {
+    // ดึงค่าจาก inputs
+    const releaseHeight = parseFloat(document.getElementById('release-height').value);
+    const strikeHeight = parseFloat(document.getElementById('strike-height').value);
+    const strikeAngle = parseFloat(document.getElementById('strike-angle').value);
+    const strikeVelocity = parseFloat(document.getElementById('strike-velocity').value);
+    const showIdeal = document.getElementById('ideal-comparison').checked;
+    
+    // ดึงค่า physics parameters ถ้ามี
+    const physicsParams = {};
+    if (document.getElementById('gravity')) {
+        physicsParams.gravity = parseFloat(document.getElementById('gravity').value);
+    }
+    if (document.getElementById('ball-mass')) {
+        physicsParams.ball_mass = parseFloat(document.getElementById('ball-mass').value);
+    }
+    if (document.getElementById('air-density')) {
+        physicsParams.air_density = parseFloat(document.getElementById('air-density').value);
+    }
+    if (document.getElementById('drag-coefficient')) {
+        physicsParams.drag_coefficient = parseFloat(document.getElementById('drag-coefficient').value);
+    }
+    if (document.getElementById('elasticity')) {
+        physicsParams.elasticity = parseFloat(document.getElementById('elasticity').value);
+    }
+    
+    // ข้อมูลที่จะส่งไป API
+    const data = {
+        release_height: releaseHeight,
+        strike_height: strikeHeight,
+        strike_angle: strikeAngle,
+        strike_velocity: strikeVelocity,
+        show_ideal: showIdeal,
+        physics: physicsParams
+    };
+    
+    // ปิดปุ่มระหว่างประมวลผล
+    setButtonDisabled('start-btn', true);
+    
+    // เรียกใช้ API
+    fetch('/api/calculate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(result => {
+        // อัปเดต UI ด้วยผลลัพธ์
+        updateSimulationResults(result);
+        showCustomMessage('การจำลองเสร็จสิ้น', 'success');
+    })
+    .catch(error => {
+        console.error('Error running simulation:', error);
+        showCustomMessage('เกิดข้อผิดพลาดในการจำลอง', 'error');
+    })
+    .finally(() => {
+        setButtonDisabled('start-btn', false);
+    });
+}
+
+// อัปเดตผลลัพธ์การจำลอง
+function updateSimulationResults(result) {
+    // อัปเดตข้อความผลลัพธ์
+    document.getElementById('landing-distance').textContent = result.landing_distance.toFixed(2) + ' m';
+    document.getElementById('strike-time').textContent = result.strike_time.toFixed(2) + ' s';
+    
+    // อัปเดตโซนเป้าหมาย
+    const targetZoneElem = document.getElementById('target-zone');
+    if (result.target_zone !== null) {
+        targetZoneElem.textContent = 'Zone ' + result.target_zone;
+        const zoneColor = zoneColors[(result.target_zone - 1) % zoneColors.length];
+        targetZoneElem.style.color = zoneColor;
+    } else {
+        targetZoneElem.textContent = 'None';
+        targetZoneElem.style.color = '';
+    }
+    
+    // อัปเดตกราฟ trajectory
+    updateTrajectoryChart(result.trajectory_x, result.trajectory_y, result.target_zones);
+    
+    // แสดงผลลัพธ์ ideal trajectory ถ้ามี
+    const idealResult = document.querySelector('.ideal-result');
+    if (result.ideal_landing_distance && idealResult) {
+        document.getElementById('ideal-landing').textContent = result.ideal_landing_distance.toFixed(2) + ' m';
+        idealResult.style.display = 'block';
+        
+        // อัปเดตกราฟ ideal trajectory
+        if (result.ideal_trajectory_x && result.ideal_trajectory_y) {
+            updateIdealTrajectory(result.ideal_trajectory_x, result.ideal_trajectory_y);
+        }
+    } else if (idealResult) {
+        idealResult.style.display = 'none';
+    }
+}
+
+// อัปเดตกราฟ trajectory
+function updateTrajectoryChart(x_positions, y_positions, zones) {
+    if (!trajectoryChart) return;
+    
+    // สร้างข้อมูลจุดพิกัด
+    const trajectoryData = [];
+    for (let i = 0; i < x_positions.length; i++) {
+        trajectoryData.push({
+            x: x_positions[i],
+            y: y_positions[i]
+        });
+    }
+    
+    // อัปเดตข้อมูลในกราฟ
+    trajectoryChart.data.datasets[0].data = trajectoryData;
+    
+    // อัปเดตจุดตกเป้าหมาย
+    if (trajectoryData.length > 0) {
+        const landingPoint = trajectoryData[trajectoryData.length - 1];
+        trajectoryChart.data.datasets[2].data = [{
+            x: landingPoint.x,
+            y: 0 // ตกลงที่ความสูง 0
+        }];
+    } else {
+        trajectoryChart.data.datasets[2].data = [];
+    }
+    
+    // วาดโซนบนกราฟ
+    if (zones) {
+        drawZonesOnTrajectoryChart(zones);
+    }
+    
+    // อัปเดตกราฟ
+    trajectoryChart.update();
+}
+
+// อัปเดต ideal trajectory
+function updateIdealTrajectory(x_positions, y_positions) {
+    if (!trajectoryChart) return;
+    
+    // สร้างข้อมูลจุดพิกัด
+    const trajectoryData = [];
+    for (let i = 0; i < x_positions.length; i++) {
+        trajectoryData.push({
+            x: x_positions[i],
+            y: y_positions[i]
+        });
+    }
+    
+    // อัปเดตข้อมูลในกราฟ
+    trajectoryChart.data.datasets[1].data = trajectoryData;
+    // แสดงชุดข้อมูลนี้
+    trajectoryChart.data.datasets[1].hidden = false;
+    
+    // อัปเดตกราฟ
+    trajectoryChart.update();
+}
+
+// วาดโซนบนกราฟ trajectory
+function drawZonesOnTrajectoryChart(zones) {
+    if (!trajectoryChart) return;
+    
+    // ตั้งค่า annotations สำหรับแสดงโซน
+    const annotations = {};
+    zones.forEach((zone, index) => {
+        const color = zoneColors[index % zoneColors.length];
+        
+        // สร้าง box annotation
+        annotations['zoneBox' + index] = {
+            type: 'box',
+            xMin: zone[0],
+            xMax: zone[1],
+            yMin: -0.05,
+            yMax: 0.05,
+            backgroundColor: color + '33', // โปร่งใส
+            borderColor: color,
+            borderWidth: 1,
+            drawTime: 'beforeDatasetsDraw'
+        };
+        
+        // สร้าง label annotation
+        annotations['zoneLabel' + index] = {
+            type: 'label',
+            xValue: (zone[0] + zone[1]) / 2,
+            yValue: 0.1,
+            content: `Zone ${index + 1}`,
+            color: '#ffffff',
+            font: { 
+                size: 10, 
+                weight: 'bold' 
+            },
+            backgroundColor: color + 'CC',
+            padding: 3
+        };
+    });
+    
+    // อัปเดต annotations
+    trajectoryChart.options.plugins.annotation.annotations = annotations;
+}
+
+// อัปเดตไฮไลท์โซนที่เลือก
+function updateTargetZoneIndicator() {
+    const targetDistance = parseFloat(document.getElementById('target-distance').value);
+    
+    // หาว่า targetDistance อยู่ในโซนไหน
+    let zoneIndex = -1;
+    for (let i = 0; i < currentZones.length; i++) {
+        const [min, max] = currentZones[i];
+        if (targetDistance >= min && targetDistance <= max) {
+            zoneIndex = i;
+            break;
+        }
+    }
+    
+    // อัปเดตข้อความและสี
+    const indicatorZone = document.getElementById('indicator-zone');
+    if (indicatorZone) {
+        if (zoneIndex >= 0) {
+            indicatorZone.textContent = `Zone ${zoneIndex + 1}`;
+            indicatorZone.style.backgroundColor = zoneColors[zoneIndex % zoneColors.length];
+        } else {
+            indicatorZone.textContent = 'None';
+            indicatorZone.style.backgroundColor = '#607D8B'; // สีเทา
+        }
+    }
+}
+
+// ฟังก์ชัน optimizeSettings
+function optimizeSettings() {
+    const targetDistance = parseFloat(document.getElementById('target-distance').value);
+    
+    // แสดงว่ากำลังโหลด
+    setButtonDisabled('optimize-btn', true);
+    showCustomMessage('กำลังหาค่าที่เหมาะสม...', 'info');
+    
+    // เรียกใช้ API
+    fetch('/api/optimize', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ target_distance: targetDistance }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(result => {
+        // อัปเดตค่าที่เหมาะสม
+        document.getElementById('strike-angle').value = result.angle;
+        document.getElementById('angle-value').textContent = result.angle.toFixed(2) + '°';
+        
+        document.getElementById('strike-velocity').value = result.velocity;
+        document.getElementById('velocity-value').textContent = result.velocity.toFixed(2) + ' m/s';
+        
+        // แสดงค่าความคลาดเคลื่อน
+        const toleranceDisplay = document.getElementById('optimal-angle-tolerance-display');
+        if (toleranceDisplay) {
+            document.getElementById('optimized-angle-value').textContent = result.angle.toFixed(2) + '°';
+            document.getElementById('optimized-angle-tolerance-range').textContent = 
+                `${result.angle_min.toFixed(2)}° - ${result.angle_max.toFixed(2)}°`;
+            document.getElementById('optimized-velocity-value').textContent = result.velocity.toFixed(2) + ' m/s';
+            toleranceDisplay.style.display = 'block';
+        }
+        
+        showCustomMessage('ได้ค่าที่เหมาะสมแล้ว', 'success');
+    })
+    .catch(error => {
+        console.error('Error optimizing settings:', error);
+        showCustomMessage('ไม่สามารถหาค่าที่เหมาะสมได้', 'error');
+    })
+    .finally(() => {
+        setButtonDisabled('optimize-btn', false);
+    });
+}
+
+// ฟังก์ชันรีเซ็ตการจำลอง
+function resetSimulation() {
+    // รีเซ็ตค่าทั้งหมด
+    document.getElementById('release-height').value = '2.0';
+    document.getElementById('strike-height').value = '0.35';
+    document.getElementById('height-value').textContent = '0.35 m';
+    document.getElementById('strike-angle').value = '45';
+    document.getElementById('angle-value').textContent = '45°';
+    document.getElementById('strike-velocity').value = '5.25';
+    document.getElementById('velocity-value').textContent = '5.25 m/s';
+    document.getElementById('target-distance').value = '1.7';
+    document.getElementById('target-value').textContent = '1.7 m';
+    document.getElementById('ideal-comparison').checked = false;
+    
+    // รีเซ็ตผลลัพธ์
+    document.getElementById('landing-distance').textContent = '0.00 m';
+    document.getElementById('strike-time').textContent = '0.00 s';
+    document.getElementById('target-zone').textContent = 'None';
+    
+    // ซ่อน ideal result
+    const idealResult = document.querySelector('.ideal-result');
+    if (idealResult) {
+        idealResult.style.display = 'none';
+    }
+    
+    // ซ่อนผลลัพธ์การหาค่าที่เหมาะสม
+    const toleranceDisplay = document.getElementById('optimal-angle-tolerance-display');
+    if (toleranceDisplay) {
+        toleranceDisplay.style.display = 'none';
+    }
+    
+    // รีเซ็ตกราฟ
+    if (trajectoryChart) {
+        trajectoryChart.data.datasets[0].data = [];
+        trajectoryChart.data.datasets[1].data = [];
+        trajectoryChart.data.datasets[2].data = [];
+        trajectoryChart.options.plugins.annotation.annotations = {};
+        trajectoryChart.update();
+    }
+    
+    // อัปเดตตัวบ่งชี้โซน
+    updateTargetZoneIndicator();
+    
+    showCustomMessage('รีเซ็ตการจำลองแล้ว', 'info');
+}
+
+// ฟังก์ชันทดสอบโซนทั้งหมด
+function testAllZones() {
+    const releaseHeight = parseFloat(document.getElementById('release-height').value);
+    
+    // แสดงว่ากำลังโหลด
+    setButtonDisabled('test-zones-btn', true);
+    showCustomMessage('กำลังทดสอบโซนทั้งหมด...', 'info');
+    
+    // เรียกใช้ API
+    fetch('/api/test_all_zones', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ release_height: releaseHeight }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(result => {
+        // สร้างตารางผลลัพธ์
+        const resultContainer = document.getElementById('test-zone-results');
+        if (resultContainer) {
+            displayZoneTestResults(resultContainer, result);
+        }
+        
+        showCustomMessage('ทดสอบโซนเสร็จสิ้น', 'success');
+    })
+    .catch(error => {
+        console.error('Error testing zones:', error);
+        showCustomMessage('ไม่สามารถทดสอบโซนได้', 'error');
+    })
+    .finally(() => {
+        setButtonDisabled('test-zones-btn', false);
+    });
+}
+
+// แสดงผลการทดสอบโซน
+function displayZoneTestResults(container, result) {
+    const { results, summary } = result;
+    
+    // สร้าง HTML สำหรับตาราง
+    let html = `
+    <h2><i class="fas fa-tasks"></i> ผลการทดสอบโซนทั้งหมด</h2>
+    <div class="card">
+        <table class="zone-table">
+            <thead>
+                <tr>
+                    <th>โซน</th>
+                    <th>ช่วงระยะ (m)</th>
+                    <th>มุมที่เหมาะสม (°)</th>
+                    <th>ความเร็ว (m/s)</th>
+                    <th>ระยะที่ได้ (m)</th>
+                    <th>ความคลาดเคลื่อน</th>
+                    <th>ความแม่นยำ</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    // เพิ่มแถวสำหรับแต่ละโซน
+    results.forEach(zone => {
+        if (typeof zone.error === 'string') {
+            // กรณีเกิดข้อผิดพลาด
+            html += `
+            <tr>
+                <td>Zone ${zone.zone}</td>
+                <td>${zone.range[0].toFixed(2)} - ${zone.range[1].toFixed(2)}</td>
+                <td colspan="4">${zone.error}</td>
+            </tr>
+            `;
+        } else {
+            // กรณีสำเร็จ
+            html += `
+            <tr>
+                <td>Zone ${zone.zone}</td>
+                <td>${zone.range[0].toFixed(2)} - ${zone.range[1].toFixed(2)}</td>
+                <td>${zone.angle.toFixed(2)}°</td>
+                <td>${zone.velocity.toFixed(2)} m/s</td>
+                <td>${zone.actual_distance.toFixed(2)} m</td>
+                <td>${zone.error.toFixed(2)} m (${zone.error_percent.toFixed(2)}%)</td>
+                <td class="${zone.within_tolerance ? 'tolerance-pass' : 'tolerance-fail'}">
+                    ${zone.within_tolerance ? 'ผ่าน' : 'ไม่ผ่าน'}
+                </td>
+            </tr>
+            `;
+        }
+    });
+    
+    html += `
+            </tbody>
+        </table>
+        
+        <div class="summary-box">
+            <h3><i class="fas fa-chart-pie"></i> สรุปผลการทดสอบ</h3>
+            <div class="stat-row">
+                <span class="stat-label">โซนที่ทดสอบสำเร็จ:</span>
+                <span class="stat-value">${summary.successful_zones} / ${summary.total_zones} โซน</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">ความคลาดเคลื่อนเฉลี่ย:</span>
+                <span class="stat-value">${summary.avg_error.toFixed(2)} m</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">ความคลาดเคลื่อนสูงสุด:</span>
+                <span class="stat-value">${summary.max_error.toFixed(2)} m</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">โซนที่ผ่านความคลาดเคลื่อน ±5%:</span>
+                <span class="stat-value ${summary.tolerance_percent > 80 ? 'good' : (summary.tolerance_percent > 50 ? 'medium' : 'poor')}">
+                    ${summary.within_tolerance_count} / ${summary.total_zones} โซน (${summary.tolerance_percent.toFixed(1)}%)
+                </span>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    // แสดงผลลัพธ์
+    container.innerHTML = html;
+}
+
+// ฟังก์ชันจัดการหน้า Tab
 function openTab(tabName) {
     const tabContents = document.getElementsByClassName('tab-content');
     for (let i = 0; i < tabContents.length; i++) {
@@ -132,8 +694,10 @@ function openTab(tabName) {
     
     document.getElementById(tabName).classList.add('active');
     
+    // หาปุ่มที่เกี่ยวข้องกับ tab นี้และเพิ่ม active class
     for (let i = 0; i < tabButtons.length; i++) {
-        if (tabButtons[i].getAttribute('onclick').includes(tabName)) {
+        const onclickAttr = tabButtons[i].getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes(tabName)) {
             tabButtons[i].classList.add('active');
             break;
         }
@@ -144,19 +708,26 @@ function openTab(tabName) {
 
 function updateChartsIfNeeded(tabName) {
     if (tabName === 'field' && fieldChart) {
-        setTimeout(() => fieldChart.resize(), 0);
-        fieldChart.update();
+        setTimeout(() => {
+            if (fieldChart.resize) fieldChart.resize();
+            fieldChart.update();
+        }, 0);
     } else if (tabName === 'results' && trajectoryChart) {
-        setTimeout(() => trajectoryChart.resize(), 0);
-        trajectoryChart.update();
+        setTimeout(() => {
+            if (trajectoryChart.resize) trajectoryChart.resize();
+            trajectoryChart.update();
+        }, 0);
     }
 }
 
 function setupTrajectoryChart() {
-    const ctx = document.getElementById('trajectory-chart').getContext('2d');
+    const ctx = document.getElementById('trajectory-chart');
+    if (!ctx) return;
+    
+    const ctxObj = ctx.getContext('2d');
     Chart.defaults.color = '#e0e0e0';
 
-    trajectoryChart = new Chart(ctx, {
+    trajectoryChart = new Chart(ctxObj, {
         type: 'scatter',
         data: {
             datasets: [
@@ -226,8 +797,11 @@ function setupTrajectoryChart() {
 }
 
 function setupFieldChart() {
-    const ctx = document.getElementById('field-chart').getContext('2d');
-    fieldChart = new Chart(ctx, {
+    const ctx = document.getElementById('field-chart');
+    if (!ctx) return;
+    
+    const ctxObj = ctx.getContext('2d');
+    fieldChart = new Chart(ctxObj, {
         type: 'bar',
         data: {
             labels: [], // ชื่อโซน
@@ -466,375 +1040,19 @@ function updateFieldChart(zones) {
     fieldChart.options.scales.x.min = overallMinDistance > 0 ? Math.floor(overallMinDistance * 0.9) : 0;
     fieldChart.options.scales.x.max = Math.ceil(overallMaxDistance * 1.1);
     
-    // เพิ่มการตกแต่ง
-    fieldChart.options.plugins.tooltip.callbacks.beforeLabel = function(context) {
-        const index = context.dataIndex;
-        const width = zones[index][1] - zones[index][0];
-        return `ความกว้างของโซน: ${width.toFixed(2)}m`;
-    };
-    
     // อัปเดตกราฟ
     fieldChart.update();
 }
 
-// =====================
-// DARK RED THEME ENHANCEMENTS (OVERRIDE)
-// =====================
-
-// Custom chart theme for dark mode with red highlights
-function setupDarkRedChartTheme() {
-    // Global chart defaults
-    Chart.defaults.color = '#b0b0b0';
-    Chart.defaults.borderColor = '#333333';
-    Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
-    
-    // Update zone colors to match our dark red theme
-    window.zoneColors = [
-        '#ff2027', '#ff5252', '#ff9e80', '#ffab40', '#64b5f6',
-        '#00e676', '#9575cd', '#f06292', '#4dd0e1', '#ffd54f'
-    ];
-    
-    // Style modifications for trajectory chart
-    if (window.trajectoryChart) {
-        trajectoryChart.data.datasets[0].borderColor = '#ff2027';
-        trajectoryChart.data.datasets[0].backgroundColor = '#ff2027';
-        trajectoryChart.data.datasets[0].pointRadius = 2;
-        trajectoryChart.data.datasets[0].borderWidth = 2;
-        
-        trajectoryChart.data.datasets[1].borderColor = '#ff9e80';
-        trajectoryChart.data.datasets[1].backgroundColor = '#ff9e80';
-        trajectoryChart.data.datasets[1].borderDash = [5, 5];
-        
-        trajectoryChart.data.datasets[2].backgroundColor = '#ffab40';
-        trajectoryChart.data.datasets[2].borderColor = '#ffab40';
-        trajectoryChart.data.datasets[2].pointRadius = 8;
-        
-        // Update chart options for dark theme
-        trajectoryChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
-        trajectoryChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
-        trajectoryChart.options.scales.x.ticks.color = '#b0b0b0';
-        trajectoryChart.options.scales.y.ticks.color = '#b0b0b0';
-        trajectoryChart.options.scales.x.title.color = '#ffffff';
-        trajectoryChart.options.scales.y.title.color = '#ffffff';
-        
-        // Enhance tooltips
-        trajectoryChart.options.plugins.tooltip.backgroundColor = 'rgba(20, 20, 20, 0.9)';
-        trajectoryChart.options.plugins.tooltip.titleColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        trajectoryChart.options.plugins.tooltip.borderColor = '#ff2027';
-        trajectoryChart.options.plugins.tooltip.borderWidth = 1;
-        trajectoryChart.options.plugins.tooltip.cornerRadius = 4;
-        
-        trajectoryChart.update();
-    }
-    
-    // Style modifications for field chart
-    if (window.fieldChart) {
-        // For the field chart gradient colors
-        if (fieldChart.data && fieldChart.data.datasets && fieldChart.data.datasets[0]) {
-            const dataset = fieldChart.data.datasets[0];
-            
-            // Create gradients for each zone
-            const backgroundColors = [];
-            const borderColors = [];
-            
-            for (let i = 0; i < window.zoneColors.length; i++) {
-                const baseColor = window.zoneColors[i % window.zoneColors.length];
-                borderColors.push(baseColor);
-                
-                // Create gradient
-                try {
-                    const ctx = document.createElement('canvas').getContext('2d');
-                    const gradient = ctx.createLinearGradient(0, 0, 400, 0);
-                    
-                    gradient.addColorStop(0, baseColor + '80');  // 50% transparent
-                    gradient.addColorStop(0.5, baseColor + 'B0'); // 70% opacity
-                    gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
-                    
-                    backgroundColors.push(gradient);
-                } catch (e) {
-                    // Fallback if gradient fails
-                    backgroundColors.push(baseColor + '99');
-                }
-            }
-            
-            dataset.backgroundColor = backgroundColors;
-            dataset.borderColor = borderColors;
-            dataset.borderWidth = 2;
-            dataset.borderRadius = 4;
-        }
-        
-        // Update chart options for dark theme
-        fieldChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
-        fieldChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
-        fieldChart.options.scales.x.ticks.color = '#b0b0b0';
-        fieldChart.options.scales.y.ticks.color = '#b0b0b0';
-        fieldChart.options.scales.x.title.color = '#ffffff';
-        fieldChart.options.scales.y.title.color = '#ffffff';
-        
-        // Enhance tooltips
-        fieldChart.options.plugins.tooltip.backgroundColor = 'rgba(20, 20, 20, 0.9)';
-        fieldChart.options.plugins.tooltip.titleColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.bodyColor = '#ffffff';
-        fieldChart.options.plugins.tooltip.borderColor = '#ff2027';
-        fieldChart.options.plugins.tooltip.borderWidth = 1;
-        fieldChart.options.plugins.tooltip.cornerRadius = 4;
-        
-        fieldChart.update();
-    }
-}
-
-// Enhanced notification system
-function showNotification(message, type = 'info') {
-    const notification = document.getElementById('notification');
-    const messageEl = document.getElementById('notification-message');
-    const iconEl = notification.querySelector('.notification-icon');
-    
-    // Set message
-    messageEl.textContent = message;
-    
-    // Set icon based on type
-    iconEl.className = 'notification-icon';
-    switch(type) {
-        case 'success':
-            iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #00e676;"></i>';
-            break;
-        case 'error':
-            iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #ff5252;"></i>';
-            break;
-        case 'warning':
-            iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffab40;"></i>';
-            break;
-        case 'info':
-        default:
-            iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #64b5f6;"></i>';
-            break;
-    }
-    
-    // Add animation class
-    notification.classList.add('show');
-    
-    // Hide after 3 seconds
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
-
-// Function to handle zone hover with enhanced visual effect
-function handleZoneHoverEnhanced(index) {
-    if (!fieldChart || !fieldChart.data || !fieldChart.data.datasets || !fieldChart.data.datasets[0]) {
-        return;
-    }
-    
-    const dataset = fieldChart.data.datasets[0];
-    const backgroundColor = [...dataset.backgroundColor];
-    const borderColor = [...dataset.borderColor];
-    const hoverBorderWidth = [...Array(backgroundColor.length)].fill(dataset.borderWidth);
-    
-    if (index >= 0 && index < backgroundColor.length) {
-        for (let i = 0; i < backgroundColor.length; i++) {
-            if (i === index) {
-                // Make selected zone more vibrant
-                const baseColor = window.zoneColors[i % window.zoneColors.length];
-                const ctx = document.createElement('canvas').getContext('2d');
-                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
-                
-                gradient.addColorStop(0, baseColor + 'CC');  // 80% opacity
-                gradient.addColorStop(0.5, baseColor + 'FF'); // Full opacity
-                gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
-                
-                backgroundColor[i] = gradient;
-                borderColor[i] = '#ffffff';  // White border for highlight
-                hoverBorderWidth[i] = 4;     // Thicker border
-            } else {
-                // Dim other zones
-                const baseColor = window.zoneColors[i % window.zoneColors.length];
-                const ctx = document.createElement('canvas').getContext('2d');
-                const gradient = ctx.createLinearGradient(0, 0, 400, 0);
-                
-                gradient.addColorStop(0, baseColor + '33');  // 20% opacity
-                gradient.addColorStop(0.5, baseColor + '66'); // 40% opacity
-                gradient.addColorStop(1, baseColor + '88');  // 53% opacity
-                
-                backgroundColor[i] = gradient;
-                borderColor[i] = baseColor + '66';  // Semi-transparent border
-                hoverBorderWidth[i] = dataset.borderWidth;
-            }
-        }
-    } else {
-        // Reset all zones to normal
-        for (let i = 0; i < backgroundColor.length; i++) {
-            const baseColor = window.zoneColors[i % window.zoneColors.length];
-            const ctx = document.createElement('canvas').getContext('2d');
-            const gradient = ctx.createLinearGradient(0, 0, 400, 0);
-            
-            gradient.addColorStop(0, baseColor + '80');  // 50% opacity
-            gradient.addColorStop(0.5, baseColor + 'B0'); // 70% opacity
-            gradient.addColorStop(1, baseColor + 'FF');  // Full opacity
-            
-            backgroundColor[i] = gradient;
-            borderColor[i] = baseColor;
-            hoverBorderWidth[i] = dataset.borderWidth;
-        }
-    }
-    
-    dataset.backgroundColor = backgroundColor;
-    dataset.borderColor = borderColor;
-    dataset.hoverBorderWidth = hoverBorderWidth;
-    fieldChart.update();
-}
-
-// Enhanced version of drawZonesOnTrajectoryChart
-function drawZonesOnTrajectoryChartEnhanced(zonesData) {
-    if (!trajectoryChart || !zonesData) return;
-
-    const annotations = {};
-    zonesData.forEach((zone, index) => {
-        const color = window.zoneColors[index % window.zoneColors.length];
-        annotations['zoneBox' + index] = {
-            type: 'box',
-            xMin: zone[0],
-            xMax: zone[1],
-            yMin: -0.05,
-            yMax: 0.05,
-            backgroundColor: color + '33', // More transparent
-            borderColor: color + '99',
-            borderWidth: 1,
-            borderDash: [3, 3], // Dashed line
-            drawTime: 'beforeDatasetsDraw',
-            borderRadius: 2
-        };
-        annotations['zoneLabel' + index] = {
-            type: 'label',
-            xValue: (zone[0] + zone[1]) / 2,
-            yValue: 0.1,
-            content: `Z${index + 1}`,
-            color: '#ffffff',
-            font: { 
-                size: 10, 
-                weight: 'bold',
-                family: "'Inter', sans-serif"
-            },
-            backgroundColor: 'rgba(30, 30, 30, 0.8)',
-            padding: 4,
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: color
-        };
-    });
-    
-    if (!trajectoryChart.options.plugins) trajectoryChart.options.plugins = {};
-    if (!trajectoryChart.options.plugins.annotation) trajectoryChart.options.plugins.annotation = {};
-    trajectoryChart.options.plugins.annotation.annotations = annotations;
-}
-
-// Function to toggle accordion sections
-function toggleAccordion(id) {
-    const content = document.getElementById(id);
-    content.classList.toggle('active');
-    
-    const icon = content.previousElementSibling.querySelector('i.fa-chevron-down, i.fa-chevron-up');
-    if (content.classList.contains('active')) {
-        icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-    } else {
-        icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
-    }
-}
-
-// Setup on document load
-// (Override/Enhance behaviors for dark red theme)
+// ตั้งค่าการใช้งานเมื่อโหลดหน้าเว็บ
 document.addEventListener('DOMContentLoaded', function() {
-    // Save original functions to override
-    const originalShowCustomMessage = window.showCustomMessage;
-    const originalHandleZoneHover = window.handleZoneHover;
-    const originalDrawZonesOnTrajectoryChart = window.drawZonesOnTrajectoryChart;
+    // แสดงข้อความต้อนรับ
+    setTimeout(() => {
+        showCustomMessage('ยินดีต้อนรับสู่โปรแกรมจำลองการตีลูกสควอช', 'info');
+    }, 1000);
     
-    // Override with enhanced functions
-    window.showCustomMessage = showNotification;
-    
-    if (originalHandleZoneHover) {
-        window.handleZoneHover = handleZoneHoverEnhanced;
-    }
-    
-    if (originalDrawZonesOnTrajectoryChart) {
-        window.drawZonesOnTrajectoryChart = drawZonesOnTrajectoryChartEnhanced;
-    }
-    
-    // Apply dark red theme to charts after a slight delay to ensure they're initialized
-    setTimeout(setupDarkRedChartTheme, 500);
-    
-    // Make sure value displays have correct values
-    const heightSlider = document.getElementById('strike-height');
-    if (heightSlider) {
-        document.getElementById('height-value').textContent = heightSlider.value + 'm';
-    }
-    
-    const angleSlider = document.getElementById('strike-angle');
-    if (angleSlider) {
-        document.getElementById('angle-value').textContent = angleSlider.value + '°';
-    }
-    
-    const velocitySlider = document.getElementById('strike-velocity');
-    if (velocitySlider) {
-        document.getElementById('velocity-value').textContent = velocitySlider.value + ' m/s';
-    }
-    
-    const targetSlider = document.getElementById('target-distance');
-    if (targetSlider) {
-        document.getElementById('target-value').textContent = targetSlider.value + 'm';
-    }
-    
-    // Set up accordion for advanced settings
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    if (accordionHeaders.length > 0) {
-        accordionHeaders.forEach(header => {
-            header.addEventListener('click', function() {
-                const contentId = this.getAttribute('data-target') || 
-                                 this.nextElementSibling.id;
-                toggleAccordion(contentId);
-            });
-        });
-    }
-    
-    // Add pulsing effect to results after simulation
-    const originalStartSimulation = window.startSimulation;
-    if (originalStartSimulation) {
-        window.startSimulation = function() {
-            // Call original function
-            const result = originalStartSimulation.apply(this, arguments);
-            
-            // Add pulse effect to results
-            setTimeout(() => {
-                const resultCards = document.querySelectorAll('.result-card');
-                resultCards.forEach(card => {
-                    card.classList.add('pulse');
-                    setTimeout(() => card.classList.remove('pulse'), 2000);
-                });
-            }, 1000);
-            
-            return result;
-        };
-    }
-    
-    // Enhance test zone results display
-    const originalTestAllZones = window.testAllZones;
-    if (originalTestAllZones) {
-        window.testAllZones = function() {
-            // Call original function
-            const result = originalTestAllZones.apply(this, arguments);
-            
-            // Add smooth scroll to results
-            setTimeout(() => {
-                const resultsElem = document.getElementById('test-zone-results');
-                if (resultsElem) {
-                    resultsElem.scrollIntoView({ 
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            }, 1000);
-            
-            return result;
-        };
+    // เปิด tab แรกเมื่อโหลดเสร็จ
+    if (document.querySelector('.tab-btn')) {
+        document.querySelector('.tab-btn').click();
     }
 });

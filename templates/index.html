@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Squash Ball Striker Simulator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-red-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -19,15 +19,40 @@
         </div>
     </div>
 
-    <div class="container">
-        <h1>
-            <i class="fas fa-bullseye" style="margin-right: 10px;"></i>
-            Squash Ball Striker Simulator
-        </h1>
-        
-        <div class="app-layout">
-            <!-- Left Column - Controls -->
-            <div class="control-panel">
+    <!-- Custom Message Box -->
+    <div id="custom-message-box" class="message-box-hidden">
+        <div class="message-box-content">
+            <i id="message-box-icon" class="fas fa-info-circle"></i>
+            <p id="message-box-text">Message goes here</p>
+            <button id="message-box-close-btn">OK</button>
+        </div>
+    </div>
+
+    <div class="content-wrapper">
+        <div class="container">
+            <h1>
+                <i class="fas fa-bullseye" style="margin-right: 10px;"></i>
+                Squash Ball Striker Simulator
+            </h1>
+            
+            <!-- Mobile Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="openTab('simulator')">
+                    <i class="fas fa-sliders-h"></i> Simulator
+                </button>
+                <button class="tab-btn" onclick="openTab('results')">
+                    <i class="fas fa-chart-line"></i> Results
+                </button>
+                <button class="tab-btn" onclick="openTab('field')">
+                    <i class="fas fa-map-marked-alt"></i> Field
+                </button>
+                <button class="tab-btn" onclick="openTab('settings')">
+                    <i class="fas fa-cog"></i> Settings
+                </button>
+            </div>
+            
+            <!-- Simulator Tab -->
+            <div id="simulator" class="tab-content active">
                 <div class="card">
                     <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
                     
@@ -70,12 +95,6 @@
                             <label for="ideal-comparison">Show ideal trajectory comparison</label>
                         </div>
                     </div>
-                    
-                    <div class="button-group">
-                        <button id="start-btn" class="btn-primary btn-full pulse" onclick="startSimulation()">
-                            <i class="fas fa-play" style="margin-right: 8px;"></i>Run Simulation
-                        </button>
-                    </div>
                 </div>
 
                 <div class="card">
@@ -93,46 +112,27 @@
                         <span>Target Zone: </span>
                         <span id="indicator-zone" class="zone-badge">Zone 3</span>
                     </div>
-                    
-                    <button id="optimize-btn" class="btn-accent btn-full" onclick="optimizeSettings()">
-                        <i class="fas fa-magic" style="margin-right: 8px;"></i>Find Optimal Settings
-                    </button>
-                    
-                    <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
-                        <div class="help-text">
-                            <p><strong class="highlight">Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
-                            <p><strong>Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
-                            <p><strong class="highlight">Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
-                        </div>
-                    </div>
                 </div>
                 
-                <div class="card">
-                    <h2><i class="fas fa-map-marked-alt"></i> Field Type</h2>
-                    <div class="control-group">
-                        <label for="field-type">Select Field Layout</label>
-                        <select id="field-type" onchange="handleFieldTypeChange()">
-                            <option value="standard" selected>Standard</option>
-                            <option value="extra1">Extended Range</option>
-                            <option value="extra2">Angle Features</option>
-                            <option value="custom">Custom</option>
-                        </select>
-                    </div>
-                    <button id="test-zones-btn" class="btn-secondary btn-full" onclick="testAllZones()" style="margin-top: 16px;">
-                        <i class="fas fa-tasks" style="margin-right: 8px;"></i>Test All Zones
-                    </button>
-                </div>
+                <button id="start-btn" class="btn-primary btn-full pulse" onclick="startSimulation()">
+                    <i class="fas fa-play"></i>Run Simulation
+                </button>
                 
-                <div class="button-group" style="margin-top: 24px;">
-                    <button id="reset-btn" class="btn-secondary btn-full" onclick="resetSimulation()">
-                        <i class="fas fa-redo" style="margin-right: 8px;"></i>Reset All Settings
-                    </button>
+                <button id="optimize-btn" class="btn-accent btn-full" onclick="optimizeSettings()">
+                    <i class="fas fa-magic"></i>Find Optimal Settings
+                </button>
+                
+                <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
+                    <div class="help-text">
+                        <p><strong class="highlight">Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
+                        <p><strong>Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
+                        <p><strong class="highlight">Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                    </div>
                 </div>
             </div>
             
-            <!-- Right Column - Visualization & Results -->
-            <div class="visualization-panel">
-                <!-- Results Summary -->
+            <!-- Results Tab -->
+            <div id="results" class="tab-content">
                 <div class="card">
                     <h2><i class="fas fa-chart-line"></i> Results</h2>
                     <div class="results-grid">
@@ -166,7 +166,12 @@
                     </div>
                 </div>
                 
-                <!-- Field Visualization -->
+                <!-- Zone Testing Results -->
+                <div id="test-zone-results"></div>
+            </div>
+            
+            <!-- Field Tab -->
+            <div id="field" class="tab-content">
                 <div class="card">
                     <h2><i class="fas fa-th"></i> Field Layout</h2>
                     <div class="chart-container">
@@ -174,214 +179,184 @@
                     </div>
                     <div id="field-info-text" class="help-text" style="margin-top: 16px;">
                         <p><i class="fas fa-info-circle"></i> Click on any zone in the chart above to set it as your target.</p>
-                    </div>
-                </div>
-                
-                <!-- Zone Testing Results -->
-                <div id="test-zone-results"></div>
-                
-                <!-- Advanced Settings (Collapsed by default) -->
-                <div class="card">
-                    <div class="accordion">
-                        <div class="accordion-header" onclick="toggleAccordion('physics-settings')">
-                            <h3><i class="fas fa-atom"></i> Advanced Physics Settings</h3>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <div id="physics-settings" class="accordion-content">
-                            <div class="control-group">
-                                <label for="gravity">Gravity (m/s²)</label>
-                                <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81">
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="ball-mass">Ball Mass (kg)</label>
-                                <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024">
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="air-density">Air Density (kg/m³)</label>
-                                <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225">
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="drag-coefficient">Drag Coefficient</label>
-                                <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5">
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="elasticity">Elasticity</label>
-                                <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4">
-                            </div>
+                        <div class="field-info-details">
+                            <p>The colored zones represent the different target areas. Each zone is 38cm wide by default.</p>
+                            <p>The simulator will analyze how to hit the ball to land in your selected zone.</p>
                         </div>
                     </div>
-                </div>
-                
-                <div class="card">
-                    <div class="accordion">
-                        <div class="accordion-header" onclick="toggleAccordion('custom-field-settings')">
-                            <h3><i class="fas fa-cog"></i> Custom Field Settings</h3>
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                        <div id="custom-field-settings" class="accordion-content">
-                            <div class="control-group">
-                                <label for="min-distance">Min Distance (m)</label>
-                                <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" disabled>
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="max-distance">Max Distance (m)</label>
-                                <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" disabled>
-                            </div>
-                            
-                            <div class="control-group">
-                                <label for="zone-width">Zone Width (m)</label>
-                                <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" disabled>
-                            </div>
-                            
-                            <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>Apply Custom Settings</button>
-                        </div>
+                    
+                    <div class="control-group">
+                        <label for="field-type">Select Field Layout</label>
+                        <select id="field-type" onchange="handleFieldTypeChange()">
+                            <option value="standard" selected>Standard</option>
+                            <option value="extra1">Extended Range</option>
+                            <option value="extra2">Angle Features</option>
+                            <option value="custom">Custom</option>
+                        </select>
                     </div>
+                    
+                    <button id="test-zones-btn" class="btn-secondary btn-full" onclick="testAllZones()">
+                        <i class="fas fa-tasks"></i>Test All Zones
+                    </button>
                 </div>
             </div>
+            
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <!-- Custom Field Settings -->
+                <div class="card">
+                    <h2><i class="fas fa-ruler-combined"></i> Custom Field Settings</h2>
+                    <div class="control-group">
+                        <label for="min-distance">Min Distance (m)</label>
+                        <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" disabled>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="max-distance">Max Distance (m)</label>
+                        <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" disabled>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="zone-width">Zone Width (m)</label>
+                        <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" disabled>
+                    </div>
+                    
+                    <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>
+                        <i class="fas fa-save"></i>Apply Custom Settings
+                    </button>
+                </div>
+                
+                <!-- Advanced Physics Settings -->
+                <div class="card">
+                    <h2><i class="fas fa-atom"></i> Advanced Physics Settings</h2>
+                    <div class="control-group">
+                        <label for="gravity">Gravity (m/s²)</label>
+                        <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="ball-mass">Ball Mass (kg)</label>
+                        <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="air-density">Air Density (kg/m³)</label>
+                        <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="drag-coefficient">Drag Coefficient</label>
+                        <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="elasticity">Elasticity</label>
+                        <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4">
+                    </div>
+                </div>
+                
+                <button id="reset-btn" class="btn-secondary btn-full" onclick="resetSimulation()">
+                    <i class="fas fa-redo"></i>Reset All Settings
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Bottom Navigation -->
+        <div class="mobile-nav">
+            <button class="nav-btn active" onclick="openTab('simulator')">
+                <i class="fas fa-sliders-h"></i>
+                <span>Simulator</span>
+            </button>
+            <button class="nav-btn" onclick="openTab('results')">
+                <i class="fas fa-chart-line"></i>
+                <span>Results</span>
+            </button>
+            <button class="nav-btn" onclick="openTab('field')">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Field</span>
+            </button>
+            <button class="nav-btn" onclick="openTab('settings')">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
         </div>
     </div>
     
+    <!-- Add function to apply field settings -->
     <script>
-        // Function to toggle accordion
-        function toggleAccordion(id) {
-            const content = document.getElementById(id);
-            content.classList.toggle('active');
+        function applyFieldSettings() {
+            const minDistance = parseFloat(document.getElementById('min-distance').value);
+            const maxDistance = parseFloat(document.getElementById('max-distance').value);
+            const zoneWidth = parseFloat(document.getElementById('zone-width').value);
             
-            const icon = content.previousElementSibling.querySelector('i.fa-chevron-down, i.fa-chevron-up');
-            if (content.classList.contains('active')) {
-                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
-            } else {
-                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            if (minDistance >= maxDistance) {
+                showCustomMessage('Min distance must be less than max distance', 'error');
+                return;
+            }
+            
+            if (zoneWidth <= 0 || zoneWidth > (maxDistance - minDistance)) {
+                showCustomMessage('Invalid zone width', 'error');
+                return;
+            }
+            
+            // API call to apply custom field
+            fetch('/api/change_field', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    field_type: 'custom',
+                    min_distance: minDistance,
+                    max_distance: maxDistance,
+                    zone_width: zoneWidth
+                }),
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.zones) {
+                    currentZones = data.zones;
+                    updateFieldChart(data.zones);
+                    updateTargetZoneIndicator();
+                    showCustomMessage('Custom field settings applied', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Error applying field settings:', error);
+                showCustomMessage('Could not apply field settings', 'error');
+            });
+        }
+
+        // Update mobile tabs
+        function openTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn, .nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show the selected tab
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to the corresponding tab buttons
+            document.querySelectorAll(`.tab-btn[onclick*="${tabName}"], .nav-btn[onclick*="${tabName}"]`).forEach(btn => {
+                btn.classList.add('active');
+            });
+            
+            // Update charts if needed
+            if (typeof updateChartsIfNeeded === 'function') {
+                updateChartsIfNeeded(tabName);
             }
         }
-        
-        // Replace default notification with our custom notification
-        function showCustomMessage(message, type) {
-            const notification = document.getElementById('notification');
-            const messageEl = document.getElementById('notification-message');
-            const iconEl = notification.querySelector('.notification-icon');
-            
-            // Set message
-            messageEl.textContent = message;
-            
-            // Set icon based on type
-            iconEl.className = 'notification-icon';
-            switch(type) {
-                case 'success':
-                    iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #00e676;"></i>';
-                    break;
-                case 'error':
-                    iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #ff5252;"></i>';
-                    break;
-                case 'warning':
-                    iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ffab40;"></i>';
-                    break;
-                case 'info':
-                default:
-                    iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #64b5f6;"></i>';
-                    break;
-            }
-            
-            // Show notification
-            notification.classList.add('show');
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-        
-        // Custom chart styles for dark theme
-        function updateChartTheme() {
-            // Global chart defaults
-            Chart.defaults.color = '#b0b0b0';
-            Chart.defaults.borderColor = '#333333';
-            Chart.defaults.font.family = "'Inter', 'Helvetica Neue', 'Arial', sans-serif";
-            
-            // Custom colors for dark theme
-            const chartColors = {
-                primary: '#ff2027',
-                secondary: '#ff5252',
-                accent: '#ff9e80',
-                grid: '#333333',
-                text: '#ffffff',
-                background: '#1e1e1e'
-            };
-            
-            // Apply to existing charts
-            if (window.trajectoryChart) {
-                // Update colors
-                trajectoryChart.data.datasets[0].borderColor = chartColors.primary;
-                trajectoryChart.data.datasets[0].backgroundColor = chartColors.primary;
-                
-                trajectoryChart.data.datasets[1].borderColor = chartColors.accent;
-                trajectoryChart.data.datasets[1].backgroundColor = chartColors.accent;
-                
-                trajectoryChart.data.datasets[2].backgroundColor = '#ffab40';
-                trajectoryChart.data.datasets[2].borderColor = '#ffab40';
-                
-                // Update options
-                trajectoryChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
-                trajectoryChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
-                trajectoryChart.options.scales.x.ticks.color = '#b0b0b0';
-                trajectoryChart.options.scales.y.ticks.color = '#b0b0b0';
-                trajectoryChart.options.scales.x.title.color = '#ffffff';
-                trajectoryChart.options.scales.y.title.color = '#ffffff';
-                
-                trajectoryChart.update();
-            }
-            
-            if (window.fieldChart) {
-                // Update field chart colors
-                window.zoneColors = [
-                    '#ff2027', '#ff5252', '#ff9e80', '#ffab40', '#64b5f6',
-                    '#00e676', '#9575cd', '#f06292', '#4dd0e1', '#ffd54f'
-                ];
-                
-                fieldChart.options.scales.x.grid.color = 'rgba(51, 51, 51, 0.6)';
-                fieldChart.options.scales.y.grid.color = 'rgba(51, 51, 51, 0.6)';
-                fieldChart.options.scales.x.ticks.color = '#b0b0b0';
-                fieldChart.options.scales.y.ticks.color = '#b0b0b0';
-                fieldChart.options.scales.x.title.color = '#ffffff';
-                fieldChart.options.scales.y.title.color = '#ffffff';
-                
-                fieldChart.update();
-            }
-        }
-        
-        // Call original script with theme updates
-        document.addEventListener('DOMContentLoaded', function() {
-            // Call the init functions from the original script
-            if (typeof setupTrajectoryChart === 'function') setupTrajectoryChart();
-            if (typeof setupFieldChart === 'function') setupFieldChart();
-            if (typeof fetchFieldInfo === 'function') fetchFieldInfo();
-            
-            // Apply dark theme to charts
-            setTimeout(updateChartTheme, 500);
-            
-            // Setup event listeners
-            document.getElementById('strike-height').addEventListener('input', function() {
-                document.getElementById('height-value').textContent = this.value + 'm';
-            });
-            
-            document.getElementById('strike-angle').addEventListener('input', function() {
-                document.getElementById('angle-value').textContent = this.value + '°';
-            });
-            
-            document.getElementById('strike-velocity').addEventListener('input', function() {
-                document.getElementById('velocity-value').textContent = this.value + ' m/s';
-            });
-            
-            document.getElementById('target-distance').addEventListener('input', function() {
-                document.getElementById('target-value').textContent = this.value + 'm';
-                if (typeof updateTargetZoneIndicator === 'function') updateTargetZoneIndicator();
-            });
-        });
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
