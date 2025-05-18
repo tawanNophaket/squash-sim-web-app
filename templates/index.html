@@ -4,222 +4,324 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Squash Ball Striker Simulation</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/minimal-style.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" xintegrity="sha512-H0P9NzU6GfNxHShL3gD6cG3rL6sAYECyOIBG3s/E3W3sD/FhHw93zS/LCEr3eSsKOTUvNBSS8LwQCTh62Rz3gA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div id="custom-message-box" class="message-box-hidden">
-        <div class="message-box-content">
-            <span id="message-box-icon"></span>
-            <p id="message-box-text"></p>
-            <button id="message-box-close-btn">Close</button>
+    <!-- Notification System -->
+    <div id="notification" class="notification">
+        <div class="notification-icon"></div>
+        <div class="notification-content">
+            <div class="notification-message" id="notification-message"></div>
         </div>
     </div>
 
     <div class="container">
-        <h1>Squash Ball Striker Simulation</h1>
+        <h1>
+            <i class="fas fa-bolt" style="margin-right: 10px;"></i>
+            Squash Ball Striker Simulator
+        </h1>
         
-        <div class="tabs">
-            <button class="tab-btn active" onclick="openTab('basic')"><i class="fas fa-cogs tab-icon"></i>Basic Settings</button>
-            <button class="tab-btn" onclick="openTab('advanced')"><i class="fas fa-atom tab-icon"></i>Advanced Physics</button>
-            <button class="tab-btn" onclick="openTab('field')"><i class="fas fa-map-marked-alt tab-icon"></i>Field Setup</button>
-            <button class="tab-btn" onclick="openTab('results')"><i class="fas fa-clipboard-check tab-icon"></i>Results</button>
-        </div>
-        
-        <div id="basic" class="tab-content active">
-            <div class="settings-panel">
-                <h2>Striker Settings</h2>
-                
-                <div class="setting">
-                    <label for="release-height">Release Height (m):</label>
-                    <select id="release-height">
-                        <option value="1.0">1.0</option>
-                        <option value="1.5">1.5</option>
-                        <option value="2.0" selected>2.0</option>
-                    </select>
+        <div class="app-layout">
+            <!-- Left Column - Controls -->
+            <div class="control-panel">
+                <div class="card">
+                    <h2>Main Settings</h2>
+                    
+                    <div class="control-group">
+                        <label for="release-height">Release Height</label>
+                        <select id="release-height" class="select-control">
+                            <option value="1.0">1.0m (Low)</option>
+                            <option value="1.5">1.5m (Medium)</option>
+                            <option value="2.0" selected>2.0m (High)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="strike-height">Strike Height</label>
+                        <div class="control-slider">
+                            <input type="range" id="strike-height" min="0.01" max="0.5" step="0.01" value="0.35">
+                            <span id="height-value" class="value">0.35m</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="strike-angle">Strike Angle</label>
+                        <div class="control-slider">
+                            <input type="range" id="strike-angle" min="10" max="80" step="0.1" value="45">
+                            <span id="angle-value" class="value">45°</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="strike-velocity">Strike Velocity</label>
+                        <div class="control-slider">
+                            <input type="range" id="strike-velocity" min="1" max="20" step="0.1" value="5.25">
+                            <span id="velocity-value" class="value">5.25 m/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="checkbox-control">
+                            <input type="checkbox" id="ideal-comparison">
+                            <label for="ideal-comparison">Show ideal trajectory comparison</label>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="start-btn" class="btn-primary btn-full" onclick="startSimulation()">
+                            <i class="fas fa-play" style="margin-right: 8px;"></i>Run Simulation
+                        </button>
+                    </div>
                 </div>
-                
-                <div class="setting">
-                    <label for="strike-height">Strike Height (m):</label>
-                    <input type="range" id="strike-height" min="0.01" max="0.5" step="0.01" value="0.35">
-                    <span id="height-value">0.35 m</span>
-                </div>
-                
-                <div class="setting">
-                    <label for="strike-angle">Strike Angle (°):</label>
-                    <input type="range" id="strike-angle" min="10" max="80" step="0.1" value="45">
-                    <span id="angle-value">45.0°</span>
-                </div>
-                
-                <div class="setting">
-                    <label for="strike-velocity">Strike Velocity (m/s):</label>
-                    <input type="range" id="strike-velocity" min="1" max="20" step="0.1" value="5.25">
-                    <span id="velocity-value">5.25 m/s</span>
-                </div>
-                
-                <div class="setting-checkbox">
-                    <input type="checkbox" id="ideal-comparison">
-                    <label for="ideal-comparison">Show Ideal vs. Realistic Comparison</label>
-                </div>
-                
-                <button id="start-btn" class="primary-btn" onclick="startSimulation()">Start Simulation</button>
-                <button id="reset-btn" onclick="resetSimulation()">Reset</button>
-            </div>
-            
-            <div class="target-panel">
-                <h2>Target Optimization</h2>
-                
-                <div class="setting">
-                    <label for="target-distance">Target Distance (m):</label>
-                    <input type="range" id="target-distance" min="0.75" max="2.65" step="0.01" value="1.7">
-                    <span id="target-value">1.70 m</span>
-                </div>
-                
-                <div class="target-zone-indicator">
-                    <span>Target Zone: </span>
-                    <span id="indicator-zone" class="zone-badge">Zone 3</span>
-                </div>
-                
-                <button id="optimize-btn" class="primary-btn" onclick="optimizeSettings()">Find Optimal Settings</button>
 
-                <div id="optimal-angle-tolerance-display" class="optimization-result-display" style="display: none;">
-                    <h4>Optimal Settings Applied:</h4>
-                    <p><strong>Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
-                    <p><strong>Angle Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
-                    <p><strong>Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                <div class="card">
+                    <h2>Target</h2>
+                    
+                    <div class="control-group">
+                        <label for="target-distance">Target Distance</label>
+                        <div class="control-slider">
+                            <input type="range" id="target-distance" min="0.75" max="2.65" step="0.01" value="1.7">
+                            <span id="target-value" class="value">1.70m</span>
+                        </div>
+                    </div>
+                    
+                    <div class="zone-indicator">
+                        <span>Target Zone: </span>
+                        <span id="indicator-zone" class="zone-badge">Zone 3</span>
+                    </div>
+                    
+                    <button id="optimize-btn" class="btn-accent btn-full" onclick="optimizeSettings()">
+                        <i class="fas fa-bullseye" style="margin-right: 8px;"></i>Find Optimal Settings
+                    </button>
+                    
+                    <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
+                        <div class="help-text">
+                            <p><strong>Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
+                            <p><strong>Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
+                            <p><strong>Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Field Type</h2>
+                    <div class="control-group">
+                        <label for="field-type">Select Field Layout</label>
+                        <select id="field-type" onchange="handleFieldTypeChange()">
+                            <option value="standard" selected>Standard</option>
+                            <option value="extra1">Extended Range</option>
+                            <option value="extra2">Angle Features</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <button id="test-zones-btn" class="btn-secondary btn-full" onclick="testAllZones()" style="margin-top: 16px;">
+                        <i class="fas fa-tasks" style="margin-right: 8px;"></i>Test All Zones
+                    </button>
+                </div>
+                
+                <div class="button-group" style="margin-top: 24px;">
+                    <button id="reset-btn" class="btn-secondary btn-full" onclick="resetSimulation()">
+                        <i class="fas fa-redo" style="margin-right: 8px;"></i>Reset All Settings
+                    </button>
                 </div>
             </div>
-        </div>
-        
-        <div id="advanced" class="tab-content">
-            <h2>Advanced Physics Settings</h2>
             
-            <div class="settings-panel">
-                <div class="setting">
-                    <label for="gravity">Gravity (m/s²):</label>
-                    <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81">
-                </div>
-                
-                <div class="setting">
-                    <label for="ball-mass">Ball Mass (kg):</label>
-                    <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024">
-                </div>
-                
-                <div class="setting">
-                    <label for="air-density">Air Density (kg/m³):</label>
-                    <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225">
-                </div>
-                
-                <div class="setting">
-                    <label for="drag-coefficient">Drag Coefficient:</label>
-                    <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5">
-                </div>
-                
-                <div class="setting">
-                    <label for="elasticity">Elasticity:</label>
-                    <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4">
-                </div>
-                
-                <div class="physics-explanation">
-                    <h3>Physics Explanation</h3>
-                    <p><strong>Air Density:</strong> Standard air density at sea level is 1.225 kg/m³. Lower values represent thinner air (higher altitude).</p>
-                    <p><strong>Drag Coefficient:</strong> Represents the aerodynamic drag of the ball. Higher values create more air resistance.</p>
-                    <p><strong>Elasticity:</strong> The coefficient of restitution, representing how much energy is conserved when the ball bounces.</p>
-                </div>
-            </div>
-        </div>
-        
-        <div id="field" class="tab-content">
-            <div class="field-layout-container">
-                <div class="field-settings-column">
-                    <h2>Field Configuration</h2>
-                    <div class="settings-panel">
-                        <div class="setting">
-                            <label for="field-type">Field Type:</label>
-                            <select id="field-type" onchange="handleFieldTypeChange()">
-                                <option value="standard" selected>Standard</option>
-                                <option value="extra1">Extra 1 (Extended Range)</option>
-                                <option value="extra2">Extra 2 (Angle Features)</option>
-                                <option value="custom">Custom</option>
-                            </select>
+            <!-- Right Column - Visualization & Results -->
+            <div class="visualization-panel">
+                <!-- Results Summary -->
+                <div class="card">
+                    <h2>Results</h2>
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <div class="result-label">Landing Distance</div>
+                            <div id="landing-distance" class="result-value">0.00 m</div>
                         </div>
                         
-                        <div class="field-dimensions">
-                            <p class="field-dimensions-title">Current Field Dimensions:</p>
-                            <div class="setting">
-                                <label for="min-distance">Min Distance (m):</label>
+                        <div class="result-card">
+                            <div class="result-label">Target Zone</div>
+                            <div id="target-zone" class="result-value">None</div>
+                        </div>
+                        
+                        <div class="result-card">
+                            <div class="result-label">Strike Time</div>
+                            <div id="strike-time" class="result-value">0.00 s</div>
+                        </div>
+                        
+                        <div class="result-card ideal-result" style="display: none;">
+                            <div class="result-label">Ideal Landing</div>
+                            <div id="ideal-landing" class="result-value">0.00 m</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Trajectory Visualization -->
+                <div class="card">
+                    <h2>Trajectory</h2>
+                    <div class="chart-container">
+                        <canvas id="trajectory-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Field Visualization -->
+                <div class="card">
+                    <h2>Field Layout</h2>
+                    <div class="chart-container">
+                        <canvas id="field-chart"></canvas>
+                    </div>
+                    <div id="field-info-text" class="help-text" style="margin-top: 16px;">
+                        <p>Click on any zone in the chart above to set it as your target.</p>
+                    </div>
+                </div>
+                
+                <!-- Zone Testing Results -->
+                <div id="test-zone-results"></div>
+                
+                <!-- Advanced Settings (Collapsed by default) -->
+                <div class="card">
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion('physics-settings')">
+                            <h3>Advanced Physics Settings</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div id="physics-settings" class="accordion-content">
+                            <div class="control-group">
+                                <label for="gravity">Gravity (m/s²)</label>
+                                <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="ball-mass">Ball Mass (kg)</label>
+                                <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="air-density">Air Density (kg/m³)</label>
+                                <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="drag-coefficient">Drag Coefficient</label>
+                                <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5">
+                            </div>
+                            
+                            <div class="control-group">
+                                <label for="elasticity">Elasticity</label>
+                                <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="accordion">
+                        <div class="accordion-header" onclick="toggleAccordion('custom-field-settings')">
+                            <h3>Custom Field Settings</h3>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div id="custom-field-settings" class="accordion-content">
+                            <div class="control-group">
+                                <label for="min-distance">Min Distance (m)</label>
                                 <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" disabled>
                             </div>
                             
-                            <div class="setting">
-                                <label for="max-distance">Max Distance (m):</label>
+                            <div class="control-group">
+                                <label for="max-distance">Max Distance (m)</label>
                                 <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" disabled>
                             </div>
                             
-                            <div class="setting">
-                                <label for="zone-width">Avg. Zone Width (m):</label>
+                            <div class="control-group">
+                                <label for="zone-width">Zone Width (m)</label>
                                 <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" disabled>
                             </div>
-                        </div>
-                        
-                        <div class="field-actions">
+                            
                             <button id="apply-field-btn" onclick="applyFieldSettings()" disabled>Apply Custom Settings</button>
-                            <button id="test-zones-btn" class="secondary-btn" onclick="testAllZones()">Test All Zones</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="field-visualization-column">
-                    <h3>Field Zone Layout</h3>
-                    <div class="field-visualization">
-                        <canvas id="field-chart"></canvas>
-                        <div id="field-info-text" class="field-info-text">
-                            <p><strong>Robot Area:</strong> 0.0m - 0.5m (approx.)</p>
-                            <p><strong>Release Point:</strong> At 0.0m distance.</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div id="results" class="tab-content">
-            <h2>Simulation Results</h2>
-            
-            <div class="results-panel">
-                <div class="result-item">
-                    <span class="label">Landing Distance:</span>
-                    <span id="landing-distance" class="value">0.00 m</span>
-                </div>
-                
-                <div class="result-item">
-                    <span class="label">Target Zone:</span>
-                    <span id="target-zone" class="value">None</span>
-                </div>
-                
-                <div class="result-item">
-                    <span class="label">Strike Time:</span>
-                    <span id="strike-time" class="value">0.00 s</span>
-                </div>
-                
-                <div class="result-item ideal-result">
-                    <span class="label">Ideal Landing:</span>
-                    <span id="ideal-landing" class="value">0.00 m</span>
-                </div>
-                
-                <div class="result-item ideal-result">
-                    <span class="label">Difference:</span>
-                    <span id="landing-difference" class="value">0.00 m</span>
-                </div>
-            </div>
-            
-            <canvas id="trajectory-chart"></canvas>
-            
-            <div id="test-zone-results"></div>
         </div>
     </div>
     
+    <script>
+        // Function to toggle accordion
+        function toggleAccordion(id) {
+            const content = document.getElementById(id);
+            content.classList.toggle('active');
+            
+            const icon = content.previousElementSibling.querySelector('i');
+            if (content.classList.contains('active')) {
+                icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            } else {
+                icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            }
+        }
+        
+        // Replace default notification with our custom notification
+        function showCustomMessage(message, type) {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notification-message');
+            const iconEl = notification.querySelector('.notification-icon');
+            
+            // Set message
+            messageEl.textContent = message;
+            
+            // Set icon based on type
+            iconEl.className = 'notification-icon';
+            switch(type) {
+                case 'success':
+                    iconEl.innerHTML = '<i class="fas fa-check-circle" style="color: #4caf50;"></i>';
+                    break;
+                case 'error':
+                    iconEl.innerHTML = '<i class="fas fa-times-circle" style="color: #f44336;"></i>';
+                    break;
+                case 'warning':
+                    iconEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i>';
+                    break;
+                case 'info':
+                default:
+                    iconEl.innerHTML = '<i class="fas fa-info-circle" style="color: #2196f3;"></i>';
+                    break;
+            }
+            
+            // Show notification
+            notification.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Call original script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Call the init functions from the original script
+            if (typeof setupTrajectoryChart === 'function') setupTrajectoryChart();
+            if (typeof setupFieldChart === 'function') setupFieldChart();
+            if (typeof fetchFieldInfo === 'function') fetchFieldInfo();
+            
+            // Setup event listeners
+            document.getElementById('strike-height').addEventListener('input', function() {
+                document.getElementById('height-value').textContent = this.value + 'm';
+            });
+            
+            document.getElementById('strike-angle').addEventListener('input', function() {
+                document.getElementById('angle-value').textContent = this.value + '°';
+            });
+            
+            document.getElementById('strike-velocity').addEventListener('input', function() {
+                document.getElementById('velocity-value').textContent = this.value + ' m/s';
+            });
+            
+            document.getElementById('target-distance').addEventListener('input', function() {
+                document.getElementById('target-value').textContent = this.value + 'm';
+                if (typeof updateTargetZoneIndicator === 'function') updateTargetZoneIndicator();
+            });
+        });
+    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
