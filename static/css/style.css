@@ -1,11 +1,12 @@
 @import url("https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap");
 
 body,
 button,
 input,
 select,
 table {
-  font-family: "Sarabun", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Anuphan", "Sarabun", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Mobile-First Styles for Squash Ball Striker App */
