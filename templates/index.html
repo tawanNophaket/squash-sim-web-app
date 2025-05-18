@@ -114,6 +114,29 @@
                     </div>
                 </div>
                 
+                <!-- เพิ่มส่วน Optimization Settings -->
+                <div class="card">
+                    <h2><i class="fas fa-cogs"></i> Optimization Settings</h2>
+                    
+                    <div class="control-group">
+                        <div class="checkbox-control">
+                            <input type="checkbox" id="fix-angle">
+                            <label for="fix-angle">Fix current angle (optimize only velocity)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="checkbox-control">
+                            <input type="checkbox" id="fix-velocity">
+                            <label for="fix-velocity">Fix current velocity (optimize only angle)</label>
+                        </div>
+                    </div>
+                    
+                    <p class="help-text">
+                        <i class="fas fa-info-circle"></i> ถ้าไม่เลือกตัวเลือกใดๆ ระบบจะหาค่าที่เหมาะสมทั้งมุมและความเร็ว
+                    </p>
+                </div>
+                
                 <button id="start-btn" class="btn-primary btn-full pulse" onclick="startSimulation()">
                     <i class="fas fa-play"></i>Run Simulation
                 </button>
@@ -122,11 +145,33 @@
                     <i class="fas fa-magic"></i>Find Optimal Settings
                 </button>
                 
+                <!-- แก้ไขส่วนแสดงผลค่าที่เหมาะสม -->
                 <div id="optimal-angle-tolerance-display" style="display: none; margin-top: 16px;">
-                    <div class="help-text">
-                        <p><strong class="highlight">Optimal Angle:</strong> <span id="optimized-angle-value"></span></p>
-                        <p><strong>Tolerance (±5%):</strong> <span id="optimized-angle-tolerance-range"></span></p>
-                        <p><strong class="highlight">Optimal Velocity:</strong> <span id="optimized-velocity-value"></span></p>
+                    <div class="card">
+                        <h3><i class="fas fa-bullseye"></i> ค่าที่เหมาะสม</h3>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <div class="result-label">Optimal Angle</div>
+                                <div id="optimized-angle-value" class="result-value">45.00°</div>
+                                <div class="result-detail">Range: <span id="optimized-angle-tolerance-range">42.75° - 47.25°</span></div>
+                            </div>
+                            
+                            <div class="result-card">
+                                <div class="result-label">Optimal Velocity</div>
+                                <div id="optimized-velocity-value" class="result-value">5.25 m/s</div>
+                                <div class="result-detail">Range: <span id="optimized-velocity-tolerance-range">4.99 - 5.51 m/s</span></div>
+                            </div>
+                            
+                            <div class="result-card">
+                                <div class="result-label">Expected Distance</div>
+                                <div id="optimized-actual-distance" class="result-value">0.00 m</div>
+                            </div>
+                            
+                            <div class="result-card">
+                                <div class="result-label">Error</div>
+                                <div id="optimized-error" class="result-value">0.00 m (0.00%)</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

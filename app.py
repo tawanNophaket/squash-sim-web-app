@@ -67,23 +67,66 @@ def calculate():
 
 @app.route('/api/optimize', methods=['POST'])
 def optimize():
+    """
+    API endpoint สำหรับหาค่าที่เหมาะสมในการตีให้ลูกตกที่ระยะเป้าหมาย
+    รับพารามิเตอร์ต่างๆ จาก request และใช้ในการคำนวณ
+    """
     data = request.json
     target_distance = float(data.get('target_distance'))
     
+    # ดึงค่าพารามิเตอร์อื่นๆ จาก request
+    release_height = float(data.get('release_height', 2.0))
+    strike_height = float(data.get('strike_height', 0.35))
+    current_angle = float(data.get('current_angle', 45.0))
+    current_velocity = float(data.get('current_velocity', 5.25))
+    fixed_params = data.get('fixed_params', {})
+    
+    # ถ้า fixed_params ไม่ได้ระบุก็ให้มีค่าว่าง (จะปรับทั้งมุมและความเร็ว)
+    if not fixed_params:
+        fixed_params = None
+    
+    # ตั้งค่า simulation
+    simulation.striker_settings.release_height = release_height
+    simulation.striker_settings.strike_height = strike_height
+    simulation.striker_settings.strike_angle = current_angle
+    simulation.striker_settings.strike_velocity = current_velocity
+    
+    # รับค่า physics parameters ถ้ามี
+    if 'physics' in data:
+        physics = data['physics']
+        simulation.ball_physics.gravity = float(physics.get('gravity', 9.81))
+        simulation.ball_physics.ball_mass = float(physics.get('ball_mass', 0.024))
+        simulation.air_density = float(physics.get('air_density', 1.225))
+        simulation.drag_coefficient = float(physics.get('drag_coefficient', 0.5))
+        simulation.ball_physics.elasticity = float(physics.get('elasticity', 0.4))
+    
     # หาค่าที่เหมาะสม
-    success, result = simulation.calculate_optimal_angle(target_distance)
+    success, result = simulation.calculate_optimal_parameters(target_distance, fixed_params)
     
     if success:
         angle, velocity = result
         
         # คำนวณช่วงความคลาดเคลื่อน ±5%
         angle_tolerance = angle * 0.05
+        velocity_tolerance = velocity * 0.05
+        
+        # ทดสอบค่าที่ได้
+        simulation.striker_settings.strike_angle = angle
+        simulation.striker_settings.strike_velocity = velocity
+        simulation.start_simulation()
+        actual_distance = simulation.landing_distance
         
         return jsonify({
             'angle': angle,
             'velocity': velocity,
             'angle_min': angle - angle_tolerance,
-            'angle_max': angle + angle_tolerance
+            'angle_max': angle + angle_tolerance,
+            'velocity_min': velocity - velocity_tolerance,
+            'velocity_max': velocity + velocity_tolerance,
+            'actual_distance': actual_distance,
+            'target_distance': target_distance,
+            'error': abs(actual_distance - target_distance),
+            'error_percent': (abs(actual_distance - target_distance) / target_distance) * 100 if target_distance > 0 else 0
         })
     else:
         return jsonify({'error': result}), 400

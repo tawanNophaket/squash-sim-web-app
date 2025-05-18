@@ -467,6 +467,23 @@ function updateTargetZoneIndicator() {
 // ฟังก์ชัน optimizeSettings
 function optimizeSettings() {
     const targetDistance = parseFloat(document.getElementById('target-distance').value);
+    const releaseHeight = parseFloat(document.getElementById('release-height').value);
+    const strikeHeight = parseFloat(document.getElementById('strike-height').value);
+    const currentAngle = parseFloat(document.getElementById('strike-angle').value);
+    const currentVelocity = parseFloat(document.getElementById('strike-velocity').value);
+    
+    // เช็คว่ามีการเลือกพารามิเตอร์คงที่หรือไม่
+    const fixAngle = document.getElementById('fix-angle').checked;
+    const fixVelocity = document.getElementById('fix-velocity').checked;
+    
+    // สร้าง object สำหรับพารามิเตอร์คงที่
+    let fixedParams = {};
+    if (fixAngle) {
+        fixedParams.angle = currentAngle;
+    }
+    if (fixVelocity) {
+        fixedParams.velocity = currentVelocity;
+    }
     
     // แสดงว่ากำลังโหลด
     setButtonDisabled('optimize-btn', true);
@@ -478,7 +495,21 @@ function optimizeSettings() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ target_distance: targetDistance }),
+        body: JSON.stringify({
+            target_distance: targetDistance,
+            release_height: releaseHeight,
+            strike_height: strikeHeight,
+            current_angle: currentAngle,
+            current_velocity: currentVelocity,
+            fixed_params: Object.keys(fixedParams).length > 0 ? fixedParams : null,
+            physics: {
+                gravity: parseFloat(document.getElementById('gravity').value || '9.81'),
+                ball_mass: parseFloat(document.getElementById('ball-mass').value || '0.024'),
+                air_density: parseFloat(document.getElementById('air-density').value || '1.225'),
+                drag_coefficient: parseFloat(document.getElementById('drag-coefficient').value || '0.5'),
+                elasticity: parseFloat(document.getElementById('elasticity').value || '0.4')
+            }
+        }),
     })
     .then(response => {
         if (!response.ok) {
@@ -487,20 +518,40 @@ function optimizeSettings() {
         return response.json();
     })
     .then(result => {
-        // อัปเดตค่าที่เหมาะสม
-        document.getElementById('strike-angle').value = result.angle;
-        document.getElementById('angle-value').textContent = result.angle.toFixed(2) + '°';
+        if (result.error) {
+            showCustomMessage(result.error, 'error');
+            return;
+        }
         
-        document.getElementById('strike-velocity').value = result.velocity;
-        document.getElementById('velocity-value').textContent = result.velocity.toFixed(2) + ' m/s';
+        // อัปเดตค่าที่เหมาะสม
+        if (!fixAngle) {
+            document.getElementById('strike-angle').value = result.angle;
+            document.getElementById('angle-value').textContent = result.angle.toFixed(2) + '°';
+        }
+        
+        if (!fixVelocity) {
+            document.getElementById('strike-velocity').value = result.velocity;
+            document.getElementById('velocity-value').textContent = result.velocity.toFixed(2) + ' m/s';
+        }
         
         // แสดงค่าความคลาดเคลื่อน
         const toleranceDisplay = document.getElementById('optimal-angle-tolerance-display');
         if (toleranceDisplay) {
+            // อัปเดตข้อมูลมุม
             document.getElementById('optimized-angle-value').textContent = result.angle.toFixed(2) + '°';
             document.getElementById('optimized-angle-tolerance-range').textContent = 
                 `${result.angle_min.toFixed(2)}° - ${result.angle_max.toFixed(2)}°`;
+                
+            // อัปเดตข้อมูลความเร็ว
             document.getElementById('optimized-velocity-value').textContent = result.velocity.toFixed(2) + ' m/s';
+            document.getElementById('optimized-velocity-tolerance-range').textContent = 
+                `${result.velocity_min.toFixed(2)} - ${result.velocity_max.toFixed(2)} m/s`;
+                
+            // อัปเดตข้อมูลระยะและความคลาดเคลื่อน
+            document.getElementById('optimized-actual-distance').textContent = result.actual_distance.toFixed(2) + ' m';
+            document.getElementById('optimized-error').textContent = 
+                `${result.error.toFixed(2)} m (${result.error_percent.toFixed(2)}%)`;
+                
             toleranceDisplay.style.display = 'block';
         }
         
@@ -1070,3 +1121,39 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelector('.tab-btn').click();
     }
 });
+
+// เพิ่มฟังก์ชันสำหรับตรวจสอบตัวเลือกที่ขัดแย้งกัน
+document.addEventListener('DOMContentLoaded', function() {
+    // เพิ่ม event listener สำหรับ checkbox
+    const fixAngleCheckbox = document.getElementById('fix-angle');
+    const fixVelocityCheckbox = document.getElementById('fix-velocity');
+    
+    if (fixAngleCheckbox && fixVelocityCheckbox) {
+        fixAngleCheckbox.addEventListener('change', function() {
+            checkConflictingOptions();
+        });
+        
+        fixVelocityCheckbox.addEventListener('change', function() {
+            checkConflictingOptions();
+        });
+    }
+    
+    // เรียก setup ครั้งแรกเมื่อโหลดหน้า
+    setTimeout(checkConflictingOptions, 500);
+});
+
+function checkConflictingOptions() {
+    const fixAngleCheckbox = document.getElementById('fix-angle');
+    const fixVelocityCheckbox = document.getElementById('fix-velocity');
+    const optimizeBtn = document.getElementById('optimize-btn');
+    
+    if (fixAngleCheckbox && fixVelocityCheckbox && optimizeBtn) {
+        // ถ้าเลือกทั้งสองตัวเลือก จะไม่สามารถปรับค่าใดๆ ได้
+        if (fixAngleCheckbox.checked && fixVelocityCheckbox.checked) {
+            showCustomMessage('ไม่สามารถกำหนดให้ทั้งมุมและความเร็วคงที่ได้', 'warning');
+            optimizeBtn.disabled = true;
+        } else {
+            optimizeBtn.disabled = false;
+        }
+    }
+}
