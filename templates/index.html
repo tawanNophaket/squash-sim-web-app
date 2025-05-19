@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Squash Ball Striker Simulator</title>
+    <title>Squash Ball Striker Simulator - 3D Enhanced</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
@@ -34,7 +34,6 @@
         margin-top: var(--spacing-xs);
       }
 
-      /* ปรับแต่ง checkbox */
       .checkbox-control input[type="checkbox"] {
         width: 20px;
         height: 20px;
@@ -50,7 +49,6 @@
         cursor: pointer;
       }
 
-      /* ปรับแต่ง help text */
       .help-text {
         font-size: 0.9rem;
         color: var(--text-secondary);
@@ -66,13 +64,11 @@
         margin-right: var(--spacing-xs);
       }
 
-      /* สไตล์สำหรับการแจ้งเตือน */
       .highlight {
         color: var(--primary-light);
         font-weight: 600;
       }
 
-      /* สไตล์ปุ่มเมื่อถูก disable */
       button:disabled {
         background-color: #555 !important;
         color: #999 !important;
@@ -81,16 +77,34 @@
         transform: none !important;
         opacity: 0.7;
       }
+
+      .target-inputs {
+        display: flex;
+        gap: var(--spacing-md);
+      }
+      .target-inputs .control-group {
+        flex: 1;
+      }
+      .chart-container-grid {
+        display: grid;
+        grid-template-columns: 1fr; /* Default to 1 column for mobile */
+        gap: var(--spacing-md);
+      }
+
+      @media (min-width: 992px) {
+        /* Adjust breakpoint as needed for wider screens */
+        .chart-container-grid {
+          grid-template-columns: 1fr 1fr; /* 2 columns for wider screens */
+        }
+      }
     </style>
   </head>
   <body>
-    <!-- Loading Screen -->
     <div id="loading-screen" class="loading-screen">
       <h1 class="loading-title">Group 11 Simulation</h1>
       <div class="loading-spinner"></div>
     </div>
 
-    <!-- Notification System -->
     <div id="notification" class="notification">
       <div class="notification-icon"></div>
       <div class="notification-content">
@@ -98,23 +112,13 @@
       </div>
     </div>
 
-    <!-- Custom Message Box -->
-    <div id="custom-message-box" class="message-box-hidden">
-      <div class="message-box-content">
-        <i id="message-box-icon" class="fas fa-info-circle"></i>
-        <p id="message-box-text">Message goes here</p>
-        <button id="message-box-close-btn">OK</button>
-      </div>
-    </div>
-
     <div class="content-wrapper">
       <div class="container">
         <h1>
           <i class="fas fa-bullseye" style="margin-right: 10px"></i>
-          Squash Ball Striker Simulator
+          Squash Ball Striker Simulator (3D)
         </h1>
 
-        <!-- Mobile Tab Navigation -->
         <div class="tabs">
           <button class="tab-btn active" onclick="openTab('simulator')">
             <i class="fas fa-sliders-h"></i> Simulator
@@ -130,7 +134,6 @@
           </button>
         </div>
 
-        <!-- Simulator Tab -->
         <div id="simulator" class="tab-content active">
           <div class="card">
             <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
@@ -160,17 +163,36 @@
             </div>
 
             <div class="control-group">
-              <label for="strike-angle">Strike Angle</label>
+              <label for="strike-angle-elevation"
+                >Strike Elevation Angle (Vertical)</label
+              >
               <div class="control-slider">
                 <input
                   type="range"
-                  id="strike-angle"
+                  id="strike-angle-elevation"
                   min="10"
                   max="80"
                   step="0.1"
                   value="45"
                 />
-                <span id="angle-value" class="value">45°</span>
+                <span id="angle-elevation-value" class="value">45.0°</span>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <label for="strike-azimuth-angle"
+                >Strike Azimuth Angle (Horizontal)</label
+              >
+              <div class="control-slider">
+                <input
+                  type="range"
+                  id="strike-azimuth-angle"
+                  min="-45"
+                  max="45"
+                  step="0.1"
+                  value="0"
+                />
+                <span id="angle-azimuth-value" class="value">0.0°</span>
               </div>
             </div>
 
@@ -200,54 +222,61 @@
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-crosshairs"></i> Target</h2>
-
-            <div class="control-group">
-              <label for="target-distance">Target Distance</label>
-              <div class="control-slider">
+            <h2><i class="fas fa-crosshairs"></i> Target Coordinates</h2>
+            <div class="target-inputs">
+              <div class="control-group">
+                <label for="target-x">Target X (m)</label>
                 <input
-                  type="range"
-                  id="target-distance"
-                  min="0.75"
-                  max="2.65"
+                  type="number"
+                  id="target-x"
+                  step="0.01"
+                  value="0.0"
+                  class="input-control"
+                />
+              </div>
+              <div class="control-group">
+                <label for="target-z">Target Z (m, Forward)</label>
+                <input
+                  type="number"
+                  id="target-z"
                   step="0.01"
                   value="1.7"
+                  class="input-control"
                 />
-                <span id="target-value" class="value">1.70m</span>
               </div>
             </div>
-
-            <div class="zone-indicator">
-              <span>Target Zone: </span>
-              <span id="indicator-zone" class="zone-badge">Zone 3</span>
+            <div class="zone-indicator" style="margin-top: var(--spacing-sm)">
+              <span>Target Zone (from X,Z): </span>
+              <span id="indicator-zone-2d" class="zone-badge">Zone ?</span>
             </div>
           </div>
 
-          <!-- เพิ่มส่วน Optimization Settings -->
           <div class="card">
             <h2><i class="fas fa-cogs"></i> Optimization Settings</h2>
-
             <div class="control-group">
               <div class="checkbox-control">
-                <input type="checkbox" id="fix-angle" />
-                <label for="fix-angle"
-                  >Fix current angle (optimize only velocity)</label
+                <input type="checkbox" id="fix-elevation-angle" />
+                <label for="fix-elevation-angle"
+                  >Fix current Elevation Angle</label
                 >
               </div>
             </div>
-
+            <div class="control-group">
+              <div class="checkbox-control">
+                <input type="checkbox" id="fix-azimuth-angle" />
+                <label for="fix-azimuth-angle">Fix current Azimuth Angle</label>
+              </div>
+            </div>
             <div class="control-group">
               <div class="checkbox-control">
                 <input type="checkbox" id="fix-velocity" />
-                <label for="fix-velocity"
-                  >Fix current velocity (optimize only angle)</label
-                >
+                <label for="fix-velocity">Fix current Velocity</label>
               </div>
             </div>
-
             <p class="help-text">
-              <i class="fas fa-info-circle"></i> ถ้าไม่เลือกตัวเลือกใดๆ
-              ระบบจะหาค่าที่เหมาะสมทั้งมุมและความเร็ว
+              <i class="fas fa-info-circle"></i> If no options are selected, the
+              system will optimize all three parameters (Elevation, Azimuth,
+              Velocity).
             </p>
           </div>
 
@@ -276,85 +305,134 @@
           </button>
         </div>
 
-        <!-- Results Tab -->
         <div id="results" class="tab-content">
           <div class="card">
-            <h2><i class="fas fa-chart-line"></i> Results</h2>
+            <h2><i class="fas fa-chart-line"></i> Simulation Results</h2>
             <div class="results-grid">
               <div class="result-card">
-                <div class="result-label">Landing Distance</div>
-                <div id="landing-distance" class="result-value">0.00 m</div>
+                <div class="result-label">Landing X</div>
+                <div id="landing-position-x" class="result-value">0.00 m</div>
               </div>
-
               <div class="result-card">
-                <div class="result-label">Target Zone</div>
-                <div id="target-zone" class="result-value">None</div>
+                <div class="result-label">Landing Z (Forward)</div>
+                <div id="landing-position-z" class="result-value">0.00 m</div>
               </div>
-
+              <div class="result-card">
+                <div class="result-label">Radial Distance</div>
+                <div id="landing-distance-radial" class="result-value">
+                  0.00 m
+                </div>
+              </div>
+              <div class="result-card">
+                <div class="result-label">Target Zone Hit</div>
+                <div id="target-zone-hit" class="result-value">None</div>
+              </div>
               <div class="result-card">
                 <div class="result-label">Strike Time</div>
                 <div id="strike-time" class="result-value">0.00 s</div>
               </div>
-
-              <div class="result-card ideal-result" style="display: none">
-                <div class="result-label">Ideal Landing</div>
-                <div id="ideal-landing" class="result-value">0.00 m</div>
+            </div>
+            <div
+              class="results-grid ideal-result-group"
+              style="display: none; margin-top: var(--spacing-sm)"
+            >
+              <div class="result-card">
+                <div class="result-label">Ideal Landing X</div>
+                <div id="ideal-landing-x" class="result-value">0.00 m</div>
+              </div>
+              <div class="result-card">
+                <div class="result-label">Ideal Landing Z</div>
+                <div id="ideal-landing-z" class="result-value">0.00 m</div>
               </div>
             </div>
           </div>
 
-          <!-- Trajectory Visualization -->
           <div class="card">
-            <h2><i class="fas fa-project-diagram"></i> Trajectory</h2>
-            <div class="chart-container">
-              <canvas id="trajectory-chart"></canvas>
+            <h2>
+              <i class="fas fa-project-diagram"></i> Trajectory Visualizations
+            </h2>
+            <div class="chart-container-grid">
+              <div class="chart-container">
+                <h3
+                  style="text-align: center; margin-bottom: var(--spacing-sm)"
+                >
+                  Side View (Z-Y Projection)
+                </h3>
+                <canvas id="trajectory-chart-side-view"></canvas>
+              </div>
+              <div class="chart-container">
+                <h3
+                  style="text-align: center; margin-bottom: var(--spacing-sm)"
+                >
+                  Top-Down View (X-Z Projection)
+                </h3>
+                <canvas id="trajectory-chart-top-view"></canvas>
+              </div>
             </div>
           </div>
 
-          <!-- Optimal Result Display moved here -->
           <div
-            id="optimal-angle-tolerance-display"
+            id="optimal-params-display"
             style="display: none; margin-top: 16px"
           >
             <div class="card">
-              <h3><i class="fas fa-bullseye"></i> ค่าที่เหมาะสม</h3>
+              <h3><i class="fas fa-bullseye"></i> Optimized Parameters</h3>
               <div class="results-grid">
                 <div class="result-card">
-                  <div class="result-label">Optimal Angle</div>
-                  <div id="optimized-angle-value" class="result-value">
-                    45.00°
+                  <div class="result-label">Optimal Elevation Angle</div>
+                  <div
+                    id="optimized-elevation-angle-value"
+                    class="result-value"
+                  >
+                    0.00°
                   </div>
                   <div class="result-detail">
                     Range:
-                    <span id="optimized-angle-tolerance-range"
-                      >42.75° - 47.25°</span
-                    >
+                    <span id="optimized-elevation-angle-range">0° - 0°</span>
                   </div>
                 </div>
-
+                <div class="result-card">
+                  <div class="result-label">Optimal Azimuth Angle</div>
+                  <div id="optimized-azimuth-angle-value" class="result-value">
+                    0.00°
+                  </div>
+                  <div class="result-detail">
+                    Range:
+                    <span id="optimized-azimuth-angle-range">0° - 0°</span>
+                  </div>
+                </div>
                 <div class="result-card">
                   <div class="result-label">Optimal Velocity</div>
                   <div id="optimized-velocity-value" class="result-value">
-                    5.25 m/s
+                    0.00 m/s
                   </div>
                   <div class="result-detail">
-                    Range:
-                    <span id="optimized-velocity-tolerance-range"
-                      >4.99 - 5.51 m/s</span
-                    >
+                    Range: <span id="optimized-velocity-range">0 - 0 m/s</span>
                   </div>
                 </div>
-
+              </div>
+              <div class="results-grid" style="margin-top: var(--spacing-sm)">
                 <div class="result-card">
-                  <div class="result-label">Expected Distance</div>
-                  <div id="optimized-actual-distance" class="result-value">
+                  <div class="result-label">Expected Landing X</div>
+                  <div id="optimized-actual-landing-x" class="result-value">
                     0.00 m
                   </div>
                 </div>
-
                 <div class="result-card">
-                  <div class="result-label">Error</div>
-                  <div id="optimized-error" class="result-value">
+                  <div class="result-label">Expected Landing Z</div>
+                  <div id="optimized-actual-landing-z" class="result-value">
+                    0.00 m
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="result-label">Target X, Z</div>
+                  <div id="optimized-target-xz" class="result-value">
+                    (0.00, 0.00) m
+                  </div>
+                </div>
+                <div class="result-card">
+                  <div class="result-label">Error Distance</div>
+                  <div id="optimized-error-dist" class="result-value">
                     0.00 m (0.00%)
                   </div>
                 </div>
@@ -362,43 +440,30 @@
             </div>
           </div>
 
-          <!-- เพิ่มส่วน Debug Information -->
           <div class="card">
             <h2><i class="fas fa-bug"></i> Debug Information</h2>
             <div class="debug-info">
               <button onclick="toggleDebugInfo()" class="btn-secondary">
                 <i class="fas fa-code"></i> Show/Hide Debug Info
               </button>
-              <div
-                id="debug-info-content"
-                style="
-                  display: none;
-                  margin-top: 16px;
-                  font-family: monospace;
-                  white-space: pre-wrap;
-                  overflow-x: auto;
-                  background: #222;
-                  padding: 16px;
-                  border-radius: 8px;
-                "
-              >
-                <!-- Debug info จะถูกเพิ่มโดย JavaScript -->
-              </div>
+              <div id="debug-info-content" style="display: none"></div>
             </div>
-          </div>
-
-          <!-- Zone Testing Results -->
-          <div id="test-zone-results" class="zone-table-container">
-            <!-- ผลการทดสอบโซนจะถูกเพิ่มโดย JavaScript -->
           </div>
         </div>
 
-        <!-- Field Tab -->
         <div id="field" class="tab-content">
           <div class="card">
-            <h2><i class="fas fa-th"></i> Field Layout</h2>
-            <div class="chart-container">
-              <canvas id="field-chart"></canvas>
+            <h2><i class="fas fa-th"></i> Field Layout & Targeting</h2>
+            <div class="control-group">
+              <label for="field-type">Select Field Layout</label>
+              <select id="field-type" onchange="handleFieldTypeChange()">
+                <option value="standard" selected>Standard (1D Radial)</option>
+                <option value="extra1">Extended Range (1D Radial)</option>
+                <option value="extra2">Angled Field (2D X-Z)</option>
+              </select>
+            </div>
+            <div class="chart-container" style="height: 400px">
+              <canvas id="field-chart-2d"></canvas>
             </div>
             <div
               id="field-info-text"
@@ -406,48 +471,27 @@
               style="margin-top: 16px"
             >
               <p>
-                <i class="fas fa-info-circle"></i> Click on any zone in the
-                chart above to set it as your target.
+                <i class="fas fa-info-circle"></i>
+                For 2D fields (like Extra2), click on the chart to set Target X,
+                Z. For 1D fields, zones are radial.
               </p>
-              <div class="field-info-details">
-                <p>
-                  The colored zones represent the different target areas. Each
-                  zone is 38cm wide by default.
-                </p>
-                <p>
-                  The simulator will analyze how to hit the ball to land in your
-                  selected zone.
-                </p>
-              </div>
             </div>
-
-            <div class="control-group">
-              <label for="field-type">Select Field Layout</label>
-              <select id="field-type" onchange="handleFieldTypeChange()">
-                <option value="standard" selected>Standard</option>
-                <option value="extra1">Extended Range</option>
-                <option value="extra2">Angle Features</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-
-            <button
-              id="test-zones-btn"
-              class="btn-secondary btn-full"
-              onclick="testAllZones()"
-            >
-              <i class="fas fa-tasks"></i>Test All Zones
-            </button>
           </div>
         </div>
 
-        <!-- Settings Tab -->
         <div id="settings" class="tab-content">
-          <!-- Custom Field Settings -->
           <div class="card">
-            <h2><i class="fas fa-ruler-combined"></i> Custom Field Settings</h2>
+            <h2>
+              <i class="fas fa-ruler-combined"></i> Custom Field Parameters
+              (Mainly for 1D Fields)
+            </h2>
+            <p class="help-text">
+              These settings primarily apply to 'Standard' or 'Extended Range'
+              1D radial fields if you were to define them as 'Custom'. 'Angled
+              Field (2D)' uses predefined zone data.
+            </p>
             <div class="control-group">
-              <label for="min-distance">Min Distance (m)</label>
+              <label for="min-distance">Min Radial Distance (m)</label>
               <input
                 type="number"
                 id="min-distance"
@@ -455,12 +499,10 @@
                 max="10"
                 step="0.01"
                 value="0.75"
-                disabled
               />
             </div>
-
             <div class="control-group">
-              <label for="max-distance">Max Distance (m)</label>
+              <label for="max-distance">Max Radial Distance (m)</label>
               <input
                 type="number"
                 id="max-distance"
@@ -468,12 +510,10 @@
                 max="10"
                 step="0.01"
                 value="2.65"
-                disabled
               />
             </div>
-
             <div class="control-group">
-              <label for="zone-width">Zone Width (m)</label>
+              <label for="zone-width">Radial Zone Width (m)</label>
               <input
                 type="number"
                 id="zone-width"
@@ -481,20 +521,10 @@
                 max="2"
                 step="0.01"
                 value="0.38"
-                disabled
               />
             </div>
-
-            <button
-              id="apply-field-btn"
-              onclick="applyFieldSettings()"
-              disabled
-            >
-              <i class="fas fa-save"></i>Apply Custom Settings
-            </button>
           </div>
 
-          <!-- Advanced Physics Settings -->
           <div class="card">
             <h2><i class="fas fa-atom"></i> Advanced Physics Settings</h2>
             <div class="control-group">
@@ -508,7 +538,6 @@
                 value="9.81"
               />
             </div>
-
             <div class="control-group">
               <label for="ball-mass">Ball Mass (kg)</label>
               <input
@@ -520,7 +549,6 @@
                 value="0.024"
               />
             </div>
-
             <div class="control-group">
               <label for="air-density">Air Density (kg/m³)</label>
               <input
@@ -532,7 +560,6 @@
                 value="1.225"
               />
             </div>
-
             <div class="control-group">
               <label for="drag-coefficient">Drag Coefficient</label>
               <input
@@ -544,9 +571,8 @@
                 value="0.5"
               />
             </div>
-
             <div class="control-group">
-              <label for="elasticity">Elasticity</label>
+              <label for="elasticity">Elasticity (Ball Restitution)</label>
               <input
                 type="number"
                 id="elasticity"
@@ -560,7 +586,6 @@
         </div>
       </div>
 
-      <!-- Mobile Bottom Navigation -->
       <div class="mobile-nav">
         <button class="nav-btn active" onclick="openTab('simulator')">
           <i class="fas fa-sliders-h"></i>
@@ -582,11 +607,10 @@
     </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-      // Loading screen handler
       window.addEventListener("load", function () {
         setTimeout(function () {
           document.getElementById("loading-screen").classList.add("fade-out");
-        }, 1500); // Show loading screen for 1.5 seconds
+        }, 1500);
       });
     </script>
   </body>

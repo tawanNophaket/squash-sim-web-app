@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import numpy as np
 import json
+import math
 
 # นำเข้าคลาส core จากโปรแกรมเดิม
 from simulation import BallPhysics, TargetArea, StrikerSettings, Simulation
@@ -8,7 +9,14 @@ from simulation import BallPhysics, TargetArea, StrikerSettings, Simulation
 app = Flask(__name__)
 
 # สร้าง simulation object สำหรับใช้งาน
-simulation = Simulation()
+# ห่อด้วย try-except เพื่อดักจับ error ตอนสร้าง instance (เช่น AttributeError ที่เคยเจอ)
+try:
+    simulation = Simulation()
+except Exception as e:
+    print(f"CRITICAL ERROR during Simulation object instantiation: {e}")
+    # ในกรณีนี้ โปรแกรมอาจจะไม่สามารถทำงานต่อได้เลย
+    # อาจจะต้องมี fallback หรือแสดงข้อความให้ผู้ใช้ทราบอย่างชัดเจน
+    simulation = None  # ตั้งเป็น None เพื่อให้ตรวจสอบได้ใน route
 
 
 @app.route("/")
@@ -18,343 +26,423 @@ def index():
 
 @app.route("/api/calculate", methods=["POST"])
 def calculate():
-    data = request.json
-
-    # รับค่าพารามิเตอร์จาก request
-    release_height = float(data.get("release_height", 2.0))
-    strike_angle = float(data.get("strike_angle", 45.0))
-    strike_velocity = float(data.get("strike_velocity", 5.25))
-    strike_height = float(data.get("strike_height", 0.35))
-    show_ideal = data.get("show_ideal", False)
-
-    # ตั้งค่า simulation
-    simulation.striker_settings.release_height = release_height
-    simulation.striker_settings.strike_angle = strike_angle
-    simulation.striker_settings.strike_velocity = strike_velocity
-    simulation.striker_settings.strike_height = strike_height
-    simulation.toggle_ideal_comparison(show_ideal)
-
-    # ตั้งค่าพารามิเตอร์ฟิสิกส์ถ้ามี
-    if "physics" in data:
-        physics = data["physics"]
-        simulation.ball_physics.gravity = float(physics.get("gravity", 9.81))
-        simulation.ball_physics.ball_mass = float(physics.get("ball_mass", 0.024))
-        simulation.air_density = float(physics.get("air_density", 1.225))
-        simulation.drag_coefficient = float(physics.get("drag_coefficient", 0.5))
-        simulation.ball_physics.elasticity = float(physics.get("elasticity", 0.4))
-
-    # คำนวณผล
-    success, message = simulation.start_simulation()
-
-    if success:
-        # ส่งข้อมูลผลลัพธ์กลับไป
-        result = {
-            "landing_distance": simulation.landing_distance,
-            "trajectory_x": simulation.trajectory_x,
-            "trajectory_y": simulation.trajectory_y,
-            "target_zone": (
-                simulation.target_zone + 1 if simulation.target_zone >= 0 else None
+    if simulation is None:
+        return (
+            jsonify(
+                {
+                    "error": "Simulation engine failed to initialize. Please check server logs."
+                }
             ),
-            "message": message,
-            "strike_time": simulation.strike_time,
-            "target_zones": [
-                (min_dist, max_dist)
-                for min_dist, max_dist in simulation.target_area.zones
-            ],
-        }
+            500,
+        )
+    try:
+        data = request.json
 
-        # ส่งข้อมูล ideal trajectory ถ้าต้องการ
-        if show_ideal:
-            result["ideal_trajectory_x"] = simulation.ideal_trajectory_x
-            result["ideal_trajectory_y"] = simulation.ideal_trajectory_y
-            result["ideal_landing_distance"] = simulation.ideal_landing_distance
+        release_height = float(data.get("release_height", 2.0))
+        strike_angle_elevation = float(data.get("strike_angle_elevation", 45.0))
+        strike_azimuth_angle = float(data.get("strike_azimuth_angle", 0.0))
+        strike_velocity = float(data.get("strike_velocity", 5.25))
+        strike_height = float(data.get("strike_height", 0.35))
+        show_ideal = data.get("show_ideal", False)
 
-        return jsonify(result)
-    else:
-        return jsonify({"error": message}), 400
+        simulation.striker_settings.release_height = release_height
+        simulation.striker_settings.strike_angle_elevation = strike_angle_elevation
+        simulation.striker_settings.strike_azimuth_angle = strike_azimuth_angle
+        simulation.striker_settings.strike_velocity = strike_velocity
+        simulation.striker_settings.strike_height = strike_height
+        simulation.toggle_ideal_comparison(show_ideal)
+
+        if "physics" in data:
+            physics_data = data["physics"]
+            simulation.ball_physics.gravity = float(physics_data.get("gravity", 9.81))
+            simulation.ball_physics.ball_mass = float(
+                physics_data.get("ball_mass", 0.024)
+            )
+            simulation.air_density = float(physics_data.get("air_density", 1.225))
+            simulation.drag_coefficient = float(
+                physics_data.get("drag_coefficient", 0.5)
+            )
+            simulation.ball_physics.elasticity = float(
+                physics_data.get("elasticity", 0.4)
+            )
+
+        success, message_or_result = simulation.start_simulation()
+
+        if success:
+            # message_or_result คือ message string ที่ได้จาก start_simulation
+            result = {
+                "landing_position_x": simulation.landing_position[0],
+                "landing_position_z": simulation.landing_position[1],
+                "landing_distance_radial": simulation.landing_distance_radial,
+                "trajectory_x": simulation.trajectory_x,
+                "trajectory_y": simulation.trajectory_y,
+                "trajectory_z": simulation.trajectory_z,
+                "target_zone": (
+                    simulation.target_zone + 1
+                    if simulation.target_zone >= 0
+                    and simulation.target_zone < len(simulation.target_area.zones)
+                    else None
+                ),
+                "message": message_or_result,  # message จาก start_simulation
+                "strike_time": simulation.strike_time,
+                "target_zones_data": simulation.target_area.get_field_dimensions()[
+                    "raw_zones_data"
+                ],
+            }
+            if show_ideal and simulation.ideal_trajectory_x:
+                result["ideal_trajectory_x"] = simulation.ideal_trajectory_x
+                result["ideal_trajectory_y"] = simulation.ideal_trajectory_y
+                result["ideal_trajectory_z"] = simulation.ideal_trajectory_z
+                result["ideal_landing_position_x"] = simulation.ideal_landing_position[
+                    0
+                ]
+                result["ideal_landing_position_z"] = simulation.ideal_landing_position[
+                    1
+                ]
+            return jsonify(result)
+        else:
+            # message_or_result คือ error message string
+            return jsonify({"error": message_or_result}), 400
+    except Exception as e:
+        app.logger.error(f"Error in /api/calculate: {e}", exc_info=True)
+        return (
+            jsonify(
+                {"error": f"An unexpected error occurred in calculate API: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/api/optimize", methods=["POST"])
 def optimize():
-    """
-    API endpoint สำหรับหาค่าที่เหมาะสมในการตีให้ลูกตกที่ระยะเป้าหมาย
-    รับพารามิเตอร์ต่างๆ จาก request และใช้ในการคำนวณ
-    """
-    data = request.json
-    target_distance = float(data.get("target_distance"))
+    if simulation is None:
+        return (
+            jsonify(
+                {
+                    "error": "Simulation engine failed to initialize. Please check server logs."
+                }
+            ),
+            500,
+        )
+    try:
+        data = request.json
+        target_x = float(data.get("target_x", 0.0))
+        target_z = float(data.get("target_z", 1.7))
+        release_height = float(data.get("release_height", 2.0))
+        strike_height = float(data.get("strike_height", 0.35))
+        current_elevation_angle = float(data.get("current_elevation_angle", 45.0))
+        current_azimuth_angle = float(data.get("current_azimuth_angle", 0.0))
+        current_velocity = float(data.get("current_velocity", 5.25))
 
-    # ดึงค่าพารามิเตอร์อื่นๆ จาก request
-    release_height = float(data.get("release_height", 2.0))
-    strike_height = float(data.get("strike_height", 0.35))
-    current_angle = float(data.get("current_angle", 45.0))
-    current_velocity = float(data.get("current_velocity", 5.25))
-
-    # ตรวจสอบ fixed_params และแปลงเป็นรูปแบบที่ถูกต้อง
-    fixed_params = None
-    if "fixed_params" in data and data["fixed_params"]:
+        fixed_params_input = data.get("fixed_params", {})  # Default to empty dict
         fixed_params = {}
-        params = data["fixed_params"]
-        if "angle" in params and params["angle"]:
-            fixed_params["angle"] = float(current_angle)
-        if "velocity" in params and params["velocity"]:
-            fixed_params["velocity"] = float(current_velocity)
+        if fixed_params_input.get("elevation_angle"):
+            fixed_params["elevation_angle"] = current_elevation_angle
+        if fixed_params_input.get("azimuth_angle"):
+            fixed_params["azimuth_angle"] = current_azimuth_angle
+        if fixed_params_input.get("velocity"):
+            fixed_params["velocity"] = current_velocity
 
-    # ตั้งค่า simulation
-    simulation.striker_settings.release_height = release_height
-    simulation.striker_settings.strike_height = strike_height
-    simulation.striker_settings.strike_angle = current_angle
-    simulation.striker_settings.strike_velocity = current_velocity
+        simulation.striker_settings.release_height = release_height
+        simulation.striker_settings.strike_height = strike_height
+        simulation.striker_settings.strike_angle_elevation = current_elevation_angle
+        simulation.striker_settings.strike_azimuth_angle = current_azimuth_angle
+        simulation.striker_settings.strike_velocity = current_velocity
 
-    # รับค่า physics parameters ถ้ามี
-    if "physics" in data:
-        physics = data["physics"]
-        simulation.ball_physics.gravity = float(physics.get("gravity", 9.81))
-        simulation.ball_physics.ball_mass = float(physics.get("ball_mass", 0.024))
-        simulation.air_density = float(physics.get("air_density", 1.225))
-        simulation.drag_coefficient = float(physics.get("drag_coefficient", 0.5))
-        simulation.ball_physics.elasticity = float(physics.get("elasticity", 0.4))
+        if "physics" in data:
+            physics_data = data["physics"]
+            simulation.ball_physics.gravity = float(physics_data.get("gravity", 9.81))
+            simulation.ball_physics.ball_mass = float(
+                physics_data.get("ball_mass", 0.024)
+            )
+            simulation.air_density = float(physics_data.get("air_density", 1.225))
+            simulation.drag_coefficient = float(
+                physics_data.get("drag_coefficient", 0.5)
+            )
+            simulation.ball_physics.elasticity = float(
+                physics_data.get("elasticity", 0.4)
+            )
 
-    # ใช้ฟังก์ชันที่มีอยู่เดิมถ้ายังไม่ได้เพิ่มฟังก์ชันใหม่
-    if not hasattr(simulation, "calculate_optimal_parameters"):
-        # ใช้ฟังก์ชันเดิมเป็น fallback
-        success, result = simulation.calculate_optimal_angle(target_distance)
-    else:
-        # ใช้ฟังก์ชันใหม่
-        success, result = simulation.calculate_optimal_parameters(
-            target_distance, fixed_params
-        )
-
-    if success:
-        angle, velocity = result
-
-        # คำนวณช่วงความคลาดเคลื่อน ±5%
-        angle_tolerance = angle * 0.05
-        velocity_tolerance = velocity * 0.05
-
-        # ทดสอบค่าที่ได้
-        simulation.striker_settings.strike_angle = angle
-        simulation.striker_settings.strike_velocity = velocity
-        simulation.start_simulation()
-        actual_distance = simulation.landing_distance
-
-        return jsonify(
-            {
-                "angle": angle,
-                "velocity": velocity,
-                "angle_min": angle - angle_tolerance,
-                "angle_max": angle + angle_tolerance,
-                "velocity_min": velocity - velocity_tolerance,
-                "velocity_max": velocity + velocity_tolerance,
-                "actual_distance": actual_distance,
-                "target_distance": target_distance,
-                "error": abs(actual_distance - target_distance),
-                "error_percent": (
-                    (abs(actual_distance - target_distance) / target_distance) * 100
-                    if target_distance > 0
-                    else 0
+        if not hasattr(simulation, "calculate_optimal_parameters"):
+            return (
+                jsonify(
+                    {
+                        "error": "Optimization function (calculate_optimal_parameters) not found in simulation core."
+                    }
                 ),
-            }
+                501,
+            )
+
+        success, opt_result_data = simulation.calculate_optimal_parameters(
+            target_x, target_z, fixed_params=fixed_params
         )
-    else:
-        return jsonify({"error": result}), 400
+
+        if success:
+            # opt_result_data is a dict from calculate_optimal_parameters
+            el_angle = opt_result_data["elevation_angle"]
+            az_angle = opt_result_data["azimuth_angle"]
+            vel = opt_result_data["velocity"]
+
+            el_angle_tolerance = el_angle * 0.05
+            az_angle_tolerance = abs(
+                az_angle * 0.05
+            )  # abs for cases where angle is negative
+            vel_tolerance = vel * 0.05
+
+            error_distance = opt_result_data["error"]
+            target_radial_dist = math.sqrt(target_x**2 + target_z**2)
+            error_percent = (
+                (error_distance / target_radial_dist) * 100
+                if target_radial_dist > 1e-6
+                else 0
+            )
+
+            return jsonify(
+                {
+                    "elevation_angle": el_angle,
+                    "azimuth_angle": az_angle,
+                    "velocity": vel,
+                    "elevation_angle_min": (
+                        el_angle - el_angle_tolerance
+                        if "elevation_angle" not in fixed_params
+                        else el_angle
+                    ),
+                    "elevation_angle_max": (
+                        el_angle + el_angle_tolerance
+                        if "elevation_angle" not in fixed_params
+                        else el_angle
+                    ),
+                    "azimuth_angle_min": (
+                        az_angle - az_angle_tolerance
+                        if "azimuth_angle" not in fixed_params
+                        else az_angle
+                    ),
+                    "azimuth_angle_max": (
+                        az_angle + az_angle_tolerance
+                        if "azimuth_angle" not in fixed_params
+                        else az_angle
+                    ),
+                    "velocity_min": (
+                        vel - vel_tolerance if "velocity" not in fixed_params else vel
+                    ),
+                    "velocity_max": (
+                        vel + vel_tolerance if "velocity" not in fixed_params else vel
+                    ),
+                    "actual_landing_x": opt_result_data["landing_x"],
+                    "actual_landing_z": opt_result_data["landing_z"],
+                    "target_x": target_x,
+                    "target_z": target_z,
+                    "error_distance": error_distance,
+                    "error_percent": error_percent,
+                    "message": "Optimal parameters found.",
+                }
+            )
+        else:
+            # opt_result_data is an error message string
+            return jsonify({"error": opt_result_data}), 400
+    except Exception as e:
+        app.logger.error(f"Error in /api/optimize: {e}", exc_info=True)
+        return (
+            jsonify(
+                {"error": f"An unexpected error occurred in optimize API: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/api/field_info", methods=["GET"])
 def field_info():
-    """ส่งข้อมูลสนามปัจจุบัน"""
-    field_dimensions = simulation.target_area.get_field_dimensions()
-    zones = [
-        (min_dist, max_dist) for min_dist, max_dist in simulation.target_area.zones
-    ]
+    if simulation is None:
+        return (
+            jsonify(
+                {
+                    "error": "Simulation engine failed to initialize. Please check server logs."
+                }
+            ),
+            500,
+        )
+    try:
+        field_data = simulation.target_area.get_field_dimensions()
 
-    return jsonify(
-        {
-            "dimensions": {
-                "min_distance": simulation.target_area.min_distance,
-                "max_distance": simulation.target_area.max_distance,
-                "zone_width": simulation.target_area.zone_width,
-                "field_type": simulation.target_area.field_type,
-            },
-            "zones": zones,
-            "available_field_types": ["standard", "extra1", "extra2"],
+        # Prepare dimensions part of the response
+        response_dimensions = {
+            "min_radial_distance": field_data.get("min_distance_overall"),
+            "max_radial_distance": field_data.get("max_distance_overall"),
+            "zone_width_radial": field_data.get("zone_width_radial"),
+            "field_type": field_data.get("field_type"),
+            "azimuth_angle_min": simulation.striker_settings.azimuth_angle_min,
+            "azimuth_angle_max": simulation.striker_settings.azimuth_angle_max,
+            "elevation_angle_min": simulation.striker_settings.angle_elevation_min,
+            "elevation_angle_max": simulation.striker_settings.angle_elevation_max,
+            "velocity_min": simulation.striker_settings.velocity_min,
+            "velocity_max": simulation.striker_settings.velocity_max,
         }
-    )
+        return jsonify(
+            {
+                "dimensions": response_dimensions,
+                "zones_data": field_data.get("raw_zones_data"),
+                "available_field_types": ["standard", "extra1", "extra2"],
+            }
+        )
+    except Exception as e:
+        app.logger.error(f"Error in /api/field_info: {e}", exc_info=True)
+        return (
+            jsonify(
+                {"error": f"An unexpected error occurred in field_info API: {str(e)}"}
+            ),
+            500,
+        )
 
 
 @app.route("/api/change_field", methods=["POST"])
 def change_field():
-    """เปลี่ยนรูปแบบสนาม"""
-    data = request.json
-    field_type = data.get("field_type", "standard")
+    if simulation is None:
+        return (
+            jsonify(
+                {
+                    "error": "Simulation engine failed to initialize. Please check server logs."
+                }
+            ),
+            500,
+        )
+    try:
+        data = request.json
+        field_type = data.get("field_type", "standard")
+        simulation.target_area.load_field_configuration(field_type)
 
-    # เปลี่ยนรูปแบบสนาม
-    simulation.target_area.load_field_configuration(field_type)
-
-    # ส่งข้อมูลสนามใหม่
-    field_dimensions = simulation.target_area.get_field_dimensions()
-    zones = [
-        (min_dist, max_dist) for min_dist, max_dist in simulation.target_area.zones
-    ]
-
-    return jsonify(
-        {
-            "dimensions": field_dimensions,
-            "zones": zones,
-            "message": f"Changed field type to {field_type}",
+        new_field_data = simulation.target_area.get_field_dimensions()
+        response_dimensions = {
+            "min_radial_distance": new_field_data.get("min_distance_overall"),
+            "max_radial_distance": new_field_data.get("max_distance_overall"),
+            "zone_width_radial": new_field_data.get("zone_width_radial"),
+            "field_type": new_field_data.get("field_type"),
+            "azimuth_angle_min": simulation.striker_settings.azimuth_angle_min,
+            "azimuth_angle_max": simulation.striker_settings.azimuth_angle_max,
+            "elevation_angle_min": simulation.striker_settings.angle_elevation_min,
+            "elevation_angle_max": simulation.striker_settings.angle_elevation_max,
+            "velocity_min": simulation.striker_settings.velocity_min,
+            "velocity_max": simulation.striker_settings.velocity_max,
         }
-    )
+        return jsonify(
+            {
+                "dimensions": response_dimensions,
+                "zones_data": new_field_data.get("raw_zones_data"),
+                "message": f"Changed field type to {field_type}",
+            }
+        )
+    except Exception as e:
+        app.logger.error(f"Error in /api/change_field: {e}", exc_info=True)
+        return (
+            jsonify(
+                {"error": f"An unexpected error occurred in change_field API: {str(e)}"}
+            ),
+            500,
+        )
 
 
+# Sensitivity analysis might need more robust error handling too if kept
 @app.route("/api/sensitivity_analysis", methods=["POST"])
 def sensitivity_analysis():
-    """ทำการวิเคราะห์ความไว (sensitivity analysis)"""
-    data = request.json
-    base_angle = float(data.get("base_angle", 45.0))
-    variation = float(data.get("variation", 5.0))
-
-    # ตั้งค่าอื่นๆ จาก request
-    release_height = float(data.get("release_height", 2.0))
-    strike_velocity = float(data.get("strike_velocity", 5.25))
-
-    # ตั้งค่า simulation
-    simulation.striker_settings.release_height = release_height
-    simulation.striker_settings.strike_velocity = strike_velocity
-
-    # สร้างชุดมุมและคำนวณระยะตก
-    angles = np.linspace(base_angle - variation, base_angle + variation, 21).tolist()
-    distances = []
-
-    for angle in angles:
-        simulation.striker_settings.strike_angle = angle
-        simulation.start_simulation()
-        distances.append(simulation.landing_distance)
-
-    # คำนวณค่าต่างๆ สำหรับการวิเคราะห์
-    base_distance = distances[len(angles) // 2]  # ระยะที่มุมกลาง
-
-    # หาระยะที่ ±5% ของมุม
-    idx_minus_5 = next((i for i, a in enumerate(angles) if a >= base_angle * 0.95), 0)
-    idx_plus_5 = next(
-        (i for i, a in enumerate(angles) if a >= base_angle * 1.05), len(angles) - 1
-    )
-
-    distance_minus_5 = distances[idx_minus_5]
-    distance_plus_5 = distances[idx_plus_5]
-
-    # คำนวณความแตกต่างของระยะ
-    distance_range = abs(distance_plus_5 - distance_minus_5)
-    distance_percent = (
-        (distance_range / base_distance) * 100 if base_distance > 0 else 0
-    )
-
-    sensitivity_results = {
-        "angles": angles,
-        "distances": distances,
-        "base_distance": base_distance,
-        "minus_5_percent": {"angle": base_angle * 0.95, "distance": distance_minus_5},
-        "plus_5_percent": {"angle": base_angle * 1.05, "distance": distance_plus_5},
-        "distance_range": distance_range,
-        "distance_percent": distance_percent,
-    }
-
-    return jsonify(sensitivity_results)
-
-
-@app.route("/api/test_all_zones", methods=["POST"])
-def test_all_zones():
-    """ทดสอบการหาค่าที่เหมาะสมสำหรับทุกโซน"""
-    data = request.json
-
-    # ดึงค่าพารามิเตอร์จาก request
-    release_height = float(data.get("release_height", 2.0))
-
-    # ตั้งค่า simulation
-    simulation.striker_settings.release_height = release_height
-
-    # รับโซนทั้งหมด
-    zones = simulation.target_area.zones
-
-    # สร้าง array เก็บผลลัพธ์
-    results = []
-
-    # ทดสอบแต่ละโซน
-    for i, (min_dist, max_dist) in enumerate(zones):
-        # คำนวณระยะเป้าหมาย (จุดกึ่งกลางของโซน)
-        target_distance = (min_dist + max_dist) / 2
-
-        # หาค่าที่เหมาะสม
-        success, result = simulation.calculate_optimal_angle(target_distance)
-
-        if success:
-            angle, velocity = result
-
-            # ทดสอบผลลัพธ์
-            simulation.striker_settings.strike_angle = angle
-            simulation.striker_settings.strike_velocity = velocity
-            simulation.start_simulation()
-
-            actual_distance = simulation.landing_distance
-            error = abs(actual_distance - target_distance)
-            error_percent = (
-                (error / target_distance) * 100 if target_distance > 0 else 0
-            )
-            within_tolerance = error_percent <= 5.0
-
-            # เก็บผลลัพธ์
-            results.append(
+    if simulation is None:
+        return (
+            jsonify(
                 {
-                    "zone": i + 1,
-                    "range": [min_dist, max_dist],
-                    "target": target_distance,
-                    "angle": angle,
-                    "velocity": velocity,
-                    "actual_distance": actual_distance,
-                    "error": error,
-                    "error_percent": error_percent,
-                    "within_tolerance": within_tolerance,
+                    "error": "Simulation engine failed to initialize. Please check server logs."
                 }
+            ),
+            500,
+        )
+    try:
+        data = request.json
+        base_elevation_angle = float(data.get("base_elevation_angle", 45.0))
+        base_azimuth_angle = float(data.get("base_azimuth_angle", 0.0))
+        variation_elevation = float(data.get("variation_elevation", 5.0))
+
+        release_height = float(data.get("release_height", 2.0))
+        strike_velocity = float(data.get("strike_velocity", 5.25))
+        strike_height = float(data.get("strike_height", 0.35))
+
+        # Directly use current simulation's physics settings for consistency
+        # simulation.striker_settings.release_height = release_height (No, use current sim settings)
+        # simulation.striker_settings.strike_velocity = strike_velocity
+        # simulation.striker_settings.strike_height = strike_height
+        # simulation.striker_settings.strike_azimuth_angle = base_azimuth_angle
+
+        elevation_angles = np.linspace(
+            base_elevation_angle - variation_elevation,
+            base_elevation_angle + variation_elevation,
+            21,
+        ).tolist()
+        landing_positions_x = []
+        landing_positions_z = []
+        radial_distances = []
+
+        # Store original settings to restore later
+        original_el = simulation.striker_settings.strike_angle_elevation
+        original_az = simulation.striker_settings.strike_azimuth_angle
+
+        simulation.striker_settings.strike_azimuth_angle = (
+            base_azimuth_angle  # Fix azimuth for this analysis
+        )
+
+        for el_angle in elevation_angles:
+            # Use get_landing_position with current simulation's striker settings (release_h, strike_h, velocity)
+            # but vary the elevation angle for the analysis.
+            lx, lz = simulation.ball_physics.get_landing_position(
+                simulation.striker_settings.release_height,  # Use current sim setting
+                simulation.striker_settings.strike_velocity,  # Use current sim setting
+                el_angle,  # Vary this
+                base_azimuth_angle,  # Fixed for analysis
+                simulation.striker_settings.strike_height,  # Use current sim setting
             )
-        else:
-            # ถ้าหาค่าที่เหมาะสมไม่สำเร็จ
-            results.append(
+            landing_positions_x.append(lx)
+            landing_positions_z.append(lz)
+            radial_distances.append(
+                math.sqrt(lx**2 + lz**2) if lx is not None and lz is not None else None
+            )
+
+        # Restore original settings
+        simulation.striker_settings.strike_angle_elevation = original_el
+        simulation.striker_settings.strike_azimuth_angle = original_az
+
+        base_radial_distance = None
+        if (
+            len(radial_distances) > len(elevation_angles) // 2
+            and radial_distances[len(elevation_angles) // 2] is not None
+        ):
+            base_radial_distance = radial_distances[len(elevation_angles) // 2]
+
+        sensitivity_results = {
+            "elevation_angles": elevation_angles,
+            "landing_positions_x": landing_positions_x,
+            "landing_positions_z": landing_positions_z,
+            "radial_distances": radial_distances,
+            "base_radial_distance": base_radial_distance,
+        }
+        return jsonify(sensitivity_results)
+    except Exception as e:
+        app.logger.error(f"Error in /api/sensitivity_analysis: {e}", exc_info=True)
+        return (
+            jsonify(
                 {
-                    "zone": i + 1,
-                    "range": [min_dist, max_dist],
-                    "target": target_distance,
-                    "error": "Optimization failed",
+                    "error": f"An unexpected error occurred in sensitivity_analysis API: {str(e)}"
                 }
-            )
-
-    # คำนวณสรุปสถิติ
-    successful_zones = sum(
-        1 for r in results if isinstance(r.get("error"), (int, float))
-    )
-    total_error = sum(
-        r.get("error", 0) for r in results if isinstance(r.get("error"), (int, float))
-    )
-    max_error = max(
-        (
-            r.get("error", 0)
-            for r in results
-            if isinstance(r.get("error"), (int, float))
-        ),
-        default=0,
-    )
-    within_tolerance_count = sum(1 for r in results if r.get("within_tolerance", False))
-
-    summary = {
-        "successful_zones": successful_zones,
-        "total_zones": len(zones),
-        "avg_error": total_error / successful_zones if successful_zones > 0 else 0,
-        "max_error": max_error,
-        "within_tolerance_count": within_tolerance_count,
-        "tolerance_percent": (
-            (within_tolerance_count / len(zones)) * 100 if len(zones) > 0 else 0
-        ),
-    }
-
-    return jsonify({"results": results, "summary": summary})
+            ),
+            500,
+        )
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=True)
+    # Basic logging setup for Flask development server
+    import logging
+
+    logging.basicConfig(level=logging.INFO)  # Show info level logs
+    # For more detailed debug logs from Flask itself if needed:
+    # app.logger.setLevel(logging.DEBUG)
+
+    if simulation is None:
+        print(
+            "Failed to start the Flask application because the Simulation object could not be initialized."
+        )
+    else:
+        app.run(host="0.0.0.0", port=10000, debug=True)

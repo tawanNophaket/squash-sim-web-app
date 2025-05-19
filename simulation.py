@@ -13,1081 +13,872 @@ class BallPhysics:
     """Class to handle the physics calculations of the ball's trajectory"""
 
     def __init__(self, gravity=9.81, ball_mass=0.024, elasticity=0.4):
-        """
-        Initialize physics parameters
-
-        Args:
-            gravity (float): Acceleration due to gravity (m/s^2)
-            ball_mass (float): Mass of the squash ball (kg)
-            elasticity (float): Coefficient of restitution for the ball
-        """
         self.gravity = gravity
         self.ball_mass = ball_mass
         self.elasticity = elasticity
-        self.time_step = 0.01  # Time step for simulation (seconds)
-        self.ideal_mode = False  # Flag for ideal/non-ideal calculations
-
-        # Realistic air resistance parameters
-        self.air_density = 1.225  # kg/m^3
-        self.drag_coefficient = 0.5  # Dimensionless
-        self.cross_sectional_area = math.pi * (
-            0.04**2
-        )  # m^2 (based on squash ball diameter ~4cm)
+        self.time_step = 0.01
+        self.ideal_mode = False
+        self.air_density = 1.225
+        self.drag_coefficient = 0.5
+        self.cross_sectional_area = math.pi * (0.04**2)
 
     def calculate_trajectory(
         self,
         release_height,
         strike_velocity,
-        strike_angle,
+        strike_angle_elevation,
+        strike_azimuth_angle,
         strike_height=0.35,
         time_limit=5.0,
     ):
-        """
-        Calculate the trajectory of the ball after being struck
+        angle_rad_elevation = math.radians(strike_angle_elevation)
+        angle_rad_azimuth = math.radians(strike_azimuth_angle)
 
-        Args:
-            release_height (float): Height from which the ball is released (m)
-            strike_velocity (float): Velocity imparted by the striker (m/s)
-            strike_angle (float): Angle at which the ball is struck (degrees)
-            strike_height (float): Height at which the ball is struck (m)
-            time_limit (float): Maximum time to simulate (seconds)
+        v0x = (
+            strike_velocity
+            * math.cos(angle_rad_elevation)
+            * math.sin(angle_rad_azimuth)
+        )
+        v0y = strike_velocity * math.sin(angle_rad_elevation)
+        v0z = (
+            strike_velocity
+            * math.cos(angle_rad_elevation)
+            * math.cos(angle_rad_azimuth)
+        )
 
-        Returns:
-            tuple: Lists of x positions, y positions, and times
-        """
-        # Convert angle to radians
-        angle_rad = math.radians(strike_angle)
-
-        # Initial velocity components
-        vx = strike_velocity * math.cos(angle_rad)
-        vy = strike_velocity * math.sin(angle_rad)
-
-        # Initial position (ball is hit at x=0, and y=strike_height)
-        x0 = 0.0
-        y0 = strike_height
-
-        # Lists to store trajectory
-        x_positions = [x0]
-        y_positions = [y0]
-        times = [0.0]
-
-        # Current state
-        x = x0
-        y = y0
+        x0, y0, z0 = 0.0, strike_height, 0.0
+        x_positions, y_positions, z_positions, times = [x0], [y0], [z0], [0.0]
+        x, y, z = x0, y0, z0
+        vx, vy, vz = v0x, v0y, v0z
         t = 0.0
 
-        # Simulation loop
-        while t < time_limit and y >= 0:
-            # Update time
+        while t < time_limit and y >= -0.01:
             t += self.time_step
-
-            # Calculate air resistance if not in ideal mode
+            ax_drag, ay_drag, az_drag = 0, 0, 0
             if not self.ideal_mode:
-                # Calculate speed
-                speed = math.sqrt(vx**2 + vy**2)
+                speed_sq = vx**2 + vy**2 + vz**2
+                if speed_sq > 1e-9:
+                    speed = math.sqrt(speed_sq)
+                    drag_force_magnitude = (
+                        0.5
+                        * self.air_density
+                        * speed_sq
+                        * self.drag_coefficient
+                        * self.cross_sectional_area
+                    )
+                    ax_drag = -drag_force_magnitude * (vx / speed) / self.ball_mass
+                    ay_drag = -drag_force_magnitude * (vy / speed) / self.ball_mass
+                    az_drag = -drag_force_magnitude * (vz / speed) / self.ball_mass
 
-                # Calculate drag force magnitude (0.5 * density * speed^2 * drag_coef * area)
-                drag_force_magnitude = (
-                    0.5
-                    * self.air_density
-                    * speed**2
-                    * self.drag_coefficient
-                    * self.cross_sectional_area
-                )
+            vx += ax_drag * self.time_step
+            vy += (ay_drag - self.gravity) * self.time_step
+            vz += az_drag * self.time_step
 
-                # Calculate drag force components
-                if speed > 0:  # Avoid division by zero
-                    drag_force_x = -drag_force_magnitude * vx / speed
-                    drag_force_y = -drag_force_magnitude * vy / speed
+            prev_x, prev_y, prev_z = x, y, z
+            x += vx * self.time_step
+            y += vy * self.time_step
+            z += vz * self.time_step
 
-                    # Calculate drag acceleration
-                    drag_acc_x = drag_force_x / self.ball_mass
-                    drag_acc_y = drag_force_y / self.ball_mass
-
-                    # Apply drag acceleration to velocity
-                    vx += drag_acc_x * self.time_step
-                    vy += drag_acc_y * self.time_step
-
-            # Update velocity due to gravity
-            vy = vy - self.gravity * self.time_step
-
-            # Update position
-            x = x + vx * self.time_step
-            y = y + vy * self.time_step
-
-            # If ball hits the ground, calculate bounce (if not the end point)
-            if y <= 0:
-                y = 0
-
-                # For visualization purposes, we allow one bounce
-                # In the actual simulation we only care about the first ground contact
-                break
-
-            # Store positions
             x_positions.append(x)
             y_positions.append(y)
+            z_positions.append(z)
             times.append(t)
 
-        return x_positions, y_positions, times
+            if y < 0 and prev_y >= 0:
+                fraction = prev_y / (prev_y - y) if (prev_y - y) != 0 else 0
+                interp_x = prev_x - fraction * (prev_x - x)
+                interp_z = prev_z - fraction * (prev_z - z)
+
+                x_positions[-1] = interp_x
+                y_positions[-1] = 0.0
+                z_positions[-1] = interp_z
+                break
+
+        if y_positions and y_positions[-1] < 0:
+            y_positions[-1] = 0.0
+        return x_positions, y_positions, z_positions, times
 
     def calculate_trajectory_ideal(
         self,
         release_height,
         strike_velocity,
-        strike_angle,
+        strike_angle_elevation,
+        strike_azimuth_angle,
         strike_height=0.35,
         time_limit=5.0,
     ):
-        """
-        Calculate the trajectory of the ball after being struck using ideal physics (no air resistance)
-
-        Args:
-            release_height (float): Height from which the ball is released (m)
-            strike_velocity (float): Velocity imparted by the striker (m/s)
-            strike_angle (float): Angle at which the ball is struck (degrees)
-            strike_height (float): Height at which the ball is struck (m)
-            time_limit (float): Maximum time to simulate (seconds)
-
-        Returns:
-            tuple: Lists of x positions, y positions, and times
-        """
-        # Temporarily set to ideal mode
         old_mode = self.ideal_mode
         self.ideal_mode = True
-
-        # Calculate trajectory
         result = self.calculate_trajectory(
-            release_height, strike_velocity, strike_angle, strike_height, time_limit
+            release_height,
+            strike_velocity,
+            strike_angle_elevation,
+            strike_azimuth_angle,
+            strike_height,
+            time_limit,
         )
-
-        # Restore previous mode
         self.ideal_mode = old_mode
-
         return result
 
-    def simulate_free_fall(self, release_height, time_limit=5.0):
-        """
-        Simulate the free fall of the ball before it's struck
-
-        Args:
-            release_height (float): Height from which the ball is released (m)
-            time_limit (float): Maximum time to simulate (seconds)
-
-        Returns:
-            tuple: Lists of y positions and times, and the time at which the ball should be struck
-        """
-        # Initial position
+    def simulate_free_fall(self, release_height, strike_height_target, time_limit=5.0):
         y0 = release_height
+        vy_fall = 0.0
+        y_positions_fall = [y0]
+        times_fall = [0.0]
+        y_current = y0
+        t_current = 0.0
 
-        # Initial velocity
-        vy = 0.0
+        while t_current < time_limit and y_current > strike_height_target:
+            t_current += self.time_step
+            vy_fall -= self.gravity * self.time_step
+            y_next = y_current + vy_fall * self.time_step
 
-        # Lists to store trajectory
-        y_positions = [y0]
-        times = [0.0]
+            if y_next < strike_height_target and vy_fall != 0:
+                t_to_target = (strike_height_target - y_current) / vy_fall
+                t_current += t_to_target
+                y_current = strike_height_target
+                y_positions_fall.append(y_current)
+                times_fall.append(t_current)
+                break
 
-        # Current state
-        y = y0
-        t = 0.0
+            y_current = y_next
+            if y_current < 0:
+                y_current = 0
 
-        # Simulation loop
-        while t < time_limit and y > 0.1:  # Stop when close to striker level
-            # Update time
-            t += self.time_step
+            y_positions_fall.append(y_current)
+            times_fall.append(t_current)
+            if y_current == strike_height_target or y_current == 0:
+                break
 
-            # Update velocity due to gravity
-            vy = vy + self.gravity * self.time_step
+        if (
+            y_positions_fall[-1] != strike_height_target
+            and y_current == strike_height_target
+        ):
+            pass
+        elif (
+            y_current > strike_height_target
+            and y_positions_fall[-1] > strike_height_target
+            and vy_fall != 0
+        ):
+            t_to_target = (strike_height_target - y_positions_fall[-1]) / vy_fall
+            if t_to_target > 0 and t_to_target < self.time_step * 2:
+                corrected_time = times_fall[-1] + t_to_target
+                if corrected_time > times_fall[-1]:
+                    times_fall.append(corrected_time)
+                    y_positions_fall.append(strike_height_target)
+                    t_current = times_fall[-1]
+        return y_positions_fall, times_fall, t_current
 
-            # Update position
-            y = y - vy * self.time_step
-
-            # Store positions
-            y_positions.append(y)
-            times.append(t)
-
-        # Return the fall trajectory and the time when the ball reaches the strike point
-        return y_positions, times, t
-
-    def get_landing_distance(
-        self, release_height, strike_velocity, strike_angle, strike_height=None
+    def get_landing_position(
+        self,
+        release_height,
+        strike_velocity,
+        strike_angle_elevation,
+        strike_azimuth_angle,
+        strike_height=None,
     ):
-        """
-        Calculate the landing distance of the ball
-
-        Args:
-            release_height (float): Height from which the ball is released (m)
-            strike_velocity (float): Velocity imparted by the striker (m/s)
-            strike_angle (float): Angle at which the ball is struck (degrees)
-            strike_height (float, optional): Height at which the ball is struck (m)
-
-        Returns:
-            float: The distance where the ball lands
-        """
         if strike_height is None:
-            strike_height = 0.35  # Default value if not provided
-
-        x_pos, y_pos, _ = self.calculate_trajectory(
-            release_height, strike_velocity, strike_angle, strike_height
+            strike_height = 0.35
+        x_pos, _, z_pos, _ = self.calculate_trajectory(
+            release_height,
+            strike_velocity,
+            strike_angle_elevation,
+            strike_azimuth_angle,
+            strike_height,
         )
-        if len(x_pos) > 0:
-            return x_pos[-1]
-        return 0.0
+        return (x_pos[-1], z_pos[-1]) if x_pos and z_pos else (0.0, 0.0)
 
-    def get_landing_distance_ideal(
-        self, release_height, strike_velocity, strike_angle, strike_height=None
+    def get_landing_position_ideal(
+        self,
+        release_height,
+        strike_velocity,
+        strike_angle_elevation,
+        strike_azimuth_angle,
+        strike_height=None,
     ):
-        """
-        Calculate the landing distance of the ball using ideal physics (no air resistance)
-
-        Args:
-            release_height (float): Height from which the ball is released (m)
-            strike_velocity (float): Velocity imparted by the striker (m/s)
-            strike_angle (float): Angle at which the ball is struck (degrees)
-            strike_height (float, optional): Height at which the ball is struck (m)
-
-        Returns:
-            float: The distance where the ball lands
-        """
-        if strike_height is None:
-            strike_height = 0.35  # Default value if not provided
-
-        # Temporarily set to ideal mode
         old_mode = self.ideal_mode
         self.ideal_mode = True
-
-        # Calculate landing distance
-        x_pos, y_pos, _ = self.calculate_trajectory(
-            release_height, strike_velocity, strike_angle, strike_height
+        res_x, res_z = self.get_landing_position(
+            release_height,
+            strike_velocity,
+            strike_angle_elevation,
+            strike_azimuth_angle,
+            strike_height,
         )
-
-        # Restore previous mode
         self.ideal_mode = old_mode
-
-        if len(x_pos) > 0:
-            return x_pos[-1]
-        return 0.0
+        return res_x, res_z
 
 
 class TargetArea:
-    """Class representing the target area on the field"""
-
     def __init__(self):
-        # Default target configuration (from the course specification)
-        self.min_distance = 0.75  # 75cm
-        self.max_distance = 2.65  # 265cm
-        self.zone_width = 0.38  # 38cm
+        self.min_distance = 0.75
+        self.max_distance = 2.65
+        self.zone_width = 0.38
         self.field_type = "standard"
-
-        # Custom zones (for non-uniform width zones)
         self.custom_zones = []
-
-        # Calculate zones
+        self.colors = [
+            "#FF6347",
+            "#FFD700",
+            "#ADFF2F",
+            "#87CEEB",
+            "#9370DB",  # Tomato, Gold, GreenYellow, SkyBlue, MediumPurple
+            "#FFA07A",
+            "#FF8C00",
+            "#32CD32",
+            "#00CED1",
+            "#BA55D3",  # LightSalmon, DarkOrange, LimeGreen, DarkTurquoise, MediumOrchid
+            "#F08080",
+            "#FF69B4",
+            "#7FFF00",
+            "#40E0D0",
+            "#8A2BE2",  # LightCoral, HotPink, Chartreuse, Turquoise, BlueViolet
+        ]
         self.zones = self._calculate_zones()
 
-        # Colors for each zone
-        self.colors = [
-            "red",
-            "blue",
-            "green",
-            "yellow",
-            "purple",
-            "orange",
-            "cyan",
-            "magenta",
-            "lime",
-            "pink",
-        ]
+    def _calculate_target_point_for_sector(self, r_min, r_max, az_min_deg, az_max_deg):
+        mid_r = (r_min + r_max) / 2
+        mid_az_deg = (az_min_deg + az_max_deg) / 2
+        mid_az_rad = math.radians(mid_az_deg)
+        target_x = mid_r * math.sin(mid_az_rad)
+        target_z = mid_r * math.cos(mid_az_rad)
+        return target_x, target_z
 
     def _calculate_zones(self):
-        """Calculate the zone boundaries based on the field configuration"""
-        # If we have custom zones defined (for extra maps), use those
-        if self.custom_zones and self.field_type != "standard":
-            return self.custom_zones
-
-        # Otherwise calculate uniform zones based on zone_width
         zones = []
-        current_distance = self.min_distance
+        if self.field_type == "extra2":
+            # Defining cells for extra2 based on Rubric (Page 4, bottom left image)
+            # Radii from image (mm): R1100, R1500, R1850, R2200, R2550
+            # Colors from image (approx, inner to outer): Orange/Red-ish, Yellow, Green, Light Blue
+            # Central Light Blue sector: 34 degrees wide (-17 to +17 deg)
 
+            # Cell definitions: [id, r_min (m), r_max (m), az_min (deg), az_max (deg), color_index]
+            # We can further divide these colored bands into smaller "ช่อง" if needed.
+            # For now, each colored band is one "cell".
+            extra2_cells_params = [
+                (
+                    "E2_Cell1_Orange",
+                    1.10,
+                    1.50,
+                    -30,
+                    30,
+                    0,
+                ),  # Wider angle for inner zone
+                ("E2_Cell2_Yellow", 1.50, 1.85, -25, 25, 1),
+                ("E2_Cell3_Green", 1.85, 2.20, -20, 20, 2),
+                ("E2_Cell4_LBlue", 2.20, 2.55, -17, 17, 3),
+            ]
+            for i, params in enumerate(extra2_cells_params):
+                target_x, target_z = self._calculate_target_point_for_sector(
+                    params[1], params[2], params[3], params[4]
+                )
+                zones.append(
+                    {
+                        "id": params[0],
+                        "shape": "sector",
+                        "r_min": params[1],
+                        "r_max": params[2],
+                        "az_min": params[3],
+                        "az_max": params[4],
+                        "color": self.colors[params[5] % len(self.colors)],
+                        "target_point": {"x": target_x, "z": target_z},
+                    }
+                )
+            return zones
+
+        elif self.field_type == "extra1":
+            current_distance = self.min_distance
+            idx = 0
+            while current_distance < self.max_distance:
+                next_distance = min(
+                    current_distance + self.zone_width, self.max_distance
+                )
+                target_z_val = (current_distance + next_distance) / 2
+                zones.append(
+                    {
+                        "id": f"E1_Z{idx+1}",
+                        "shape": "radial1d",
+                        "r_min": current_distance,
+                        "r_max": next_distance,
+                        "color": self.colors[idx % len(self.colors)],
+                        "target_point": {
+                            "x": 0.0,
+                            "z": target_z_val,
+                        },  # Target is straight ahead
+                    }
+                )
+                current_distance = next_distance
+                idx += 1
+            return zones
+
+        # Standard 1D radial zones
+        current_distance = self.min_distance
+        idx = 0
         while current_distance < self.max_distance:
             next_distance = min(current_distance + self.zone_width, self.max_distance)
-            zones.append((current_distance, next_distance))
+            target_z_val = (current_distance + next_distance) / 2
+            zones.append(
+                {
+                    "id": f"STD_Z{idx+1}",
+                    "shape": "radial1d",
+                    "r_min": current_distance,
+                    "r_max": next_distance,
+                    "color": self.colors[idx % len(self.colors)],
+                    "target_point": {
+                        "x": 0.0,
+                        "z": target_z_val,
+                    },  # Target is straight ahead
+                }
+            )
             current_distance = next_distance
-
+            idx += 1
         return zones
 
-    def get_zone_for_distance(self, distance):
-        """
-        Get the zone index for a given distance
+    def get_zone_for_position(self, x, z):
+        landing_r = math.sqrt(x**2 + z**2)
+        landing_azimuth = math.degrees(math.atan2(x, z))
 
-        Args:
-            distance (float): The landing distance in meters
-
-        Returns:
-            int: The zone index (0-based) or -1 if not in any zone
-        """
-        for i, (min_dist, max_dist) in enumerate(self.zones):
-            if min_dist <= distance < max_dist:
-                return i
+        for i, zone_def in enumerate(self.zones):
+            if not isinstance(zone_def, dict):
+                continue
+            shape = zone_def.get("shape")
+            if shape == "sector":
+                if zone_def.get("r_min", -float("inf")) <= landing_r < zone_def.get(
+                    "r_max", float("inf")
+                ) and zone_def.get("az_min", -180) <= landing_azimuth < zone_def.get(
+                    "az_max", 180
+                ):
+                    return i
+            elif shape == "rect":
+                if zone_def.get("x_min", -float("inf")) <= x < zone_def.get(
+                    "x_max", float("inf")
+                ) and zone_def.get("z_min", -float("inf")) <= z < zone_def.get(
+                    "z_max", float("inf")
+                ):
+                    return i
+            elif shape == "radial1d":
+                if (
+                    zone_def.get("r_min", -float("inf"))
+                    <= landing_r
+                    < zone_def.get("r_max", float("inf"))
+                ):
+                    return i
         return -1
 
     def load_field_configuration(self, field_type="standard"):
-        """
-        Load field configuration based on type
-
-        Args:
-            field_type (str): The type of field configuration
-        """
         self.field_type = field_type
         self.custom_zones = []
 
         if field_type == "standard":
-            # Standard field
             self.min_distance = 0.75
             self.max_distance = 2.65
             self.zone_width = 0.38
         elif field_type == "extra1":
-            # Extra field 1 with extended ranges
             self.min_distance = 0.75
             self.max_distance = 4.55
-            self.zone_width = 0.38  # Default width, though we use custom zones
-
-            # Define the custom zones for extra1 (non-uniform width)
-            self.custom_zones = [
-                # Original zones (same as standard)
-                (0.75, 1.13),  # 0.75 + 0.38 = 1.13
-                (1.13, 1.51),  # 1.13 + 0.38 = 1.51
-                (1.51, 1.89),  # 1.51 + 0.38 = 1.89
-                (1.89, 2.27),  # 1.89 + 0.38 = 2.27
-                (2.27, 2.65),  # 2.27 + 0.38 = 2.65
-                # Additional extended zones
-                (2.65, 3.03),  # 2.65 + 0.38 = 3.03
-                (3.03, 3.41),  # 3.03 + 0.38 = 3.41
-                (3.41, 3.79),  # 3.41 + 0.38 = 3.79
-                (3.79, 4.17),  # 3.79 + 0.38 = 4.17
-                (4.17, 4.55),  # 4.17 + 0.38 = 4.55
-            ]
-        elif field_type == "extra2":
-            # Extra field 2 (same distances as standard but angle will be added later)
-            self.min_distance = 0.75
-            self.max_distance = 2.65
             self.zone_width = 0.38
+        elif field_type == "extra2":
+            # min_distance, max_distance for extra2 will be derived from its zones in get_field_dimensions
+            pass
 
-        # Recalculate zones
         self.zones = self._calculate_zones()
 
     def get_field_dimensions(self):
-        """Get the field dimensions as a dictionary"""
+        overall_min_r_val = float("inf")
+        overall_max_r_val = float("-inf")
+        has_radial_data = False
+
+        if self.zones:
+            for z_def in self.zones:
+                if not isinstance(z_def, dict):
+                    continue
+                if "r_min" in z_def:
+                    overall_min_r_val = min(overall_min_r_val, z_def["r_min"])
+                    has_radial_data = True
+                if "r_max" in z_def:
+                    overall_max_r_val = max(overall_max_r_val, z_def["r_max"])
+                    has_radial_data = True
+
+        if not has_radial_data or overall_min_r_val == float("inf"):
+            if self.field_type == "standard" or self.field_type == "extra1":
+                overall_min_r_val = self.min_distance
+                overall_max_r_val = self.max_distance
+            else:
+                overall_min_r_val = 0.0
+                overall_max_r_val = 3.0
+
         return {
-            "min_distance": self.min_distance,
-            "max_distance": self.max_distance,
-            "zone_width": self.zone_width,
+            "min_distance_overall": overall_min_r_val,
+            "max_distance_overall": overall_max_r_val,
+            "zone_width_radial": (
+                self.zone_width
+                if (self.field_type == "standard" or self.field_type == "extra1")
+                else None
+            ),
             "field_type": self.field_type,
+            "raw_zones_data": self.zones if self.zones else [],
         }
 
     def set_field_dimensions(
         self, min_distance, max_distance, zone_width, field_type="custom"
     ):
-        """Set custom field dimensions"""
         self.min_distance = min_distance
         self.max_distance = max_distance
         self.zone_width = zone_width
         self.field_type = field_type
-        self.custom_zones = []  # Clear any custom zones when setting new dimensions
-
-        # Recalculate zones
+        self.custom_zones = []
         self.zones = self._calculate_zones()
 
 
 class StrikerSettings:
-    """Class to manage striker settings and parameters"""
-
     def __init__(self):
-        """Initialize with default values"""
-        # Available release heights (m)
-        self.available_heights = [1.0, 1.5, 2.0]  # 100cm, 150cm, 200cm
-
-        # Current settings
-        self.release_height = 2.0  # Default to 2.0 meters
-        self.strike_height = 0.35  # Height at which the ball is struck (m)
-        self.strike_angle = 45.0  # Degrees
-        self.strike_velocity = 5.25  # m/s
-        self.delay_time = 0.37  # seconds
-        self.striker_power = 50.0  # Percentage
-
-        # Limits for settings
-        self.angle_min = 10.0
-        self.angle_max = 80.0
+        self.available_heights = [1.0, 1.5, 2.0]
+        self.release_height = 2.0
+        self.strike_height = 0.35
+        self.strike_angle_elevation = 45.0
+        self.strike_azimuth_angle = 0.0
+        self.strike_velocity = 5.25
+        self.delay_time = 0.37
+        self.striker_power = 50.0
+        self.angle_elevation_min = 10.0
+        self.angle_elevation_max = 80.0
+        self.azimuth_angle_min = -45.0
+        self.azimuth_angle_max = 45.0
         self.velocity_min = 1.0
         self.velocity_max = 20.0
         self.power_min = 10.0
         self.power_max = 100.0
         self.delay_min = 0.0
         self.delay_max = 1.0
-        self.strike_height_min = 0.01  # 1cm
-        self.strike_height_max = 0.5  # 50cm
+        self.strike_height_min = 0.01
+        self.strike_height_max = 0.5
 
     def convert_power_to_velocity(self):
-        """Convert power percentage to strike velocity"""
-        # Linear mapping from power percentage to velocity range
+        if self.power_max == self.power_min:
+            return self.velocity_min
         power_factor = (self.striker_power - self.power_min) / (
             self.power_max - self.power_min
         )
-        velocity = self.velocity_min + power_factor * (
+        power_factor = max(0, min(1, power_factor))
+        return self.velocity_min + power_factor * (
             self.velocity_max - self.velocity_min
         )
-        return velocity
 
     def validate_settings(self):
-        """Validate that all settings are within allowed ranges"""
-        # Check release height
         if self.release_height not in self.available_heights:
             return (
                 False,
                 f"Release height must be one of {self.available_heights} meters",
             )
-
-        # Check strike height
         if not (self.strike_height_min <= self.strike_height <= self.strike_height_max):
             return (
                 False,
-                f"Strike height must be between {self.strike_height_min} and {self.strike_height_max} meters",
+                f"Strike height: {self.strike_height_min:.2f}-{self.strike_height_max:.2f} m",
             )
-
-        # Check angle
-        if not (self.angle_min <= self.strike_angle <= self.angle_max):
+        if not (
+            self.angle_elevation_min
+            <= self.strike_angle_elevation
+            <= self.angle_elevation_max
+        ):
             return (
                 False,
-                f"Strike angle must be between {self.angle_min} and {self.angle_max} degrees",
+                f"Elevation: {self.angle_elevation_min:.1f}-{self.angle_elevation_max:.1f} deg",
             )
-
-        # Check velocity
-        if not (self.velocity_min <= self.strike_velocity <= self.velocity_max):
+        if not (
+            self.azimuth_angle_min
+            <= self.strike_azimuth_angle
+            <= self.azimuth_angle_max
+        ):
             return (
                 False,
-                f"Strike velocity must be between {self.velocity_min} and {self.velocity_max} m/s",
+                f"Azimuth: {self.azimuth_angle_min:.1f}-{self.azimuth_angle_max:.1f} deg",
             )
 
-        # Check power
+        vel_to_check = self.strike_velocity
+        if vel_to_check <= 0 and self.striker_power > 0:
+            vel_to_check = self.convert_power_to_velocity()
+        elif vel_to_check <= 0:
+            vel_to_check = self.velocity_min
+
+        if not (self.velocity_min <= vel_to_check <= self.velocity_max):
+            return (
+                False,
+                f"Velocity ({vel_to_check:.2f}): {self.velocity_min:.1f}-{self.velocity_max:.1f} m/s",
+            )
         if not (self.power_min <= self.striker_power <= self.power_max):
-            return (
-                False,
-                f"Striker power must be between {self.power_min} and {self.power_max}%",
-            )
-
-        # Check delay
-        if not (self.delay_min <= self.delay_time <= self.delay_max):
-            return (
-                False,
-                f"Delay time must be between {self.delay_min} and {self.delay_max} seconds",
-            )
-
+            return False, f"Power: {self.power_min:.1f}-{self.power_max:.1f}%"
         return True, "Settings are valid"
 
     def get_settings(self):
-        """Get the current settings as a dictionary"""
         return {
             "release_height": self.release_height,
             "strike_height": self.strike_height,
-            "strike_angle": self.strike_angle,
+            "strike_angle_elevation": self.strike_angle_elevation,
+            "strike_azimuth_angle": self.strike_azimuth_angle,
             "strike_velocity": self.strike_velocity,
             "delay_time": self.delay_time,
             "striker_power": self.striker_power,
         }
 
     def set_settings(self, settings):
-        """Set settings from a dictionary"""
-        if "release_height" in settings:
-            self.release_height = settings["release_height"]
-        if "strike_height" in settings:
-            self.strike_height = settings["strike_height"]
-        if "strike_angle" in settings:
-            self.strike_angle = settings["strike_angle"]
-        if "strike_velocity" in settings:
-            self.strike_velocity = settings["strike_velocity"]
-        if "delay_time" in settings:
-            self.delay_time = settings["delay_time"]
-        if "striker_power" in settings:
-            self.striker_power = settings["striker_power"]
+        for key, value in settings.items():
+            if hasattr(self, key):
+                setattr(self, key, float(value))
 
 
 class FieldSettings:
-    """Class to manage field settings"""
-
     def __init__(self):
-        """Initialize with default values"""
-        # Field dimensions
-        self.field_width = 3.5  # meters
-        self.field_length = 3.5  # meters
-
-        # Robot area
-        self.robot_area_width = 0.5  # meters
-        self.robot_area_length = 0.5  # meters
-
-        # Swing area
-        self.swing_area_width = 0.5  # meters
-        self.swing_area_length = 0.5  # meters
-
-        # Release point (from the edge of the field)
-        self.release_point_x = 0.0  # meters
-        self.release_point_y = 0.0  # meters
-
-    def get_settings(self):
-        """Get the current settings as a dictionary"""
-        return {
-            "field_width": self.field_width,
-            "field_length": self.field_length,
-            "robot_area_width": self.robot_area_width,
-            "robot_area_length": self.robot_area_length,
-            "swing_area_width": self.swing_area_width,
-            "swing_area_length": self.swing_area_length,
-            "release_point_x": self.release_point_x,
-            "release_point_y": self.release_point_y,
-        }
-
-    def set_settings(self, settings):
-        """Set settings from a dictionary"""
-        if "field_width" in settings:
-            self.field_width = settings["field_width"]
-        if "field_length" in settings:
-            self.field_length = settings["field_length"]
-        if "robot_area_width" in settings:
-            self.robot_area_width = settings["robot_area_width"]
-        if "robot_area_length" in settings:
-            self.robot_area_length = settings["robot_area_length"]
-        if "swing_area_width" in settings:
-            self.swing_area_width = settings["swing_area_width"]
-        if "swing_area_length" in settings:
-            self.swing_area_length = settings["swing_area_length"]
-        if "release_point_x" in settings:
-            self.release_point_x = settings["release_point_x"]
-        if "release_point_y" in settings:
-            self.release_point_y = settings["release_point_y"]
+        self.field_width = 3.5
+        self.field_length = 3.5
+        self.robot_pos_x = 0.0
+        self.robot_pos_z = 0.0
+        self.robot_orientation_yaw = 0.0
 
 
 class Simulation:
-    """Main simulation class that coordinates all components"""
-
     def __init__(self):
-        """Initialize the simulation"""
         self.ball_physics = BallPhysics()
         self.target_area = TargetArea()
         self.striker_settings = StrikerSettings()
         self.field_settings = FieldSettings()
-
-        # Simulation results
-        self.trajectory_x = []
-        self.trajectory_y = []
-        self.landing_distance = 0.0
+        self.trajectory_x, self.trajectory_y, self.trajectory_z = [], [], []
+        self.landing_position = (0.0, 0.0)
+        self.landing_distance_radial = 0.0
         self.target_zone = -1
-
-        # Fall trajectory before strike
-        self.fall_y = []
-        self.fall_times = []
+        self.fall_y, self.fall_times = [], []
         self.strike_time = 0.0
-
-        # For comparison of ideal vs non-ideal
-        self.ideal_trajectory_x = []
-        self.ideal_trajectory_y = []
-        self.ideal_landing_distance = 0.0
+        self.ideal_trajectory_x, self.ideal_trajectory_y, self.ideal_trajectory_z = (
+            [],
+            [],
+            [],
+        )
+        self.ideal_landing_position = (0.0, 0.0)
         self.show_ideal_comparison = False
-
-        # For physics parameters
-        self.air_density = 1.225  # kg/m^3
-        self.drag_coefficient = 0.5  # Dimensionless
-
-        # For target indicator on plot
-        self.target_indicator = None
-        self.target_text_annotation = None
-
-        # For zone highlight on plot
-        self.zone_highlight = None
-        self.zone_text = None
+        self.air_density = 1.225
+        self.drag_coefficient = 0.5
 
     def start_simulation(self):
-        """Start the simulation"""
-        # Validate settings
         valid, message = self.striker_settings.validate_settings()
         if not valid:
             return False, message
 
-        # Simulate free fall
-        self.fall_y, self.fall_times, self.strike_time = (
-            self.ball_physics.simulate_free_fall(self.striker_settings.release_height)
+        _, _, self.strike_time = self.ball_physics.simulate_free_fall(
+            self.striker_settings.release_height, self.striker_settings.strike_height
         )
+        vel = self.striker_settings.strike_velocity
+        if vel <= 0 and self.striker_settings.striker_power > 0:
+            vel = self.striker_settings.convert_power_to_velocity()
+        elif vel <= 0:
+            vel = self.striker_settings.velocity_min
 
-        # Get strike velocity (either direct or from power)
-        if self.striker_settings.strike_velocity <= 0:
-            strike_velocity = self.striker_settings.convert_power_to_velocity()
-        else:
-            strike_velocity = self.striker_settings.strike_velocity
-
-        # Apply physics parameters
         self.ball_physics.air_density = self.air_density
         self.ball_physics.drag_coefficient = self.drag_coefficient
 
-        # Calculate trajectory after strike
-        self.trajectory_x, self.trajectory_y, _ = (
+        self.trajectory_x, self.trajectory_y, self.trajectory_z, _ = (
             self.ball_physics.calculate_trajectory(
                 self.striker_settings.release_height,
-                strike_velocity,
-                self.striker_settings.strike_angle,
+                vel,
+                self.striker_settings.strike_angle_elevation,
+                self.striker_settings.strike_azimuth_angle,
                 self.striker_settings.strike_height,
             )
         )
-
-        # Calculate landing distance
-        if len(self.trajectory_x) > 0:
-            self.landing_distance = self.trajectory_x[-1]
+        if self.trajectory_x:
+            land_x, land_z = self.trajectory_x[-1], self.trajectory_z[-1]
+            self.landing_position = (land_x, land_z)
+            self.landing_distance_radial = math.sqrt(land_x**2 + land_z**2)
         else:
-            self.landing_distance = 0.0
+            land_x, land_z = 0.0, 0.0
+            self.landing_position = (0.0, 0.0)
+            self.landing_distance_radial = 0.0
 
-        # Determine target zone
-        self.target_zone = self.target_area.get_zone_for_distance(self.landing_distance)
-
-        # If comparison is enabled, calculate ideal trajectory too
-        if self.show_ideal_comparison:
-            self.ideal_trajectory_x, self.ideal_trajectory_y, _ = (
-                self.ball_physics.calculate_trajectory_ideal(
-                    self.striker_settings.release_height,
-                    strike_velocity,
-                    self.striker_settings.strike_angle,
-                    self.striker_settings.strike_height,
-                )
+        self.target_zone = self.target_area.get_zone_for_position(land_x, land_z)
+        zone_name = "None"
+        if self.target_zone >= 0 and self.target_zone < len(self.target_area.zones):
+            zone_name = self.target_area.zones[self.target_zone].get(
+                "id", f"Zone {self.target_zone + 1}"
             )
+        msg_out = f"Landed at (x={land_x:.2f}, z={land_z:.2f})m. Radial: {self.landing_distance_radial:.2f}m. Zone: {zone_name}"
 
-            if len(self.ideal_trajectory_x) > 0:
-                self.ideal_landing_distance = self.ideal_trajectory_x[-1]
-            else:
-                self.ideal_landing_distance = 0.0
-
-        return (
-            True,
-            f"Ball landed at {self.landing_distance:.2f}m (Zone: {self.target_zone + 1 if self.target_zone >= 0 else 'None'})",
-        )
+        if self.show_ideal_comparison:
+            (
+                self.ideal_trajectory_x,
+                self.ideal_trajectory_y,
+                self.ideal_trajectory_z,
+                _,
+            ) = self.ball_physics.calculate_trajectory_ideal(
+                self.striker_settings.release_height,
+                vel,
+                self.striker_settings.strike_angle_elevation,
+                self.striker_settings.strike_azimuth_angle,
+                self.striker_settings.strike_height,
+            )
+            self.ideal_landing_position = (
+                (self.ideal_trajectory_x[-1], self.ideal_trajectory_z[-1])
+                if self.ideal_trajectory_x
+                else (0.0, 0.0)
+            )
+        return True, msg_out
 
     def toggle_ideal_comparison(self, show_comparison):
-        """Toggle the ideal vs non-ideal comparison"""
         self.show_ideal_comparison = show_comparison
 
     def reset_simulation(self):
-        """Reset the simulation"""
-        # รีเซ็ตค่าต่างๆ ในตัวจำลอง
-        self.trajectory_x = []
-        self.trajectory_y = []
-        self.landing_distance = 0.0
+        self.trajectory_x, self.trajectory_y, self.trajectory_z = [], [], []
+        self.landing_position = (0.0, 0.0)
+        self.landing_distance_radial = 0.0
         self.target_zone = -1
-        self.fall_y = []
-        self.fall_times = []
-        self.strike_time = 0.0
-        self.ideal_trajectory_x = []
-        self.ideal_trajectory_y = []
-        self.ideal_landing_distance = 0.0
-
-        # รีเซ็ตตัวชี้วัด
-        self.target_indicator = None
-        self.target_text_annotation = None
-        self.zone_highlight = None
-        self.zone_text = None
-
-        return True, "Simulation reset successfully"
-
-    def calculate_optimal_angle(self, target_distance):
-        """Calculate the optimal angle to hit a target distance"""
-        if not (
-            self.target_area.min_distance
-            <= target_distance
-            <= self.target_area.max_distance
-        ):
-            return (
-                False,
-                f"Target distance must be between {self.target_area.min_distance} and {self.target_area.max_distance} meters",
-            )
-
-        # Simple binary search to find the angle
-        min_angle = self.striker_settings.angle_min
-        max_angle = self.striker_settings.angle_max
-
-        # Get velocity (either direct or from power)
-        if self.striker_settings.strike_velocity <= 0:
-            strike_velocity = self.striker_settings.convert_power_to_velocity()
-        else:
-            strike_velocity = self.striker_settings.strike_velocity
-
-        # Maximum iterations to prevent infinite loop
-        max_iterations = 20
-        best_angle = min_angle
-        best_distance_error = float("inf")
-
-        for _ in range(max_iterations):
-            mid_angle = (min_angle + max_angle) / 2
-
-            # Calculate distance with this angle
-            distance = self.ball_physics.get_landing_distance(
-                self.striker_settings.release_height,
-                strike_velocity,
-                mid_angle,
-                self.striker_settings.strike_height,
-            )
-
-            # Check if this is better than our current best
-            distance_error = abs(distance - target_distance)
-            if distance_error < best_distance_error:
-                best_angle = mid_angle
-                best_distance_error = distance_error
-
-            # Update search range
-            if distance < target_distance:
-                min_angle = mid_angle
-            else:
-                max_angle = mid_angle
-
-            # If we're close enough, stop
-            if distance_error < 0.01:
-                break
-
-        return True, (best_angle, strike_velocity)
-
-    def calculate_optimal_velocity(self, target_distance, fixed_angle=None):
-        """Calculate the optimal velocity to hit a target distance at a given angle"""
-        if not (
-            self.target_area.min_distance
-            <= target_distance
-            <= self.target_area.max_distance
-        ):
-            return (
-                False,
-                f"Target distance must be between {self.target_area.min_distance} and {self.target_area.max_distance} meters",
-            )
-
-        # ใช้มุมปัจจุบันถ้าไม่มีการระบุมุมที่ต้องการ
-        angle = (
-            fixed_angle
-            if fixed_angle is not None
-            else self.striker_settings.strike_angle
+        self.ideal_trajectory_x, self.ideal_trajectory_y, self.ideal_trajectory_z = (
+            [],
+            [],
+            [],
         )
+        self.ideal_landing_position = (0.0, 0.0)
+        return True, "Simulation reset"
 
-        # ทำ binary search เพื่อหาความเร็วที่เหมาะสม
-        min_velocity = self.striker_settings.velocity_min
-        max_velocity = self.striker_settings.velocity_max
-
-        # จำนวนรอบสูงสุดเพื่อป้องกัน infinite loop
-        max_iterations = 20
-        best_velocity = min_velocity
-        best_distance_error = float("inf")
-
-        for _ in range(max_iterations):
-            mid_velocity = (min_velocity + max_velocity) / 2
-
-            # คำนวณระยะทางด้วยความเร็วนี้
-            distance = self.ball_physics.get_landing_distance(
-                self.striker_settings.release_height,
-                mid_velocity,
-                angle,
-                self.striker_settings.strike_height,
-            )
-
-            # ตรวจสอบว่าผลลัพธ์นี้ดีกว่าค่าที่ดีที่สุดปัจจุบันหรือไม่
-            distance_error = abs(distance - target_distance)
-            if distance_error < best_distance_error:
-                best_velocity = mid_velocity
-                best_distance_error = distance_error
-
-            # ปรับช่วงการค้นหา
-            if distance < target_distance:
-                min_velocity = mid_velocity
-            else:
-                max_velocity = mid_velocity
-
-            # ถ้าใกล้เคียงพอแล้ว ให้หยุด
-            if distance_error < 0.01:
-                break
-
-        return True, (angle, best_velocity)
-
-    def calculate_optimal_parameters(self, target_distance, fixed_params=None):
-        """
-        คำนวณหาค่าพารามิเตอร์ที่เหมาะสมที่สุด (มุมและความเร็ว) เพื่อให้ลูกตกที่ระยะเป้าหมาย
-
-        Args:
-            target_distance (float): ระยะเป้าหมายที่ต้องการให้ลูกตก (เมตร)
-            fixed_params (dict, optional): พารามิเตอร์ที่ต้องการให้คงที่ (ถ้าไม่กำหนดจะปรับทั้งมุมและความเร็ว)
-                - 'angle': กำหนดมุมคงที่และหาเฉพาะความเร็ว
-                - 'velocity': กำหนดความเร็วคงที่และหาเฉพาะมุม
-
-        Returns:
-            tuple: (success, result) โดย result เป็น tuple ของ (angle, velocity)
-        """
-        # ตรวจสอบว่าระยะเป้าหมายอยู่ในช่วงที่เป็นไปได้หรือไม่
-        if not (
-            self.target_area.min_distance
-            <= target_distance
-            <= self.target_area.max_distance
-        ):
-            return (
-                False,
-                f"Target distance must be between {self.target_area.min_distance:.2f} and {self.target_area.max_distance:.2f} meters",
-            )
-
+    def calculate_optimal_parameters(self, target_x, target_z, fixed_params=None):
         if fixed_params is None:
             fixed_params = {}
+        best_params = {
+            "elevation_angle": self.striker_settings.strike_angle_elevation,
+            "velocity": self.striker_settings.strike_velocity,
+            "azimuth_angle": self.striker_settings.strike_azimuth_angle,
+            "error": float("inf"),
+            "landing_x": 0,
+            "landing_z": 0,
+        }
 
-        fix_angle = "angle" in fixed_params
-        fix_velocity = "velocity" in fixed_params
+        release_h = self.striker_settings.release_height
+        strike_h = self.striker_settings.strike_height
 
-        if fix_angle and fix_velocity:
-            angle = fixed_params["angle"]
-            velocity = fixed_params["velocity"]
-            distance = self.ball_physics.get_landing_distance(
-                self.striker_settings.release_height,
-                velocity,
-                angle,
-                self.striker_settings.strike_height,
+        # Increased steps for better initial grid search
+        az_steps = 20 if "azimuth_angle" not in fixed_params else 1
+        el_steps = 25 if "elevation_angle" not in fixed_params else 1
+        vel_steps = 25 if "velocity" not in fixed_params else 1
+
+        vel_min_s = fixed_params.get("velocity", self.striker_settings.velocity_min)
+        vel_max_s = fixed_params.get("velocity", self.striker_settings.velocity_max)
+        el_min_s = fixed_params.get(
+            "elevation_angle", self.striker_settings.angle_elevation_min
+        )
+        el_max_s = fixed_params.get(
+            "elevation_angle", self.striker_settings.angle_elevation_max
+        )
+        az_min_s = fixed_params.get(
+            "azimuth_angle", self.striker_settings.azimuth_angle_min
+        )
+        az_max_s = fixed_params.get(
+            "azimuth_angle", self.striker_settings.azimuth_angle_max
+        )
+
+        # Heuristic adjustment based on target distance
+        target_rad = math.sqrt(target_x**2 + target_z**2)
+        if "velocity" not in fixed_params:
+            if target_rad > 3.5:
+                vel_min_s = max(vel_min_s, 7.0)
+            elif target_rad < 1.0:
+                vel_max_s = min(vel_max_s, 8.0)
+        if "elevation_angle" not in fixed_params:
+            if target_rad > 3.0:
+                el_max_s = min(el_max_s, 65.0)  # Lower angles for far targets
+            elif target_rad < 1.0:
+                el_min_s = max(el_min_s, 30.0)  # Higher angles for near targets
+
+        az_range = np.linspace(az_min_s, az_max_s, az_steps)
+        el_range = np.linspace(el_min_s, el_max_s, el_steps)
+        vel_range = np.linspace(vel_min_s, vel_max_s, vel_steps)
+
+        for az in az_range:
+            cur_az = fixed_params.get("azimuth_angle", az)
+            for el in el_range:
+                cur_el = fixed_params.get("elevation_angle", el)
+                for vel in vel_range:
+                    cur_vel = fixed_params.get("velocity", vel)
+                    land_x, land_z = self.ball_physics.get_landing_position(
+                        release_h, cur_vel, cur_el, cur_az, strike_h
+                    )
+                    error = math.sqrt(
+                        (land_x - target_x) ** 2 + (land_z - target_z) ** 2
+                    )
+                    if error < best_params["error"]:
+                        best_params.update(
+                            {
+                                "error": error,
+                                "azimuth_angle": cur_az,
+                                "elevation_angle": cur_el,
+                                "velocity": cur_vel,
+                                "landing_x": land_x,
+                                "landing_z": land_z,
+                            }
+                        )
+
+        tolerance = 0.05  # Target 5cm accuracy
+        if best_params["error"] < tolerance:
+            return True, best_params
+
+        # Refined search if initial error is not too large (e.g. < 30cm)
+        if best_params["error"] < 0.30:
+            # print(f"Refining search. Initial best error: {best_params['error']:.3f}m")
+            refine_steps = 9  # More steps for refinement
+            az_ref_min = best_params["azimuth_angle"] - 1.5
+            az_ref_max = best_params["azimuth_angle"] + 1.5
+            el_ref_min = best_params["elevation_angle"] - 1.5
+            el_ref_max = best_params["elevation_angle"] + 1.5
+            vel_ref_min = best_params["velocity"] - 0.3
+            vel_ref_max = best_params["velocity"] + 0.3
+
+            az_r_range = (
+                np.linspace(az_ref_min, az_ref_max, refine_steps)
+                if "azimuth_angle" not in fixed_params
+                else [best_params["azimuth_angle"]]
             )
-            error = abs(distance - target_distance)
-            if error < 0.1:
-                return (True, (angle, velocity))
-            else:
-                return (
-                    False,
-                    f"Fixed parameters result in landing distance of {distance:.2f}m (error: {error:.2f}m)",
-                )
-        elif fix_angle:
-            angle = fixed_params["angle"]
-            return self.calculate_optimal_velocity(target_distance, angle)
-        elif fix_velocity:
-            original_velocity = self.striker_settings.strike_velocity
-            self.striker_settings.strike_velocity = fixed_params["velocity"]
-            result = self.calculate_optimal_angle(target_distance)
-            self.striker_settings.strike_velocity = original_velocity
-            return result
-        else:
-            # ปรับปรุงส่วน Initial Guesses
-            test_angles = []
-            test_velocities = []
-
-            if target_distance <= 1.5:  # ระยะใกล้
-                test_angles = [25, 30, 35]
-                test_velocities = [3, 4, 5]
-            elif target_distance <= 2.5:  # ระยะกลาง
-                test_angles = [35, 40, 45, 50]
-                test_velocities = [4.5, 5.5, 6.5]
-            elif target_distance <= 3.5:  # ระยะไกลปานกลาง (สำหรับ extra1)
-                test_angles = [40, 45, 50, 55]
-                test_velocities = [6, 7, 8, 9]
-            else:  # ระยะไกลมาก (สำหรับ extra1 ส่วนปลาย)
-                test_angles = [40, 45, 50, 55, 60]
-                test_velocities = [8, 9, 10, 11, 12]  # เพิ่มความเร็วที่สูงขึ้น
-
-            angle_min_config, angle_max_config = (
-                self.striker_settings.angle_min,
-                self.striker_settings.angle_max,
+            el_r_range = (
+                np.linspace(el_ref_min, el_ref_max, refine_steps)
+                if "elevation_angle" not in fixed_params
+                else [best_params["elevation_angle"]]
             )
-            velocity_min_config, velocity_max_config = (
+            vel_r_range = (
+                np.linspace(vel_ref_min, vel_ref_max, refine_steps)
+                if "velocity" not in fixed_params
+                else [best_params["velocity"]]
+            )
+
+            az_r_range = np.clip(
+                az_r_range,
+                self.striker_settings.azimuth_angle_min,
+                self.striker_settings.azimuth_angle_max,
+            )
+            el_r_range = np.clip(
+                el_r_range,
+                self.striker_settings.angle_elevation_min,
+                self.striker_settings.angle_elevation_max,
+            )
+            vel_r_range = np.clip(
+                vel_r_range,
                 self.striker_settings.velocity_min,
                 self.striker_settings.velocity_max,
             )
 
-            best_params = None
-            best_error = float("inf")
+            for az_r in az_r_range:
+                cur_az_r = fixed_params.get("azimuth_angle", az_r)
+                for el_r in el_r_range:
+                    cur_el_r = fixed_params.get("elevation_angle", el_r)
+                    for vel_r in vel_r_range:
+                        cur_vel_r = fixed_params.get("velocity", vel_r)
+                        land_x_r, land_z_r = self.ball_physics.get_landing_position(
+                            release_h, cur_vel_r, cur_el_r, cur_az_r, strike_h
+                        )
+                        error_r = math.sqrt(
+                            (land_x_r - target_x) ** 2 + (land_z_r - target_z) ** 2
+                        )
+                        if error_r < best_params["error"]:
+                            best_params.update(
+                                {
+                                    "error": error_r,
+                                    "azimuth_angle": cur_az_r,
+                                    "elevation_angle": cur_el_r,
+                                    "velocity": cur_vel_r,
+                                    "landing_x": land_x_r,
+                                    "landing_z": land_z_r,
+                                }
+                            )
+            # print(f"After refinement, best error: {best_params['error']:.3f}m")
+            if best_params["error"] < tolerance:
+                return True, best_params
 
-            for angle_guess in test_angles:
-                for velocity_guess in test_velocities:
-                    if not (
-                        angle_min_config <= angle_guess <= angle_max_config
-                    ) or not (
-                        velocity_min_config <= velocity_guess <= velocity_max_config
-                    ):
-                        continue
-
-                    distance = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        velocity_guess,
-                        angle_guess,
-                        self.striker_settings.strike_height,
-                    )
-                    error = abs(distance - target_distance)
-
-                    if error < best_error:
-                        best_error = error
-                        best_params = (angle_guess, velocity_guess, distance)
-
-            if best_params:
-                # เริ่มต้นการปรับละเอียดจากค่าที่ดีที่สุดที่ได้จากการ guess
-                current_angle, current_velocity, _ = best_params
-
-                # Iterative refinement (สามารถปรับปรุงให้ซับซ้อนขึ้นได้ เช่นใช้ step ที่เล็กลงเรื่อยๆ)
-                # หรือใช้ optimization algorithm ที่เฉพาะเจาะจงมากขึ้น
-                # ในที่นี้จะยังคงการปรับทีละน้อยแบบเดิม แต่เริ่มจากจุดที่ดีขึ้น
-
-                # ปรับมุม
-                angle_step = 1.0
-                for _ in range(10):  # เพิ่มจำนวนรอบการปรับ
-                    dist_current = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity,
-                        current_angle,
-                        self.striker_settings.strike_height,
-                    )
-                    error_current = abs(dist_current - target_distance)
-
-                    dist_up_angle = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity,
-                        current_angle + angle_step,
-                        self.striker_settings.strike_height,
-                    )
-                    error_up_angle = abs(dist_up_angle - target_distance)
-
-                    dist_down_angle = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity,
-                        current_angle - angle_step,
-                        self.striker_settings.strike_height,
-                    )
-                    error_down_angle = abs(dist_down_angle - target_distance)
-
-                    if (
-                        error_up_angle < error_current
-                        and error_up_angle <= error_down_angle
-                        and (current_angle + angle_step) <= angle_max_config
-                    ):
-                        current_angle += angle_step
-                    elif (
-                        error_down_angle < error_current
-                        and (current_angle - angle_step) >= angle_min_config
-                    ):
-                        current_angle -= angle_step
-                    else:
-                        angle_step /= 2  # ลด step ถ้าไม่ดีขึ้น
-
-                    if angle_step < 0.05 or abs(error_current) < 0.01:  # เกณฑ์การหยุด
-                        break
-
-                # ปรับความเร็ว
-                velocity_step = 0.25
-                for _ in range(10):  # เพิ่มจำนวนรอบการปรับ
-                    dist_current = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity,
-                        current_angle,
-                        self.striker_settings.strike_height,
-                    )
-                    error_current = abs(dist_current - target_distance)
-
-                    dist_up_vel = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity + velocity_step,
-                        current_angle,
-                        self.striker_settings.strike_height,
-                    )
-                    error_up_vel = abs(dist_up_vel - target_distance)
-
-                    dist_down_vel = self.ball_physics.get_landing_distance(
-                        self.striker_settings.release_height,
-                        current_velocity - velocity_step,
-                        current_angle,
-                        self.striker_settings.strike_height,
-                    )
-                    error_down_vel = abs(dist_down_vel - target_distance)
-
-                    if (
-                        error_up_vel < error_current
-                        and error_up_vel <= error_down_vel
-                        and (current_velocity + velocity_step) <= velocity_max_config
-                    ):
-                        current_velocity += velocity_step
-                    elif (
-                        error_down_vel < error_current
-                        and (current_velocity - velocity_step) >= velocity_min_config
-                    ):
-                        current_velocity -= velocity_step
-                    else:
-                        velocity_step /= 2  # ลด step ถ้าไม่ดีขึ้น
-
-                    if velocity_step < 0.05 or abs(error_current) < 0.01:  # เกณฑ์การหยุด
-                        break
-
-                # ตรวจสอบว่าค่าสุดท้ายยังอยู่ในช่วงที่กำหนด
-                current_angle = max(
-                    angle_min_config, min(angle_max_config, current_angle)
-                )
-                current_velocity = max(
-                    velocity_min_config, min(velocity_max_config, current_velocity)
-                )
-
-                return (True, (current_angle, current_velocity))
-
-            return (
-                False,
-                "Could not find suitable initial parameters for optimization.",
-            )
+        return False, (
+            f"Could not find optimal parameters within {tolerance*100:.0f}cm. "
+            f"Best error: {best_params['error']:.2f}m. "
+            f"Params: Az:{best_params['azimuth_angle']:.1f}, El:{best_params['elevation_angle']:.1f}, Vel:{best_params['velocity']:.1f}"
+        )
 
     def save_settings(self, filename):
-        """Save current settings to a file"""
-        settings = {
-            "striker": self.striker_settings.get_settings(),
-            "field": self.field_settings.get_settings(),
-            "target_area": self.target_area.get_field_dimensions(),
-            "physics": {
+        settings_data = {
+            "striker_settings": self.striker_settings.get_settings(),
+            "field_settings": self.field_settings.get_settings(),
+            "target_area_config": self.target_area.get_field_dimensions(),
+            "physics_sim_params": {
                 "gravity": self.ball_physics.gravity,
                 "ball_mass": self.ball_physics.ball_mass,
-                "air_resistance": self.ball_physics.air_resistance,
+                "air_density_sim": self.air_density,
+                "drag_coefficient_sim": self.drag_coefficient,
                 "elasticity": self.ball_physics.elasticity,
             },
         }
-
         try:
-            with open(filename, "w") as file:
-                json.dump(settings, file, indent=4)
+            with open(filename, "w") as f:
+                json.dump(settings_data, f, indent=4)
             return True, f"Settings saved to {filename}"
         except Exception as e:
             return False, f"Error saving settings: {str(e)}"
 
     def load_settings(self, filename):
-        """Load settings from a file"""
         try:
-            with open(filename, "r") as file:
-                settings = json.load(file)
-
-            # Update striker settings
-            if "striker" in settings:
-                self.striker_settings.set_settings(settings["striker"])
-
-            # Update field settings
-            if "field" in settings:
-                self.field_settings.set_settings(settings["field"])
-
-            # Update target area
-            if "target_area" in settings:
-                self.target_area.set_field_dimensions(
-                    settings["target_area"]["min_distance"],
-                    settings["target_area"]["max_distance"],
-                    settings["target_area"].get("field_type", "custom"),
+            with open(filename, "r") as f:
+                settings_data = json.load(f)
+            if "striker_settings" in settings_data:
+                self.striker_settings.set_settings(settings_data["striker_settings"])
+            if "target_area_config" in settings_data:
+                ta_conf = settings_data["target_area_config"]
+                self.target_area.load_field_configuration(
+                    ta_conf.get("field_type", "standard")
                 )
-
-            # Update physics parameters
-            if "physics" in settings:
-                self.ball_physics.gravity = settings["physics"].get("gravity", 9.81)
-                self.ball_physics.ball_mass = settings["physics"].get(
-                    "ball_mass", 0.024
+            if "physics_sim_params" in settings_data:
+                phys = settings_data["physics_sim_params"]
+                self.ball_physics.gravity = phys.get(
+                    "gravity", self.ball_physics.gravity
                 )
-                self.ball_physics.air_resistance = settings["physics"].get(
-                    "air_resistance", 0.001
+                self.ball_physics.ball_mass = phys.get(
+                    "ball_mass", self.ball_physics.ball_mass
                 )
-                self.ball_physics.elasticity = settings["physics"].get(
-                    "elasticity", 0.4
+                self.air_density = phys.get("air_density_sim", self.air_density)
+                self.drag_coefficient = phys.get(
+                    "drag_coefficient_sim", self.drag_coefficient
                 )
-
+                self.ball_physics.elasticity = phys.get(
+                    "elasticity", self.ball_physics.elasticity
+                )
             return True, f"Settings loaded from {filename}"
         except Exception as e:
             return False, f"Error loading settings: {str(e)}"
 
 
 def main():
-    """Main function to run the simulation"""
-    root = tk.Tk()
-    app = SimulationGUI(root)
-    root.mainloop()
+    sim = Simulation()
+    sim.target_area.load_field_configuration("extra2")
+    print(f"Field: {sim.target_area.field_type}, Zones: {len(sim.target_area.zones)}")
+    for zone in sim.target_area.zones:
+        print(
+            f"  {zone.get('id')}: Target Point ({zone.get('target_point',{}).get('x',0):.2f}, {zone.get('target_point',{}).get('z',0):.2f})"
+        )
+
+    sim.striker_settings.strike_angle_elevation = 30
+    sim.striker_settings.strike_azimuth_angle = 5
+    sim.striker_settings.strike_velocity = 10
+    sim.striker_settings.release_height = 2.0
+    sim.striker_settings.strike_height = 0.35
+
+    success, msg = sim.start_simulation()
+    print(f"\nSim 1: {msg}" if success else f"\nSim 1 Fail: {msg}")
+
+    target_x, target_z = 0.5, 2.0
+    print(
+        f"\nOptimizing for X={target_x}, Z={target_z} on {sim.target_area.field_type}"
+    )
+    opt_s, opt_r = sim.calculate_optimal_parameters(target_x, target_z)
+    if opt_s:
+        print(
+            f"Optimal: El={opt_r['elevation_angle']:.2f}, Az={opt_r['azimuth_angle']:.2f}, Vel={opt_r['velocity']:.2f}"
+        )
+        print(
+            f"  Landing: (x={opt_r['landing_x']:.2f}, z={opt_r['landing_z']:.2f})m, Error: {opt_r['error']:.3f}m"
+        )
+        sim.striker_settings.strike_angle_elevation = opt_r["elevation_angle"]
+        sim.striker_settings.strike_azimuth_angle = opt_r["azimuth_angle"]
+        sim.striker_settings.strike_velocity = opt_r["velocity"]
+        ver_s, ver_msg = sim.start_simulation()
+        print(f"Verification: {ver_msg}")
+    else:
+        print(f"Optimization failed: {opt_r}")
 
 
 if __name__ == "__main__":
