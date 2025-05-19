@@ -275,20 +275,17 @@ function fetchFieldInfo() {
           data.dimensions.max_distance;
         document.getElementById("zone-width").value =
           data.dimensions.zone_width;
-        currentFieldType = data.dimensions.field_type;
+        currentFieldType = data.dimensions.field_type; // สำคัญ: อัปเดต currentFieldType ก่อน
+        updateTargetSliderRange(
+          data.dimensions.min_distance,
+          data.dimensions.max_distance
+        );
       }
 
       // อัปเดตโซน
       if (data.zones) {
-        currentZones = data.zones;
+        currentZones = data.zones; // สำคัญ: อัปเดต currentZones ก่อนเรียก updateFieldChart และ updateTargetZoneIndicator
         updateFieldChart(data.zones);
-        updateTargetZoneIndicator(); // อัปเดตไฮไลท์โซนที่เลือก
-      }
-
-      // อัปเดตเลือกประเภทสนาม
-      const fieldTypeSelect = document.getElementById("field-type");
-      if (fieldTypeSelect) {
-        fieldTypeSelect.value = currentFieldType;
       }
     })
     .catch((error) => {
@@ -329,11 +326,9 @@ function changeFieldType(fieldType) {
     })
     .then((data) => {
       if (data.zones) {
-        currentZones = data.zones;
+        currentZones = data.zones; // สำคัญ: อัปเดต currentZones ก่อน
         updateFieldChart(data.zones);
-        updateTargetZoneIndicator();
 
-        // อัปเดตค่าในช่อง input
         if (data.dimensions) {
           document.getElementById("min-distance").value =
             data.dimensions.min_distance;
@@ -341,9 +336,12 @@ function changeFieldType(fieldType) {
             data.dimensions.max_distance;
           document.getElementById("zone-width").value =
             data.dimensions.zone_width;
-          currentFieldType = data.dimensions.field_type;
+          currentFieldType = data.dimensions.field_type; // สำคัญ: อัปเดต currentFieldType ก่อน
+          updateTargetSliderRange(
+            data.dimensions.min_distance,
+            data.dimensions.max_distance
+          );
         }
-
         showCustomMessage(`เปลี่ยนสนามเป็น ${fieldType} สำเร็จ`, "success");
       }
     })
@@ -1516,6 +1514,13 @@ function applyFieldSettings() {
         currentZones = data.zones;
         updateFieldChart(data.zones);
         updateTargetZoneIndicator();
+        // อัปเดต Target Slider Range ด้วยค่าที่ได้จาก response
+        if (data.dimensions) {
+          updateTargetSliderRange(
+            data.dimensions.min_distance,
+            data.dimensions.max_distance
+          );
+        }
         showCustomMessage("Custom field settings applied", "success");
       }
     })
@@ -1523,4 +1528,42 @@ function applyFieldSettings() {
       console.error("Error applying field settings:", error);
       showCustomMessage("Could not apply field settings", "error");
     });
+}
+
+function updateTargetSliderRange(min_distance, max_distance) {
+  const targetSlider = document.getElementById("target-distance");
+  const targetValueDisplay = document.getElementById("target-value");
+
+  if (targetSlider && targetValueDisplay) {
+    const newMin = parseFloat(min_distance);
+    const newMax = parseFloat(max_distance);
+
+    // Debugging: Log ค่าใหม่
+    console.log(`Updating target slider range: min=${newMin}, max=${newMax}`);
+
+    targetSlider.min = newMin;
+    targetSlider.max = newMax;
+
+    // ปรับค่าปัจจุบันของ slider ถ้ามันอยู่นอกช่วงใหม่
+    let currentSliderVal = parseFloat(targetSlider.value);
+
+    if (currentSliderVal < newMin) {
+      targetSlider.value = newMin;
+    } else if (currentSliderVal > newMax) {
+      targetSlider.value = newMax;
+    }
+
+    // บังคับให้ browser รับรู้การเปลี่ยนแปลง value อีกครั้ง
+    // และอัปเดตการแสดงผลค่าของ slider
+    const updatedSliderValue = parseFloat(targetSlider.value);
+    targetValueDisplay.textContent = updatedSliderValue.toFixed(2) + " m";
+
+    // Debugging: Log ค่า slider หลังอัปเดต
+    console.log(
+      `Target slider updated: value=${targetSlider.value}, min=${targetSlider.min}, max=${targetSlider.max}`
+    );
+
+    // หลังจากปรับค่า slider แล้ว ให้อัปเดต indicator ด้วย
+    updateTargetZoneIndicator();
+  }
 }
