@@ -52,7 +52,7 @@ class BallPhysics:
         vx, vy, vz = v0x, v0y, v0z
         t = 0.0
 
-        while t < time_limit and y >= -0.01:
+        while t < time_limit and y >= 0:
             t += self.time_step
             ax_drag, ay_drag, az_drag = 0, 0, 0
             if not self.ideal_mode:
