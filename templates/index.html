@@ -682,6 +682,17 @@
                     class="input-control"
                   />
                 </div>
+                <div class="control-group">
+                  <label for="compare-actual-strike-time"
+                    >เวลาตกกระทบจริง (s) (Actual Strike Time (s))</label
+                  >
+                  <input
+                    type="number"
+                    id="compare-actual-strike-time"
+                    step="0.001"
+                    class="input-control"
+                  />
+                </div>
                 <button id="compare-results-btn" class="btn-accent" disabled>
                   <i class="fas fa-balance-scale"></i> เปรียบเทียบผลลัพธ์
                   (Compare Results)
@@ -713,6 +724,18 @@
                   <tr>
                     <td>ระยะคลาดเคลื่อนรวม (Total Error Distance)</td>
                     <td id="compare-error-distance">-</td>
+                  </tr>
+                  <tr>
+                    <td>ผลต่างของเวลา (จำลอง - จริง) (s) (Delta Time (Sim - Actual) (s))</td>
+                    <td id="compare-delta-time">-</td>
+                  </tr>
+                  <tr>
+                    <td>ความคลาดเคลื่อน X (%) (Percentage Error X (%))</td>
+                    <td id="compare-percentage-error-x">-</td>
+                  </tr>
+                  <tr>
+                    <td>ความคลาดเคลื่อน Z (%) (Percentage Error Z (%))</td>
+                    <td id="compare-percentage-error-z">-</td>
                   </tr>
                 </table>
               </div>
@@ -1074,40 +1097,76 @@
           const actualZ = parseFloat(
             document.getElementById("compare-actual-landing-z").value
           );
+          const actualTime = parseFloat(
+            document.getElementById("compare-actual-strike-time").value
+          );
 
           if (isNaN(actualX) || isNaN(actualZ)) {
             showCustomMessage(
               "กรุณาป้อนผลการทดลองจริง X และ Z (เปรียบเทียบ) ให้ถูกต้อง",
               "warning"
             );
-            exportCsvCompareBtn.disabled = true;
+            // ไม่จำเป็นต้อง disable exportCsvCompareBtn ที่นี่ เพราะอาจมีข้อมูลเวลาที่ถูกต้อง
             return;
           }
           if (
             simResultsCompare.landing_position_x === undefined ||
             simResultsCompare.landing_position_z === undefined
+            // ไม่จำเป็นต้องเช็ค simResultsCompare.strike_time ที่นี่ เพราะการเปรียบเทียบ X, Z สามารถทำได้แม้ไม่มีเวลาจำลอง
           ) {
             showCustomMessage(
-              "กรุณาทำการจำลองผล (เปรียบเทียบ) ก่อนเปรียบเทียบ",
+              "กรุณาทำการจำลองผล (เปรียบเทียบ) เพื่อให้มีค่า Landing X, Z ก่อนเปรียบเทียบ",
               "warning"
             );
-            exportCsvCompareBtn.disabled = true;
+            exportCsvCompareBtn.disabled = true; // ถ้าไม่มีผลจำลอง X,Z ก็ export ไม่ได้
             return;
           }
+
           actualResultsCompare = {
             landing_position_x: actualX,
             landing_position_z: actualZ,
+            strike_time: !isNaN(actualTime) ? actualTime : undefined, // เก็บเฉพาะเมื่อเป็นตัวเลข
           };
-          const deltaX = simResultsCompare.landing_position_x - actualX;
-          const deltaZ = simResultsCompare.landing_position_z - actualZ;
+
+          const simX = simResultsCompare.landing_position_x;
+          const simZ = simResultsCompare.landing_position_z;
+          const simTime = simResultsCompare.strike_time;
+
+          const deltaX = simX - actualX;
+          const deltaZ = simZ - actualZ;
           const errorDistance = Math.sqrt(deltaX ** 2 + deltaZ ** 2);
+
           document.getElementById("compare-delta-x").textContent =
             safe(deltaX).toFixed(3) + " m";
           document.getElementById("compare-delta-z").textContent =
             safe(deltaZ).toFixed(3) + " m";
           document.getElementById("compare-error-distance").textContent =
             safe(errorDistance).toFixed(3) + " m";
-          exportCsvCompareBtn.disabled = false;
+
+          let percentageErrorX = "-";
+          if (!isNaN(actualX) && actualX !== 0) {
+            percentageErrorX = ((deltaX / actualX) * 100).toFixed(2) + " %";
+          } else if (!isNaN(actualX) && actualX === 0 && !isNaN(simX) && simX !== 0) {
+            percentageErrorX = "∞ % (Actual is 0)"; // หรือ N/A
+          }
+          document.getElementById("compare-percentage-error-x").textContent = percentageErrorX;
+
+          let percentageErrorZ = "-";
+          if (!isNaN(actualZ) && actualZ !== 0) {
+            percentageErrorZ = ((deltaZ / actualZ) * 100).toFixed(2) + " %";
+          } else if (!isNaN(actualZ) && actualZ === 0 && !isNaN(simZ) && simZ !== 0) {
+            percentageErrorZ = "∞ % (Actual is 0)"; // หรือ N/A
+          }
+          document.getElementById("compare-percentage-error-z").textContent = percentageErrorZ;
+          
+          let deltaTime = "-";
+          if (simTime !== undefined && actualResultsCompare.strike_time !== undefined) {
+            deltaTime = safe(simTime - actualResultsCompare.strike_time).toFixed(3) + " s";
+          }
+          document.getElementById("compare-delta-time").textContent = deltaTime;
+
+
+          exportCsvCompareBtn.disabled = false; // เปิดใช้งานปุ่ม Export เมื่อมีการเปรียบเทียบสำเร็จ
           showCustomMessage(
             "การเปรียบเทียบผลลัพธ์ (เปรียบเทียบ) เสร็จสิ้น",
             "info"
@@ -1117,93 +1176,144 @@
         exportCsvCompareBtn.addEventListener("click", function () {
           if (
             Object.keys(simParamsCompare).length === 0 ||
-            Object.keys(simResultsCompare).length === 0 ||
-            Object.keys(actualResultsCompare).length === 0
+            Object.keys(simResultsCompare).length === 0 || // ต้องมีผลจำลอง
+            (isNaN(parseFloat(document.getElementById("compare-actual-landing-x").value)) || // ต้องมีผลจริง X
+             isNaN(parseFloat(document.getElementById("compare-actual-landing-z").value))) // ต้องมีผลจริง Z
           ) {
             showCustomMessage(
-              "ข้อมูลไม่ครบถ้วนสำหรับการ Export (เปรียบเทียบ)",
+              "ข้อมูลไม่ครบถ้วนสำหรับการ Export (เปรียบเทียบ): กรุณาทำการจำลองและป้อนค่า X, Z จริง",
               "warning"
             );
             return;
           }
+          // actualResultsCompare จะถูก set ใน compareResultsBtn.addEventListener
+          // ดังนั้น ตรวจสอบอีกครั้งว่ามีค่าที่จำเป็นหรือไม่
+          const currentActualX = parseFloat(document.getElementById("compare-actual-landing-x").value);
+          const currentActualZ = parseFloat(document.getElementById("compare-actual-landing-z").value);
+          const currentActualTime = parseFloat(document.getElementById("compare-actual-strike-time").value);
+
+          // อัปเดต actualResultsCompare ให้เป็นค่าล่าสุดก่อน export
+          actualResultsCompare = {
+            landing_position_x: currentActualX,
+            landing_position_z: currentActualZ,
+            strike_time: !isNaN(currentActualTime) ? currentActualTime : undefined,
+          };
+
+
           let csvContent = "data:text/csv;charset=utf-8,";
-          csvContent += "Parameter,Simulated Value,Actual Value,Difference\r\n";
+          csvContent += "Parameter,Simulated Value,Actual Value,Difference,Percentage Error\\r\\n";
           csvContent +=
             "Release Height (m)," +
             simParamsCompare.release_height +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Strike Height (m)," +
             simParamsCompare.strike_height +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Strike Angle Elevation (°)," +
             simParamsCompare.strike_angle_elevation +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Strike Azimuth Angle (°)," +
             simParamsCompare.strike_azimuth_angle +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Strike Velocity (m/s)," +
             simParamsCompare.strike_velocity +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Gravity (m/s²)," +
-            simParamsCompare.physics.gravity +
-            ",N/A,N/A\r\n";
+            (simParamsCompare.physics ? simParamsCompare.physics.gravity : 'N/A') +
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Ball Mass (kg)," +
-            simParamsCompare.physics.ball_mass +
-            ",N/A,N/A\r\n";
+            (simParamsCompare.physics ? simParamsCompare.physics.ball_mass : 'N/A') +
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Air Density (kg/m³)," +
-            simParamsCompare.physics.air_density +
-            ",N/A,N/A\r\n";
+            (simParamsCompare.physics ? simParamsCompare.physics.air_density : 'N/A') +
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Drag Coefficient," +
-            simParamsCompare.physics.drag_coefficient +
-            ",N/A,N/A\r\n";
+            (simParamsCompare.physics ? simParamsCompare.physics.drag_coefficient : 'N/A') +
+            ",N/A,N/A,N/A\\r\\n";
           csvContent +=
             "Elasticity," +
-            simParamsCompare.physics.elasticity +
-            ",N/A,N/A\r\n";
+            (simParamsCompare.physics ? simParamsCompare.physics.elasticity : 'N/A') +
+            ",N/A,N/A,N/A\\r\\n";
+
           const simX = simResultsCompare.landing_position_x;
           const simZ = simResultsCompare.landing_position_z;
+          const simTime = simResultsCompare.strike_time;
+
           const actX = actualResultsCompare.landing_position_x;
           const actZ = actualResultsCompare.landing_position_z;
+          const actTime = actualResultsCompare.strike_time;
+
+          let diffX_val = (simX !== undefined && actX !== undefined && !isNaN(actX)) ? safe(simX - actX).toFixed(3) : "";
+          let percErrorX_val = "";
+          if (simX !== undefined && actX !== undefined && !isNaN(actX)) {
+            if (actX !== 0) {
+              percErrorX_val = (( (simX - actX) / actX) * 100).toFixed(2) + "%";
+            } else if (simX !== 0) {
+              percErrorX_val = "Inf";
+            } else {
+              percErrorX_val = "0.00%"; // Sim and Actual are both 0
+            }
+          }
+
           csvContent +=
             "Landing X (m)," +
             (simX !== undefined ? safe(simX).toFixed(3) : "") +
             "," +
-            (actX !== undefined ? safe(actX).toFixed(3) : "") +
+            (actX !== undefined && !isNaN(actX) ? safe(actX).toFixed(3) : "") +
             "," +
-            (simX !== undefined && actX !== undefined
-              ? safe(simX - actX).toFixed(3)
-              : "") +
-            "\r\n";
+            diffX_val +
+            "," +
+            percErrorX_val +
+            "\\r\\n";
+
+          let diffZ_val = (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) ? safe(simZ - actZ).toFixed(3) : "";
+          let percErrorZ_val = "";
+           if (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) {
+            if (actZ !== 0) {
+              percErrorZ_val = (((simZ - actZ) / actZ) * 100).toFixed(2) + "%";
+            } else if (simZ !== 0) {
+              percErrorZ_val = "Inf";
+            } else {
+               percErrorZ_val = "0.00%";
+            }
+          }
+
           csvContent +=
             "Landing Z (m)," +
             (simZ !== undefined ? safe(simZ).toFixed(3) : "") +
             "," +
-            (actZ !== undefined ? safe(actZ).toFixed(3) : "") +
+            (actZ !== undefined && !isNaN(actZ) ? safe(actZ).toFixed(3) : "") +
             "," +
-            (simZ !== undefined && actZ !== undefined
-              ? safe(simZ - actZ).toFixed(3)
-              : "") +
-            "\r\n";
+            diffZ_val +
+            "," +
+            percErrorZ_val +
+            "\\r\\n";
+
           csvContent +=
             "Radial Distance (m)," +
             (simResultsCompare.landing_distance_radial !== undefined
               ? safe(simResultsCompare.landing_distance_radial).toFixed(3)
               : "") +
-            ",N/A,N/A\r\n";
+            ",N/A,N/A,N/A\\r\\n"; // Actual Radial and Diff Radial not directly asked for, keep as N/A
+
+          let diffTime_val = (simTime !== undefined && actTime !== undefined && !isNaN(actTime)) ? safe(simTime - actTime).toFixed(3) : "";
           csvContent +=
             "Strike Time (s)," +
-            (simResultsCompare.strike_time !== undefined
-              ? safe(simResultsCompare.strike_time).toFixed(3)
-              : "") +
-            ",N/A,N/A\r\n";
+            (simTime !== undefined ? safe(simTime).toFixed(3) : "") +
+            "," +
+            (actTime !== undefined && !isNaN(actTime) ? safe(actTime).toFixed(3) : "") +
+            "," +
+            diffTime_val +
+            ",N/A\\r\\n"; // Percentage error for time usually not standard, keep as N/A
+
           const encodedUri = encodeURI(csvContent);
           const link = document.createElement("a");
           link.setAttribute("href", encodedUri);
