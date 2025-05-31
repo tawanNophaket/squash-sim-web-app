@@ -653,14 +653,16 @@ function updateSimulationResultsUI(result) {
       strike_angle_elevation: result.optimized_params.strike_angle_elevation,
       strike_azimuth_angle: result.optimized_params.strike_azimuth_angle,
       strike_velocity: result.optimized_params.strike_velocity,
-      strike_angle_elevation_range: result.optimized_params.strike_angle_elevation_range,
-      strike_azimuth_angle_range: result.optimized_params.strike_azimuth_angle_range,
+      strike_angle_elevation_range:
+        result.optimized_params.strike_angle_elevation_range,
+      strike_azimuth_angle_range:
+        result.optimized_params.strike_azimuth_angle_range,
       strike_velocity_range: result.optimized_params.strike_velocity_range,
       target_x: result.optimization_target.x,
       target_z: result.optimization_target.z,
       error_distance: result.optimization_error_distance,
       actual_landing_x: result.optimized_actual_landing_x,
-      actual_landing_z: result.optimized_actual_landing_z
+      actual_landing_z: result.optimized_actual_landing_z,
     });
   }
 }
@@ -668,36 +670,61 @@ function updateSimulationResultsUI(result) {
 function updateOptimizedParamsUI(data) {
   document.getElementById("optimal-params-display").style.display = "block";
 
+  // ป้องกัน error กรณีข้อมูลไม่ครบหรือ undefined
+  const safe = (v, d = 0) => (typeof v === "number" && !isNaN(v) ? v : d);
+  const safeArr = (arr, idx, d = 0) =>
+    Array.isArray(arr) && typeof arr[idx] === "number" && !isNaN(arr[idx])
+      ? arr[idx]
+      : d;
+
   document.getElementById("optimized-elevation-angle-value").textContent =
-    data.strike_angle_elevation.toFixed(2) + "°";
+    safe(data.strike_angle_elevation).toFixed(2) + "°";
   document.getElementById("optimized-elevation-angle-range").textContent =
-    data.strike_angle_elevation_range
-      ? `${data.strike_angle_elevation_range[0].toFixed(1)}° - ${data.strike_angle_elevation_range[1].toFixed(1)}°`
+    data.strike_angle_elevation_range &&
+    Array.isArray(data.strike_angle_elevation_range)
+      ? `${safeArr(data.strike_angle_elevation_range, 0).toFixed(
+          1
+        )}° - ${safeArr(data.strike_angle_elevation_range, 1).toFixed(1)}°`
       : "N/A";
 
   document.getElementById("optimized-azimuth-angle-value").textContent =
-    data.strike_azimuth_angle.toFixed(2) + "°";
+    safe(data.strike_azimuth_angle).toFixed(2) + "°";
   document.getElementById("optimized-azimuth-angle-range").textContent =
-    data.strike_azimuth_angle_range
-      ? `${data.strike_azimuth_angle_range[0].toFixed(1)}° - ${data.strike_azimuth_angle_range[1].toFixed(1)}°`
+    data.strike_azimuth_angle_range &&
+    Array.isArray(data.strike_azimuth_angle_range)
+      ? `${safeArr(data.strike_azimuth_angle_range, 0).toFixed(1)}° - ${safeArr(
+          data.strike_azimuth_angle_range,
+          1
+        ).toFixed(1)}°`
       : "N/A";
 
   document.getElementById("optimized-velocity-value").textContent =
-    data.strike_velocity.toFixed(2) + " m/s";
+    safe(data.strike_velocity).toFixed(2) + " m/s";
   document.getElementById("optimized-velocity-range").textContent =
-    data.strike_velocity_range
-      ? `${data.strike_velocity_range[0].toFixed(1)} - ${data.strike_velocity_range[1].toFixed(1)} m/s`
+    data.strike_velocity_range && Array.isArray(data.strike_velocity_range)
+      ? `${safeArr(data.strike_velocity_range, 0).toFixed(1)} - ${safeArr(
+          data.strike_velocity_range,
+          1
+        ).toFixed(1)} m/s`
       : "N/A";
 
-  document.getElementById("optimized-target-xz").textContent = `(${data.target_x.toFixed(2)}, ${data.target_z.toFixed(2)}) m`;
+  document.getElementById("optimized-target-xz").textContent = `(${safe(
+    data.target_x
+  ).toFixed(2)}, ${safe(data.target_z).toFixed(2)}) m`;
   let errorPercentage = 0;
-  const targetMagnitude = Math.sqrt(data.target_x ** 2 + data.target_z ** 2);
+  const targetMagnitude = Math.sqrt(
+    safe(data.target_x) ** 2 + safe(data.target_z) ** 2
+  );
   if (targetMagnitude > 0) {
-    errorPercentage = (data.error_distance / targetMagnitude) * 100;
+    errorPercentage = (safe(data.error_distance) / targetMagnitude) * 100;
   }
-  document.getElementById("optimized-error-dist").textContent = `${data.error_distance.toFixed(3)} m (${errorPercentage.toFixed(2)}%)`;
-  document.getElementById("optimized-actual-landing-x").textContent = data.actual_landing_x.toFixed(3) + " m";
-  document.getElementById("optimized-actual-landing-z").textContent = data.actual_landing_z.toFixed(3) + " m";
+  document.getElementById("optimized-error-dist").textContent = `${safe(
+    data.error_distance
+  ).toFixed(3)} m (${errorPercentage.toFixed(2)}%)`;
+  document.getElementById("optimized-actual-landing-x").textContent =
+    safe(data.actual_landing_x).toFixed(3) + " m";
+  document.getElementById("optimized-actual-landing-z").textContent =
+    safe(data.actual_landing_z).toFixed(3) + " m";
 }
 
 function updateTrajectoryCharts(trajX, trajY, trajZ, zonesDataFromCalc) {
@@ -1125,11 +1152,13 @@ function openTab(tabName) {
     .forEach((btn) => btn.classList.add("active"));
   updateChartsIfNeeded(tabName);
 
-  if (tabName === 'compare') {
-    if (typeof initializeCompareTab === 'function') {
+  if (tabName === "compare") {
+    if (typeof initializeCompareTab === "function") {
       initializeCompareTab();
     } else {
-      console.error("initializeCompareTab function is not defined. Make sure it is globally available from index.html.");
+      console.error(
+        "initializeCompareTab function is not defined. Make sure it is globally available from index.html."
+      );
     }
   }
 }

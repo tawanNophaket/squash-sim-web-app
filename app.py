@@ -29,9 +29,7 @@ def calculate():
     if simulation is None:
         return (
             jsonify(
-                {
-                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
-                }
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
             ),
             500,
         )
@@ -106,9 +104,7 @@ def calculate():
     except Exception as e:
         app.logger.error(f"Error in /api/calculate: {e}", exc_info=True)
         return (
-            jsonify(
-                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การคำนวณ: {str(e)}"}
-            ),
+            jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การคำนวณ: {str(e)}"}),
             500,
         )
 
@@ -118,9 +114,7 @@ def optimize():
     if simulation is None:
         return (
             jsonify(
-                {
-                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
-                }
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
             ),
             500,
         )
@@ -243,9 +237,7 @@ def optimize():
     except Exception as e:
         app.logger.error(f"Error in /api/optimize: {e}", exc_info=True)
         return (
-            jsonify(
-                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การปรับให้เหมาะสม: {str(e)}"}
-            ),
+            jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การปรับให้เหมาะสม: {str(e)}"}),
             500,
         )
 
@@ -255,9 +247,7 @@ def field_info():
     if simulation is None:
         return (
             jsonify(
-                {
-                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
-                }
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
             ),
             500,
         )
@@ -287,9 +277,7 @@ def field_info():
     except Exception as e:
         app.logger.error(f"Error in /api/field_info: {e}", exc_info=True)
         return (
-            jsonify(
-                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API ข้อมูลสนาม: {str(e)}"}
-            ),
+            jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API ข้อมูลสนาม: {str(e)}"}),
             500,
         )
 
@@ -299,9 +287,7 @@ def change_field():
     if simulation is None:
         return (
             jsonify(
-                {
-                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
-                }
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
             ),
             500,
         )
@@ -333,9 +319,7 @@ def change_field():
     except Exception as e:
         app.logger.error(f"Error in /api/change_field: {e}", exc_info=True)
         return (
-            jsonify(
-                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การเปลี่ยนสนาม: {str(e)}"}
-            ),
+            jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การเปลี่ยนสนาม: {str(e)}"}),
             500,
         )
 
@@ -346,9 +330,7 @@ def sensitivity_analysis():
     if simulation is None:
         return (
             jsonify(
-                {
-                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
-                }
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
             ),
             500,
         )
@@ -423,11 +405,7 @@ def sensitivity_analysis():
     except Exception as e:
         app.logger.error(f"Error in /api/sensitivity_analysis: {e}", exc_info=True)
         return (
-            jsonify(
-                {
-                    "error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การวิเคราะห์ความไว: {str(e)}"
-                }
-            ),
+            jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การวิเคราะห์ความไว: {str(e)}"}),
             500,
         )
 
@@ -441,8 +419,6 @@ if __name__ == "__main__":
     # app.logger.setLevel(logging.DEBUG)
 
     if simulation is None:
-        print(
-            "ไม่สามารถเริ่มแอปพลิเคชัน Flask ได้เนื่องจากไม่สามารถเริ่มต้นอ็อบเจ็กต์ Simulation"
-        )
+        print("ไม่สามารถเริ่มแอปพลิเคชัน Flask ได้เนื่องจากไม่สามารถเริ่มต้นอ็อบเจ็กต์ Simulation")
     else:
         app.run(host="0.0.0.0", port=5000, debug=True)
