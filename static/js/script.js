@@ -198,6 +198,31 @@ function initializeEventListeners() {
       checkConflictingOptimizeOptions
     );
 
+  // เพิ่ม Event Listeners สำหรับ Physics Settings ในแท็บ "ตั้งค่า"
+  const physicsInputs = [
+    "gravity",
+    "ball-mass",
+    "air-density",
+    "drag-coefficient",
+    "elasticity",
+  ];
+  physicsInputs.forEach((id) => {
+    const inputElement = document.getElementById(id);
+    if (inputElement) {
+      // โหลดค่าเริ่มต้นจาก localStorage ถ้ามี
+      const storedValue = localStorage.getItem(`physics_${id}`);
+      if (storedValue !== null) {
+        inputElement.value = storedValue;
+      }
+      // เพิ่ม event listener เพื่อบันทึกเมื่อมีการเปลี่ยนแปลง
+      inputElement.addEventListener("change", (e) => {
+        localStorage.setItem(`physics_${id}`, e.target.value);
+        // อาจจะเพิ่มการ show message ว่าบันทึกแล้ว
+        // showCustomMessage(`บันทึก ${id} เป็น ${e.target.value} แล้ว`, "info", 1500);
+      });
+    }
+  });
+
   checkConflictingOptimizeOptions();
 }
 
@@ -385,6 +410,12 @@ function handleFieldTypeChange() {
 }
 
 function startSimulation() {
+  // อ่านค่า Physics จาก localStorage หรือใช้ค่า default
+  const getPhysicsSetting = (id, defaultValue) => {
+    const storedValue = localStorage.getItem(`physics_${id}`);
+    return storedValue !== null ? parseFloat(storedValue) : defaultValue;
+  };
+
   const payload = {
     release_height: parseFloat(document.getElementById("release-height").value),
     strike_height: parseFloat(document.getElementById("strike-height").value),
@@ -399,13 +430,11 @@ function startSimulation() {
     ),
     show_ideal: document.getElementById("ideal-comparison").checked,
     physics: {
-      gravity: parseFloat(document.getElementById("gravity").value),
-      ball_mass: parseFloat(document.getElementById("ball-mass").value),
-      air_density: parseFloat(document.getElementById("air-density").value),
-      drag_coefficient: parseFloat(
-        document.getElementById("drag-coefficient").value
-      ),
-      elasticity: parseFloat(document.getElementById("elasticity").value),
+      gravity: getPhysicsSetting("gravity", 9.81),
+      ball_mass: getPhysicsSetting("ball-mass", 0.024),
+      air_density: getPhysicsSetting("air-density", 1.225),
+      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.5),
+      elasticity: getPhysicsSetting("elasticity", 0.4),
     },
   };
   addDebugInfo("request", payload);
@@ -453,6 +482,12 @@ function startSimulation() {
 }
 
 function optimizeSettings() {
+  // อ่านค่า Physics จาก localStorage หรือใช้ค่า default (เหมือนใน startSimulation)
+  const getPhysicsSetting = (id, defaultValue) => {
+    const storedValue = localStorage.getItem(`physics_${id}`);
+    return storedValue !== null ? parseFloat(storedValue) : defaultValue;
+  };
+
   const payload = {
     target_x: parseFloat(document.getElementById("target-x").value),
     target_z: parseFloat(document.getElementById("target-z").value),
@@ -473,13 +508,11 @@ function optimizeSettings() {
       velocity: document.getElementById("fix-velocity").checked,
     },
     physics: {
-      gravity: parseFloat(document.getElementById("gravity").value),
-      ball_mass: parseFloat(document.getElementById("ball-mass").value),
-      air_density: parseFloat(document.getElementById("air-density").value),
-      drag_coefficient: parseFloat(
-        document.getElementById("drag-coefficient").value
-      ),
-      elasticity: parseFloat(document.getElementById("elasticity").value),
+      gravity: getPhysicsSetting("gravity", 9.81),
+      ball_mass: getPhysicsSetting("ball-mass", 0.024),
+      air_density: getPhysicsSetting("air-density", 1.225),
+      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.5),
+      elasticity: getPhysicsSetting("elasticity", 0.4),
     },
   };
   addDebugInfo("request", payload);
@@ -558,21 +591,13 @@ function optimizeSettings() {
 
 function updateSimulationResultsUI(result) {
   document.getElementById("landing-position-x").textContent =
-    result.landing_position_x !== undefined
-      ? result.landing_position_x.toFixed(2) + " ม"
-      : "ไม่มีข้อมูล";
+    result.landing_position_x.toFixed(3) + " m";
   document.getElementById("landing-position-z").textContent =
-    result.landing_position_z !== undefined
-      ? result.landing_position_z.toFixed(2) + " ม"
-      : "ไม่มีข้อมูล";
+    result.landing_position_z.toFixed(3) + " m";
   document.getElementById("landing-distance-radial").textContent =
-    result.landing_distance_radial !== undefined
-      ? result.landing_distance_radial.toFixed(2) + " ม"
-      : "ไม่มีข้อมูล";
+    result.landing_distance_radial.toFixed(3) + " m";
   document.getElementById("strike-time").textContent =
-    result.strike_time !== undefined
-      ? result.strike_time.toFixed(2) + " วิ"
-      : "ไม่มีข้อมูล";
+    result.strike_time.toFixed(3) + " s";
 
   const targetZoneHitEl = document.getElementById("target-zone-hit");
   const zoneIndex = result.target_zone ? result.target_zone - 1 : -1;
@@ -604,13 +629,9 @@ function updateSimulationResultsUI(result) {
   const idealGroup = document.querySelector(".ideal-result-group");
   if (result.ideal_trajectory_x && idealGroup) {
     document.getElementById("ideal-landing-x").textContent =
-      result.ideal_landing_position_x !== undefined
-        ? result.ideal_landing_position_x.toFixed(2) + " ม"
-        : "ไม่มีข้อมูล";
+      result.ideal_landing_position_x.toFixed(3) + " m";
     document.getElementById("ideal-landing-z").textContent =
-      result.ideal_landing_position_z !== undefined
-        ? result.ideal_landing_position_z.toFixed(2) + " ม"
-        : "ไม่มีข้อมูล";
+      result.ideal_landing_position_z.toFixed(3) + " m";
     idealGroup.style.display = "grid";
     updateIdealTrajectoryCharts(
       result.ideal_trajectory_x,
@@ -626,65 +647,57 @@ function updateSimulationResultsUI(result) {
     trajectoryChartSideView?.update();
     trajectoryChartTopView?.update();
   }
+
+  if (result.optimized_params) {
+    updateOptimizedParamsUI({
+      strike_angle_elevation: result.optimized_params.strike_angle_elevation,
+      strike_azimuth_angle: result.optimized_params.strike_azimuth_angle,
+      strike_velocity: result.optimized_params.strike_velocity,
+      strike_angle_elevation_range: result.optimized_params.strike_angle_elevation_range,
+      strike_azimuth_angle_range: result.optimized_params.strike_azimuth_angle_range,
+      strike_velocity_range: result.optimized_params.strike_velocity_range,
+      target_x: result.optimization_target.x,
+      target_z: result.optimization_target.z,
+      error_distance: result.optimization_error_distance,
+      actual_landing_x: result.optimized_actual_landing_x,
+      actual_landing_z: result.optimized_actual_landing_z
+    });
+  }
 }
 
-function updateOptimizedParamsUI(result) {
-  const displayDiv = document.getElementById("optimal-params-display");
-  if (!displayDiv) return;
+function updateOptimizedParamsUI(data) {
+  document.getElementById("optimal-params-display").style.display = "block";
 
   document.getElementById("optimized-elevation-angle-value").textContent =
-    result.elevation_angle !== undefined
-      ? result.elevation_angle.toFixed(2) + "°"
-      : "ไม่มีข้อมูล";
+    data.strike_angle_elevation.toFixed(2) + "°";
   document.getElementById("optimized-elevation-angle-range").textContent =
-    result.elevation_angle_min !== undefined &&
-    result.elevation_angle_max !== undefined
-      ? `${result.elevation_angle_min.toFixed(
-          2
-        )}° - ${result.elevation_angle_max.toFixed(2)}°`
-      : "ไม่มีข้อมูล";
+    data.strike_angle_elevation_range
+      ? `${data.strike_angle_elevation_range[0].toFixed(1)}° - ${data.strike_angle_elevation_range[1].toFixed(1)}°`
+      : "N/A";
 
   document.getElementById("optimized-azimuth-angle-value").textContent =
-    result.azimuth_angle !== undefined
-      ? result.azimuth_angle.toFixed(2) + "°"
-      : "ไม่มีข้อมูล";
+    data.strike_azimuth_angle.toFixed(2) + "°";
   document.getElementById("optimized-azimuth-angle-range").textContent =
-    result.azimuth_angle_min !== undefined &&
-    result.azimuth_angle_max !== undefined
-      ? `${result.azimuth_angle_min.toFixed(
-          2
-        )}° - ${result.azimuth_angle_max.toFixed(2)}°`
-      : "ไม่มีข้อมูล";
+    data.strike_azimuth_angle_range
+      ? `${data.strike_azimuth_angle_range[0].toFixed(1)}° - ${data.strike_azimuth_angle_range[1].toFixed(1)}°`
+      : "N/A";
 
   document.getElementById("optimized-velocity-value").textContent =
-    result.velocity !== undefined ? result.velocity.toFixed(2) + " ม/ว" : "ไม่มีข้อมูล";
+    data.strike_velocity.toFixed(2) + " m/s";
   document.getElementById("optimized-velocity-range").textContent =
-    result.velocity_min !== undefined && result.velocity_max !== undefined
-      ? `${result.velocity_min.toFixed(2)} - ${result.velocity_max.toFixed(
-          2
-        )} ม/ว`
-      : "ไม่มีข้อมูล";
+    data.strike_velocity_range
+      ? `${data.strike_velocity_range[0].toFixed(1)} - ${data.strike_velocity_range[1].toFixed(1)} m/s`
+      : "N/A";
 
-  document.getElementById("optimized-actual-landing-x").textContent =
-    result.actual_landing_x !== undefined
-      ? result.actual_landing_x.toFixed(2) + " ม"
-      : "ไม่มีข้อมูล";
-  document.getElementById("optimized-actual-landing-z").textContent =
-    result.actual_landing_z !== undefined
-      ? result.actual_landing_z.toFixed(2) + " ม"
-      : "ไม่มีข้อมูล";
-  document.getElementById("optimized-target-xz").textContent =
-    result.target_x !== undefined && result.target_z !== undefined
-      ? `(${result.target_x.toFixed(2)}, ${result.target_z.toFixed(2)}) ม`
-      : "ไม่มีข้อมูล";
-  document.getElementById("optimized-error-dist").textContent =
-    result.error_distance !== undefined && result.error_percent !== undefined
-      ? `${result.error_distance.toFixed(2)} ม (${result.error_percent.toFixed(
-          2
-        )}%)`
-      : "ไม่มีข้อมูล";
-
-  displayDiv.style.display = "block";
+  document.getElementById("optimized-target-xz").textContent = `(${data.target_x.toFixed(2)}, ${data.target_z.toFixed(2)}) m`;
+  let errorPercentage = 0;
+  const targetMagnitude = Math.sqrt(data.target_x ** 2 + data.target_z ** 2);
+  if (targetMagnitude > 0) {
+    errorPercentage = (data.error_distance / targetMagnitude) * 100;
+  }
+  document.getElementById("optimized-error-dist").textContent = `${data.error_distance.toFixed(3)} m (${errorPercentage.toFixed(2)}%)`;
+  document.getElementById("optimized-actual-landing-x").textContent = data.actual_landing_x.toFixed(3) + " m";
+  document.getElementById("optimized-actual-landing-z").textContent = data.actual_landing_z.toFixed(3) + " m";
 }
 
 function updateTrajectoryCharts(trajX, trajY, trajZ, zonesDataFromCalc) {
@@ -1042,11 +1055,27 @@ function resetSimulation() {
   document.getElementById("fix-velocity").checked = false;
   checkConflictingOptimizeOptions();
 
-  document.getElementById("landing-position-x").textContent = "0.00 ม";
-  document.getElementById("landing-position-z").textContent = "0.00 ม";
-  document.getElementById("landing-distance-radial").textContent = "0.00 ม";
+  // Reset Physics Settings ใน UI และ localStorage เป็นค่า default
+  const defaultPhysics = {
+    gravity: 9.81,
+    "ball-mass": 0.024,
+    "air-density": 1.225,
+    "drag-coefficient": 0.5,
+    elasticity: 0.4,
+  };
+  for (const id in defaultPhysics) {
+    const inputElement = document.getElementById(id);
+    if (inputElement) {
+      inputElement.value = defaultPhysics[id];
+      localStorage.setItem(`physics_${id}`, defaultPhysics[id]);
+    }
+  }
+
+  document.getElementById("landing-position-x").textContent = "0.00 m";
+  document.getElementById("landing-position-z").textContent = "0.00 m";
+  document.getElementById("landing-distance-radial").textContent = "0.00 m";
   document.getElementById("target-zone-hit").textContent = "ไม่พบ";
-  document.getElementById("strike-time").textContent = "0.00 วิ";
+  document.getElementById("strike-time").textContent = "0.00 s";
 
   const idealGroup = document.querySelector(".ideal-result-group");
   if (idealGroup) idealGroup.style.display = "none";
@@ -1095,6 +1124,14 @@ function openTab(tabName) {
     )
     .forEach((btn) => btn.classList.add("active"));
   updateChartsIfNeeded(tabName);
+
+  if (tabName === 'compare') {
+    if (typeof initializeCompareTab === 'function') {
+      initializeCompareTab();
+    } else {
+      console.error("initializeCompareTab function is not defined. Make sure it is globally available from index.html.");
+    }
+  }
 }
 
 function updateChartsIfNeeded(tabName) {

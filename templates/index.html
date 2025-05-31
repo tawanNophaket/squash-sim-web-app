@@ -97,6 +97,42 @@
           grid-template-columns: 1fr 1fr; /* 2 columns for wider screens */
         }
       }
+
+      /* CSS จาก compare_results.html */
+      .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
+      }
+      .result-section {
+        background-color: var(--surface-card);
+        padding: var(--spacing-md);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+      }
+      .result-section h3 {
+        color: var(--primary);
+        margin-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: var(--spacing-xs);
+      }
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: var(--spacing-sm);
+      }
+      .comparison-table th,
+      .comparison-table td {
+        border: 1px solid var(--border-color);
+        padding: var(--spacing-sm);
+        text-align: left;
+      }
+      .comparison-table th {
+        background-color: var(--surface-header);
+        color: var(--text-secondary);
+      }
+      /* สิ้นสุด CSS จาก compare_results.html */
     </style>
   </head>
   <body>
@@ -116,7 +152,7 @@
       <div class="container">
         <h1>
           <i class="fas fa-bullseye" style="margin-right: 10px"></i>
-          โปรแกรมจำลองการตีลูกสควอช (3มิติ)
+          โปรแกรมจำลองการตีลูกสควอช (3D Squash Ball Striker Simulator)
         </h1>
 
         <div class="tabs">
@@ -129,6 +165,9 @@
           <button class="tab-btn" onclick="openTab('field')">
             <i class="fas fa-map-marked-alt"></i> สนาม
           </button>
+          <button class="tab-btn" onclick="openTab('compare')">
+            <i class="fas fa-balance-scale"></i> เปรียบเทียบผล
+          </button>
           <button class="tab-btn" onclick="openTab('settings')">
             <i class="fas fa-cog"></i> ตั้งค่า
           </button>
@@ -139,16 +178,16 @@
             <h2><i class="fas fa-sliders-h"></i> ตั้งค่าหลัก</h2>
 
             <div class="control-group">
-              <label for="release-height">ความสูงในการปล่อยลูก</label>
+              <label for="release-height">ความสูงในการปล่อยลูก (m)</label>
               <select id="release-height" class="select-control">
-                <option value="1.0">1.0ม (ต่ำ)</option>
-                <option value="1.5">1.5ม (ปานกลาง)</option>
-                <option value="2.0" selected>2.0ม (สูง)</option>
+                <option value="1.0">1.0m (ต่ำ)</option>
+                <option value="1.5">1.5m (ปานกลาง)</option>
+                <option value="2.0" selected>2.0m (สูง)</option>
               </select>
             </div>
 
             <div class="control-group">
-              <label for="strike-height">ความสูงในการตี</label>
+              <label for="strike-height">ความสูงในการตี (m)</label>
               <div class="control-slider">
                 <input
                   type="range"
@@ -158,13 +197,13 @@
                   step="0.01"
                   value="0.35"
                 />
-                <span id="height-value" class="value">0.35ม</span>
+                <span id="height-value" class="value">0.35m</span>
               </div>
             </div>
 
             <div class="control-group">
               <label for="strike-angle-elevation"
-                >มุมเงยในการตี (แนวตั้ง)</label
+                >มุมเงยในการตี (แนวตั้ง) (°)</label
               >
               <div class="control-slider">
                 <input
@@ -181,7 +220,7 @@
 
             <div class="control-group">
               <label for="strike-azimuth-angle"
-                >มุมทิศในการตี (แนวนอน)</label
+                >มุมทิศในการตี (แนวนอน) (°)</label
               >
               <div class="control-slider">
                 <input
@@ -197,7 +236,7 @@
             </div>
 
             <div class="control-group">
-              <label for="strike-velocity">ความเร็วในการตี</label>
+              <label for="strike-velocity">ความเร็วในการตี (m/s)</label>
               <div class="control-slider">
                 <input
                   type="range"
@@ -207,7 +246,7 @@
                   step="0.1"
                   value="5.25"
                 />
-                <span id="velocity-value" class="value">5.25 ม/ว</span>
+                <span id="velocity-value" class="value">5.25 m/s</span>
               </div>
             </div>
 
@@ -222,10 +261,10 @@
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-crosshairs"></i> พิกัดเป้าหมาย</h2>
+            <h2><i class="fas fa-crosshairs"></i> พิกัดเป้าหมาย (Target Coordinates)</h2>
             <div class="target-inputs">
               <div class="control-group">
-                <label for="target-x">เป้าหมาย X (ม)</label>
+                <label for="target-x">เป้าหมาย X (m)</label>
                 <input
                   type="number"
                   id="target-x"
@@ -235,7 +274,7 @@
                 />
               </div>
               <div class="control-group">
-                <label for="target-z">เป้าหมาย Z (ม, ด้านหน้า)</label>
+                <label for="target-z">เป้าหมาย Z (m, ด้านหน้า)</label>
                 <input
                   type="number"
                   id="target-z"
@@ -256,9 +295,7 @@
             <div class="control-group">
               <div class="checkbox-control">
                 <input type="checkbox" id="fix-elevation-angle" />
-                <label for="fix-elevation-angle"
-                  >ตรึงค่ามุมเงยปัจจุบัน</label
-                >
+                <label for="fix-elevation-angle">ตรึงค่ามุมเงยปัจจุบัน</label>
               </div>
             </div>
             <div class="control-group">
@@ -275,8 +312,7 @@
             </div>
             <p class="help-text">
               <i class="fas fa-info-circle"></i> หากไม่เลือกตัวเลือกใดเลย
-              ระบบจะปรับพารามิเตอร์ทั้งสามให้เหมาะสม (มุมเงย, มุมทิศ,
-              ความเร็ว)
+              ระบบจะปรับพารามิเตอร์ทั้งสามให้เหมาะสม (มุมเงย, มุมทิศ, ความเร็ว)
             </p>
           </div>
 
@@ -310,26 +346,26 @@
             <h2><i class="fas fa-chart-line"></i> ผลลัพธ์การจำลอง</h2>
             <div class="results-grid">
               <div class="result-card">
-                <div class="result-label">ตำแหน่งตกกระทบ X</div>
-                <div id="landing-position-x" class="result-value">0.00 ม</div>
+                <div class="result-label">ตำแหน่งตกกระทบ X (Landing Position X)</div>
+                <div id="landing-position-x" class="result-value">0.00 m</div>
               </div>
               <div class="result-card">
-                <div class="result-label">ตำแหน่งตกกระทบ Z (ด้านหน้า)</div>
-                <div id="landing-position-z" class="result-value">0.00 ม</div>
+                <div class="result-label">ตำแหน่งตกกระทบ Z (Landing Position Z, Forward)</div>
+                <div id="landing-position-z" class="result-value">0.00 m</div>
               </div>
               <div class="result-card">
-                <div class="result-label">ระยะห่างแนวรัศมี</div>
+                <div class="result-label">ระยะห่างแนวรัศมี (Radial Distance)</div>
                 <div id="landing-distance-radial" class="result-value">
-                  0.00 ม
+                  0.00 m
                 </div>
               </div>
               <div class="result-card">
-                <div class="result-label">โซนเป้าหมายที่โดน</div>
-                <div id="target-zone-hit" class="result-value">ไม่มี</div>
+                <div class="result-label">โซนเป้าหมายที่โดน (Target Zone Hit)</div>
+                <div id="target-zone-hit" class="result-value">ไม่มี (None)</div>
               </div>
               <div class="result-card">
-                <div class="result-label">เวลาที่ใช้ในการตี</div>
-                <div id="strike-time" class="result-value">0.00 วิ</div>
+                <div class="result-label">เวลาที่ใช้ในการตี (Strike Time)</div>
+                <div id="strike-time" class="result-value">0.00 s</div>
               </div>
             </div>
             <div
@@ -337,26 +373,24 @@
               style="display: none; margin-top: var(--spacing-sm)"
             >
               <div class="result-card">
-                <div class="result-label">ตำแหน่งตกกระทบ X (อุดมคติ)</div>
-                <div id="ideal-landing-x" class="result-value">0.00 ม</div>
+                <div class="result-label">ตำแหน่งตกกระทบ X (อุดมคติ) (Ideal Landing X)</div>
+                <div id="ideal-landing-x" class="result-value">0.00 m</div>
               </div>
               <div class="result-card">
-                <div class="result-label">ตำแหน่งตกกระทบ Z (อุดมคติ)</div>
-                <div id="ideal-landing-z" class="result-value">0.00 ม</div>
+                <div class="result-label">ตำแหน่งตกกระทบ Z (อุดมคติ) (Ideal Landing Z)</div>
+                <div id="ideal-landing-z" class="result-value">0.00 m</div>
               </div>
             </div>
           </div>
 
           <div class="card">
-            <h2>
-              <i class="fas fa-project-diagram"></i> การแสดงผลวิถีโคจร
-            </h2>
+            <h2><i class="fas fa-project-diagram"></i> การแสดงผลวิถีโคจร (Trajectory Visualizations)</h2>
             <div class="chart-container-grid">
               <div class="chart-container">
                 <h3
                   style="text-align: center; margin-bottom: var(--spacing-sm)"
                 >
-                  มุมมองด้านข้าง (แกน Z-Y)
+                  มุมมองด้านข้าง (Side View, Z-Y Projection)
                 </h3>
                 <canvas id="trajectory-chart-side-view"></canvas>
               </div>
@@ -364,7 +398,7 @@
                 <h3
                   style="text-align: center; margin-bottom: var(--spacing-sm)"
                 >
-                  มุมมองด้านบน (แกน X-Z)
+                  มุมมองด้านบน (Top-Down View, X-Z Projection)
                 </h3>
                 <canvas id="trajectory-chart-top-view"></canvas>
               </div>
@@ -376,10 +410,10 @@
             style="display: none; margin-top: 16px"
           >
             <div class="card">
-              <h3><i class="fas fa-bullseye"></i> พารามิเตอร์ที่ปรับให้เหมาะสมที่สุด</h3>
+              <h3><i class="fas fa-bullseye"></i> พารามิเตอร์ที่ปรับให้เหมาะสมที่สุด (Optimized Parameters)</h3>
               <div class="results-grid">
                 <div class="result-card">
-                  <div class="result-label">มุมเงยที่เหมาะสมที่สุด</div>
+                  <div class="result-label">มุมเงยที่เหมาะสมที่สุด (Optimal Elevation)</div>
                   <div
                     id="optimized-elevation-angle-value"
                     class="result-value"
@@ -387,66 +421,54 @@
                     0.00°
                   </div>
                   <div class="result-detail">
-                    ช่วง:
-                    <span id="optimized-elevation-angle-range">0° - 0°</span>
+                    ช่วง (Range): <span id="optimized-elevation-angle-range">0° - 0°</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">มุมทิศที่เหมาะสมที่สุด</div>
+                  <div class="result-label">มุมทิศที่เหมาะสมที่สุด (Optimal Azimuth)</div>
                   <div id="optimized-azimuth-angle-value" class="result-value">
                     0.00°
                   </div>
                   <div class="result-detail">
-                    ช่วง:
-                    <span id="optimized-azimuth-angle-range">0° - 0°</span>
+                    ช่วง (Range): <span id="optimized-azimuth-angle-range">0° - 0°</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">ความเร็วที่เหมาะสมที่สุด</div>
+                  <div class="result-label">ความเร็วที่เหมาะสมที่สุด (Optimal Velocity)</div>
                   <div id="optimized-velocity-value" class="result-value">
-                    0.00 ม/ว
+                    0.00 m/s
                   </div>
                   <div class="result-detail">
-                    ช่วง: <span id="optimized-velocity-range">0 - 0 ม/ว</span>
+                    ช่วง (Range): <span id="optimized-velocity-range">0 - 0 m/s</span>
                   </div>
                 </div>
               </div>
               <div class="results-grid" style="margin-top: var(--spacing-sm)">
                 <div class="result-card">
-                  <div class="result-label">ตำแหน่งตกกระทบ X ที่คาดหวัง</div>
+                  <div class="result-label">ตำแหน่งตกกระทบ X ที่คาดหวัง (Expected Landing X)</div>
                   <div id="optimized-actual-landing-x" class="result-value">
-                    0.00 ม
+                    0.00 m
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">ตำแหน่งตกกระทบ Z ที่คาดหวัง</div>
+                  <div class="result-label">ตำแหน่งตกกระทบ Z ที่คาดหวัง (Expected Landing Z)</div>
                   <div id="optimized-actual-landing-z" class="result-value">
-                    0.00 ม
+                    0.00 m
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">เป้าหมาย X, Z</div>
+                  <div class="result-label">เป้าหมาย X, Z (Target X,Z)</div>
                   <div id="optimized-target-xz" class="result-value">
-                    (0.00, 0.00) ม
+                    (0.00, 0.00) m
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">ระยะคลาดเคลื่อน</div>
+                  <div class="result-label">ระยะคลาดเคลื่อน (Error Distance)</div>
                   <div id="optimized-error-dist" class="result-value">
-                    0.00 ม (0.00%)
+                    0.00 m (0.00%)
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <h2><i class="fas fa-bug"></i> ข้อมูลดีบัก</h2>
-            <div class="debug-info">
-              <button onclick="toggleDebugInfo()" class="btn-secondary">
-                <i class="fas fa-code"></i> แสดง/ซ่อนข้อมูลดีบัก
-              </button>
-              <div id="debug-info-content" style="display: none"></div>
             </div>
           </div>
         </div>
@@ -455,11 +477,13 @@
           <div class="card">
             <h2><i class="fas fa-th"></i> รูปแบบสนาม & การกำหนดเป้าหมาย</h2>
             <div class="control-group">
-              <label for="field-type">เลือกรูปแบบสนาม</label>
+              <label for="field-type">เลือกรูปแบบสนาม (Select Field Layout)</label>
               <select id="field-type" onchange="handleFieldTypeChange()">
-                <option value="standard" selected>มาตรฐาน (1มิติ แนวรัศมี)</option>
-                <option value="extra1">ขยายระยะ (1มิติ แนวรัศมี)</option>
-                <option value="extra2">สนามทำมุม (2มิติ X-Z)</option>
+                <option value="standard" selected>
+                  มาตรฐาน (Standard, 1D Radial)
+                </option>
+                <option value="extra1">ขยายระยะ (Extended Range, 1D Radial)</option>
+                <option value="extra2">สนามทำมุม (Angled Field, 2D X-Z)</option>
               </select>
             </div>
             <div class="chart-container" style="height: 400px">
@@ -472,118 +496,231 @@
             >
               <p>
                 <i class="fas fa-info-circle"></i>
-                สำหรับสนาม 2มิติ (เช่น Extra2), คลิกบนแผนภูมิเพื่อตั้งค่าเป้าหมาย X,
-                Z. สำหรับสนาม 1มิติ, โซนจะเป็นแนวรัศมี
+                สำหรับสนาม 2มิติ (เช่น Extra2), คลิกบนแผนภูมิเพื่อตั้งค่าเป้าหมาย X,Z. สำหรับสนาม 1มิติ, โซนจะเป็นแนวรัศมี
+                (For 2D fields (e.g., Extra2), click on the chart to set Target X,Z. For 1D fields, zones are radial.)
               </p>
             </div>
           </div>
         </div>
 
+        <div id="compare" class="tab-content">
+          <div class="card">
+            <h2>
+              <i class="fas fa-balance-scale" style="margin-right: 10px"></i>
+              เปรียบเทียบผลการทดลองและผลการจำลอง (Compare Experimental & Simulation Results)
+            </h2>
+            <div class="comparison-grid">
+              <div class="result-section sim-params-section">
+                <h3>
+                  <i class="fas fa-cogs"></i> พารามิเตอร์การจำลอง (เปรียบเทียบ) (Simulation Parameters - Compare)
+                </h3>
+                <div class="control-group">
+                  <label for="comp-release-height"
+                    >ความสูงในการปล่อยลูก (m) (Release Height (m))</label
+                  >
+                  <input
+                    type="number"
+                    id="comp-release-height"
+                    value="2.0"
+                    step="0.1"
+                    class="input-control"
+                  />
+                </div>
+                <div class="control-group">
+                  <label for="comp-strike-height">ความสูงในการตี (m) (Strike Height (m))</label>
+                  <input
+                    type="number"
+                    id="comp-strike-height"
+                    value="0.35"
+                    step="0.01"
+                    class="input-control"
+                  />
+                </div>
+                <div class="control-group">
+                  <label for="comp-strike-angle-elevation"
+                    >มุมเงยในการตี (°) (Strike Elevation Angle (°))</label
+                  >
+                  <input
+                    type="number"
+                    id="comp-strike-angle-elevation"
+                    value="45"
+                    step="0.1"
+                    class="input-control"
+                  />
+                </div>
+                <div class="control-group">
+                  <label for="comp-strike-azimuth-angle"
+                    >มุมทิศในการตี (°) (Strike Azimuth Angle (°))</label
+                  >
+                  <input
+                    type="number"
+                    id="comp-strike-azimuth-angle"
+                    value="0"
+                    step="0.1"
+                    class="input-control"
+                  />
+                </div>
+                <div class="control-group">
+                  <label for="comp-strike-velocity"
+                    >ความเร็วในการตี (m/s) (Strike Velocity (m/s))</label
+                  >
+                  <input
+                    type="number"
+                    id="comp-strike-velocity"
+                    value="5.25"
+                    step="0.1"
+                    class="input-control"
+                  />
+                </div>
+                <button id="run-sim-compare-btn" class="btn-primary">
+                  <i class="fas fa-play"></i> เริ่มการจำลอง (เพื่อเปรียบเทียบ) (Run Simulation - Compare)
+                </button>
+              </div>
+
+              <div class="result-section sim-results-section">
+                <h3>
+                  <i class="fas fa-chart-line"></i> ผลลัพธ์จากการจำลอง (เปรียบเทียบ) (Simulation Results - Compare)
+                </h3>
+                <table class="comparison-table">
+                  <tr>
+                    <th>รายการ (Item)</th>
+                    <th>ค่า (Value)</th>
+                  </tr>
+                  <tr>
+                    <td>ตำแหน่งตกกระทบ X (จำลอง) (Simulated Landing X)</td>
+                    <td id="compare-sim-landing-x">-</td>
+                  </tr>
+                  <tr>
+                    <td>ตำแหน่งตกกระทบ Z (จำลอง) (Simulated Landing Z)</td>
+                    <td id="compare-sim-landing-z">-</td>
+                  </tr>
+                  <tr>
+                    <td>ระยะทางแนวรัศมี (จำลอง) (Simulated Radial Dist.)</td>
+                    <td id="compare-sim-radial-dist">-</td>
+                  </tr>
+                  <tr>
+                    <td>เวลาที่ใช้ (จำลอง) (Simulated Time)</td>
+                    <td id="compare-sim-strike-time">-</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="result-section actual-input-section">
+                <h3>
+                  <i class="fas fa-edit"></i> ป้อนผลการทดลองจริง (เปรียบเทียบ) (Enter Actual Experimental Results - Compare)
+                </h3>
+                <div class="control-group">
+                  <label for="compare-actual-landing-x"
+                    >ตำแหน่งตกกระทบ X จริง (m) (Actual Landing X (m))</label
+                  >
+                  <input
+                    type="number"
+                    id="compare-actual-landing-x"
+                    step="0.01"
+                    class="input-control"
+                  />
+                </div>
+                <div class="control-group">
+                  <label for="compare-actual-landing-z"
+                    >ตำแหน่งตกกระทบ Z จริง (m) (Actual Landing Z (m))</label
+                  >
+                  <input
+                    type="number"
+                    id="compare-actual-landing-z"
+                    step="0.01"
+                    class="input-control"
+                  />
+                </div>
+                <button id="compare-results-btn" class="btn-accent" disabled>
+                  <i class="fas fa-balance-scale"></i> เปรียบเทียบผลลัพธ์ (Compare Results)
+                </button>
+              </div>
+
+              <div class="result-section comparison-results-section">
+                <h3><i class="fas fa-equals"></i> ผลการเปรียบเทียบ (Comparison Results)</h3>
+                <table class="comparison-table">
+                  <tr>
+                    <th>รายการ (Item)</th>
+                    <th>ค่า (Value)</th>
+                  </tr>
+                  <tr>
+                    <td>ความแตกต่าง X (จำลอง - จริง) (Delta X (Sim - Actual))</td>
+                    <td id="compare-delta-x">-</td>
+                  </tr>
+                  <tr>
+                    <td>ความแตกต่าง Z (จำลอง - จริง) (Delta Z (Sim - Actual))</td>
+                    <td id="compare-delta-z">-</td>
+                  </tr>
+                  <tr>
+                    <td>ระยะคลาดเคลื่อนรวม (Total Error Distance)</td>
+                    <td id="compare-error-distance">-</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin-top: var(--spacing-lg)">
+              <button
+                id="export-csv-compare-btn"
+                class="btn-secondary btn-full"
+                disabled
+              >
+                <i class="fas fa-file-csv"></i> Export ผลลัพธ์เปรียบเทียบเป็น CSV (Export Comparison as CSV)
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- สิ้นสุดเนื้อหา Tab compare -->
+
         <div id="settings" class="tab-content">
           <div class="card">
             <h2>
-              <i class="fas fa-ruler-combined"></i> พารามิเตอร์สนามแบบกำหนดเอง
-              (ส่วนใหญ่สำหรับสนาม 1มิติ)
+              <i class="fas fa-ruler-combined"></i> พารามิเตอร์สนามแบบกำหนดเอง (ส่วนใหญ่สำหรับสนาม 1มิติ) (Custom Field Parameters - mainly for 1D fields)
             </h2>
             <p class="help-text">
-              การตั้งค่าเหล่านี้ส่วนใหญ่ใช้กับสนามแนวรัศมี 1มิติ 'มาตรฐาน' หรือ 'ขยายระยะ'
-              หากคุณกำหนดให้เป็น 'กำหนดเอง' ส่วน 'สนามทำมุม (2มิติ)' จะใช้ข้อมูลโซนที่กำหนดไว้ล่วงหน้า
+              การตั้งค่าเหล่านี้ส่วนใหญ่ใช้กับสนามแนวรัศมี 1มิติ 'มาตรฐาน' หรือ 'ขยายระยะ' หากคุณกำหนดให้เป็น 'กำหนดเอง' ส่วน 'สนามทำมุม (2มิติ)' จะใช้ข้อมูลโซนที่กำหนดไว้ล่วงหน้า (These settings mostly apply to 1D radial fields like 'Standard' or 'Extended Range'. The 'Angled Field (2D)' uses predefined zone data.)
             </p>
             <div class="control-group">
-              <label for="min-distance">ระยะรัศมีต่ำสุด (ม)</label>
-              <input
-                type="number"
-                id="min-distance"
-                min="0.1"
-                max="10"
-                step="0.01"
-                value="0.75"
-              />
+              <label for="min-distance">ระยะรัศมีต่ำสุด (m) (Min. Radial Distance (m))</label>
+              <input type="number" id="min-distance" min="0.1" max="10" step="0.01" value="0.75" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="max-distance">ระยะรัศมีสูงสุด (ม)</label>
-              <input
-                type="number"
-                id="max-distance"
-                min="0.1"
-                max="10"
-                step="0.01"
-                value="2.65"
-              />
+              <label for="max-distance">ระยะรัศมีสูงสุด (m) (Max. Radial Distance (m))</label>
+              <input type="number" id="max-distance" min="0.1" max="10" step="0.01" value="2.65" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="zone-width">ความกว้างโซนแนวรัศมี (ม)</label>
-              <input
-                type="number"
-                id="zone-width"
-                min="0.1"
-                max="2"
-                step="0.01"
-                value="0.38"
-              />
+              <label for="zone-width">ความกว้างโซนแนวรัศมี (m) (Radial Zone Width (m))</label>
+              <input type="number" id="zone-width" min="0.1" max="2" step="0.01" value="0.38" class="input-control" />
             </div>
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-atom"></i> ตั้งค่าฟิสิกส์ขั้นสูง</h2>
+            <h2><i class="fas fa-atom"></i> ตั้งค่าฟิสิกส์ขั้นสูง (Advanced Physics Settings)</h2>
             <div class="control-group">
-              <label for="gravity">แรงโน้มถ่วง (ม/วิ²)</label>
-              <input
-                type="number"
-                id="gravity"
-                min="1"
-                max="20"
-                step="0.01"
-                value="9.81"
-              />
+              <label for="gravity">แรงโน้มถ่วง (m/s²) (Gravity (m/s²))</label>
+              <input type="number" id="gravity" min="1" max="20" step="0.01" value="9.81" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="ball-mass">มวลลูกบอล (กก)</label>
-              <input
-                type="number"
-                id="ball-mass"
-                min="0.01"
-                max="0.1"
-                step="0.001"
-                value="0.024"
-              />
+              <label for="ball-mass">มวลลูกบอล (kg) (Ball Mass (kg))</label>
+              <input type="number" id="ball-mass" min="0.01" max="0.1" step="0.001" value="0.024" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="air-density">ความหนาแน่นอากาศ (กก/ลบ.ม.)</label>
-              <input
-                type="number"
-                id="air-density"
-                min="0.1"
-                max="5"
-                step="0.001"
-                value="1.225"
-              />
+              <label for="air-density">ความหนาแน่นอากาศ (kg/m³) (Air Density (kg/m³))</label>
+              <input type="number" id="air-density" min="0.1" max="5" step="0.001" value="1.225" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="drag-coefficient">สัมประสิทธิ์แรงต้าน</label>
-              <input
-                type="number"
-                id="drag-coefficient"
-                min="0.1"
-                max="2"
-                step="0.01"
-                value="0.5"
-              />
+              <label for="drag-coefficient">สัมประสิทธิ์แรงต้าน (Drag Coefficient)</label>
+              <input type="number" id="drag-coefficient" min="0.1" max="2" step="0.01" value="0.5" class="input-control" />
             </div>
             <div class="control-group">
-              <label for="elasticity">ค่าความยืดหยุ่น (การคืนตัวของลูกบอล)</label>
-              <input
-                type="number"
-                id="elasticity"
-                min="0.1"
-                max="1"
-                step="0.01"
-                value="0.4"
-              />
+              <label for="elasticity">ค่าความยืดหยุ่น (การคืนตัวของลูกบอล) (Elasticity - Ball Restitution)</label>
+              <input type="number" id="elasticity" min="0.1" max="1" step="0.01" value="0.4" class="input-control" />
             </div>
           </div>
         </div>
-      </div>
+        <!-- สิ้นสุดเนื้อหา Tab settings -->
+
+      </div> <!-- ปิด .container หลัก -->
 
       <div class="mobile-nav">
         <button class="nav-btn active" onclick="openTab('simulator')">
@@ -598,6 +735,10 @@
           <i class="fas fa-map-marked-alt"></i>
           <span>สนาม</span>
         </button>
+        <button class="nav-btn" onclick="openTab('compare')">
+          <i class="fas fa-balance-scale"></i>
+          <span>เปรียบเทียบผล</span>
+        </button>
         <button class="nav-btn" onclick="openTab('settings')">
           <i class="fas fa-cog"></i>
           <span>ตั้งค่า</span>
@@ -610,6 +751,337 @@
         setTimeout(function () {
           document.getElementById("loading-screen").classList.add("fade-out");
         }, 1500);
+      });
+
+      let compareTabJsInitialized = false; // Flag to track initialization
+
+      function initializeCompareTab() {
+        const runSimCompareBtn = document.getElementById("run-sim-compare-btn");
+        const compareResultsBtn = document.getElementById(
+          "compare-results-btn"
+        );
+        const exportCsvCompareBtn = document.getElementById(
+          "export-csv-compare-btn"
+        );
+
+        if (!runSimCompareBtn || !compareResultsBtn || !exportCsvCompareBtn) {
+          // Elements not found, likely not on the compare tab or DOM not fully ready.
+          // console.warn("Compare tab elements not found during initialization attempt.");
+          return;
+        }
+
+        // Load last simulation parameters from general simulation into compare tab inputs
+        // This part can be run every time the tab is initialized/shown to refresh defaults.
+        const lastMainSimParams = JSON.parse(
+          localStorage.getItem("lastSimulationParams")
+        );
+        if (lastMainSimParams) {
+          if (document.getElementById("comp-release-height"))
+            document.getElementById("comp-release-height").value =
+              lastMainSimParams.release_height || 2.0;
+          if (document.getElementById("comp-strike-height"))
+            document.getElementById("comp-strike-height").value =
+              lastMainSimParams.strike_height || 0.35;
+          if (document.getElementById("comp-strike-angle-elevation"))
+            document.getElementById("comp-strike-angle-elevation").value =
+              lastMainSimParams.strike_angle_elevation || 45;
+          if (document.getElementById("comp-strike-azimuth-angle"))
+            document.getElementById("comp-strike-azimuth-angle").value =
+              lastMainSimParams.strike_azimuth_angle || 0;
+          if (document.getElementById("comp-strike-velocity"))
+            document.getElementById("comp-strike-velocity").value =
+              lastMainSimParams.strike_velocity || 5.25;
+        }
+        // Ensure physics settings are loaded/defaulted for the compare tab
+        // This can also be run each time to ensure consistency if physics settings change in another tab.
+        getPhysicsSettingsForCompareTab();
+
+        if (compareTabJsInitialized) {
+          // console.log("Compare tab JS already initialized. Skipping event listener setup.");
+          return; // Listeners already attached
+        }
+        // console.log("Initializing Compare tab JS and attaching event listeners.");
+
+        let simParamsCompare = {};
+        let simResultsCompare = {};
+        let actualResultsCompare = {};
+
+        function getPhysicsSettingsForCompareTab() {
+          const physics = {
+            gravity:
+              parseFloat(localStorage.getItem("physics_gravity")) || 9.81,
+            ball_mass:
+              parseFloat(localStorage.getItem("physics_ball_mass")) || 0.024,
+            air_density:
+              parseFloat(localStorage.getItem("physics_air_density")) || 1.225,
+            drag_coefficient:
+              parseFloat(localStorage.getItem("physics_drag_coefficient")) ||
+              0.5,
+            elasticity:
+              parseFloat(localStorage.getItem("physics_elasticity")) || 0.4,
+          };
+          localStorage.setItem("physics_gravity", physics.gravity);
+          localStorage.setItem("physics_ball_mass", physics.ball_mass);
+          localStorage.setItem("physics_air_density", physics.air_density);
+          localStorage.setItem(
+            "physics_drag_coefficient",
+            physics.drag_coefficient
+          );
+          localStorage.setItem("physics_elasticity", physics.elasticity);
+          return physics;
+        }
+
+        runSimCompareBtn.addEventListener("click", function () {
+          simParamsCompare = {
+            release_height: parseFloat(
+              document.getElementById("comp-release-height").value
+            ),
+            strike_height: parseFloat(
+              document.getElementById("comp-strike-height").value
+            ),
+            strike_angle_elevation: parseFloat(
+              document.getElementById("comp-strike-angle-elevation").value
+            ),
+            strike_azimuth_angle: parseFloat(
+              document.getElementById("comp-strike-azimuth-angle").value
+            ),
+            strike_velocity: parseFloat(
+              document.getElementById("comp-strike-velocity").value
+            ),
+            show_ideal: false,
+            physics: getPhysicsSettingsForCompareTab(),
+          };
+          showCustomMessage("กำลังจำลองผล (เพื่อเปรียบเทียบ)...", "info", 2000);
+          fetch("/api/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(simParamsCompare),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                showCustomMessage(
+                  "เกิดข้อผิดพลาดในการจำลอง (เปรียบเทียบ): " + data.error,
+                  "error"
+                );
+                simResultsCompare = {};
+                updateSimResultsTableForCompareTab(simResultsCompare);
+                compareResultsBtn.disabled = true;
+                exportCsvCompareBtn.disabled = true;
+              } else {
+                simResultsCompare = {
+                  landing_position_x: data.landing_position_x,
+                  landing_position_z: data.landing_position_z,
+                  landing_distance_radial: data.landing_distance_radial,
+                  strike_time: data.strike_time,
+                };
+                updateSimResultsTableForCompareTab(simResultsCompare);
+                compareResultsBtn.disabled = false;
+                exportCsvCompareBtn.disabled = true;
+                document.getElementById("compare-delta-x").textContent = "-";
+                document.getElementById("compare-delta-z").textContent = "-";
+                document.getElementById("compare-error-distance").textContent =
+                  "-";
+                showCustomMessage(
+                  "การจำลอง (เปรียบเทียบ) เสร็จสิ้น",
+                  "success"
+                );
+              }
+            })
+            .catch((error) => {
+              showCustomMessage(
+                "เกิดข้อผิดพลาดในการเชื่อมต่อ (เปรียบเทียบ): " + error,
+                "error"
+              );
+              simResultsCompare = {};
+              updateSimResultsTableForCompareTab(simResultsCompare);
+              compareResultsBtn.disabled = true;
+              exportCsvCompareBtn.disabled = true;
+            });
+        });
+
+        function updateSimResultsTableForCompareTab(results) {
+          document.getElementById("compare-sim-landing-x").textContent =
+            results.landing_position_x !== undefined
+              ? results.landing_position_x.toFixed(3) + " m"
+              : "-";
+          document.getElementById("compare-sim-landing-z").textContent =
+            results.landing_position_z !== undefined
+              ? results.landing_position_z.toFixed(3) + " m"
+              : "-";
+          document.getElementById("compare-sim-radial-dist").textContent =
+            results.landing_distance_radial !== undefined
+              ? results.landing_distance_radial.toFixed(3) + " m"
+              : "-";
+          document.getElementById("compare-sim-strike-time").textContent =
+            results.strike_time !== undefined
+              ? results.strike_time.toFixed(3) + " s"
+              : "-";
+        }
+
+        compareResultsBtn.addEventListener("click", function () {
+          const actualX = parseFloat(
+            document.getElementById("compare-actual-landing-x").value
+          );
+          const actualZ = parseFloat(
+            document.getElementById("compare-actual-landing-z").value
+          );
+
+          if (isNaN(actualX) || isNaN(actualZ)) {
+            showCustomMessage(
+              "กรุณาป้อนผลการทดลองจริง X และ Z (เปรียบเทียบ) ให้ถูกต้อง",
+              "warning"
+            );
+            exportCsvCompareBtn.disabled = true;
+            return;
+          }
+          if (
+            simResultsCompare.landing_position_x === undefined ||
+            simResultsCompare.landing_position_z === undefined
+          ) {
+            showCustomMessage(
+              "กรุณาทำการจำลองผล (เปรียบเทียบ) ก่อนเปรียบเทียบ",
+              "warning"
+            );
+            exportCsvCompareBtn.disabled = true;
+            return;
+          }
+          actualResultsCompare = {
+            landing_position_x: actualX,
+            landing_position_z: actualZ,
+          };
+          const deltaX = simResultsCompare.landing_position_x - actualX;
+          const deltaZ = simResultsCompare.landing_position_z - actualZ;
+          const errorDistance = Math.sqrt(deltaX ** 2 + deltaZ ** 2);
+          document.getElementById("compare-delta-x").textContent =
+            deltaX.toFixed(3) + " m";
+          document.getElementById("compare-delta-z").textContent =
+            deltaZ.toFixed(3) + " m";
+          document.getElementById("compare-error-distance").textContent =
+            errorDistance.toFixed(3) + " m";
+          exportCsvCompareBtn.disabled = false;
+          showCustomMessage(
+            "การเปรียบเทียบผลลัพธ์ (เปรียบเทียบ) เสร็จสิ้น",
+            "info"
+          );
+        });
+
+        exportCsvCompareBtn.addEventListener("click", function () {
+          if (
+            Object.keys(simParamsCompare).length === 0 ||
+            Object.keys(simResultsCompare).length === 0 ||
+            Object.keys(actualResultsCompare).length === 0
+          ) {
+            showCustomMessage(
+              "ข้อมูลไม่ครบถ้วนสำหรับการ Export (เปรียบเทียบ)",
+              "warning"
+            );
+            return;
+          }
+          let csvContent = "data:text/csv;charset=utf-8,";
+          csvContent +=
+            "Parameter,Simulated Value,Actual Value,Difference\\r\\n";
+          csvContent +=
+            "Release Height (m)," +
+            simParamsCompare.release_height +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Strike Height (m)," +
+            simParamsCompare.strike_height +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Strike Angle Elevation (°)," +
+            simParamsCompare.strike_angle_elevation +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Strike Azimuth Angle (°)," +
+            simParamsCompare.strike_azimuth_angle +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Strike Velocity (m/s)," +
+            simParamsCompare.strike_velocity +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Gravity (m/s²)," +
+            simParamsCompare.physics.gravity +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Ball Mass (kg)," +
+            simParamsCompare.physics.ball_mass +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Air Density (kg/m³)," +
+            simParamsCompare.physics.air_density +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Drag Coefficient," +
+            simParamsCompare.physics.drag_coefficient +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Elasticity," +
+            simParamsCompare.physics.elasticity +
+            ",N/A,N/A\\r\\n";
+          const simX = simResultsCompare.landing_position_x;
+          const simZ = simResultsCompare.landing_position_z;
+          const actX = actualResultsCompare.landing_position_x;
+          const actZ = actualResultsCompare.landing_position_z;
+          csvContent +=
+            "Landing X (m)," +
+            (simX !== undefined ? simX.toFixed(3) : "") +
+            "," +
+            (actX !== undefined ? actX.toFixed(3) : "") +
+            "," +
+            (simX !== undefined && actX !== undefined
+              ? (simX - actX).toFixed(3)
+              : "") +
+            "\\r\\n";
+          csvContent +=
+            "Landing Z (m)," +
+            (simZ !== undefined ? simZ.toFixed(3) : "") +
+            "," +
+            (actZ !== undefined ? actZ.toFixed(3) : "") +
+            "," +
+            (simZ !== undefined && actZ !== undefined
+              ? (simZ - actZ).toFixed(3)
+              : "") +
+            "\\r\\n";
+          csvContent +=
+            "Radial Distance (m)," +
+            (simResultsCompare.landing_distance_radial !== undefined
+              ? simResultsCompare.landing_distance_radial.toFixed(3)
+              : "") +
+            ",N/A,N/A\\r\\n";
+          csvContent +=
+            "Strike Time (s)," +
+            (simResultsCompare.strike_time !== undefined
+              ? simResultsCompare.strike_time.toFixed(3)
+              : "") +
+            ",N/A,N/A\\r\\n";
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement("a");
+          link.setAttribute("href", encodedUri);
+          link.setAttribute("download", "comparison_results.csv");
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showCustomMessage("Export CSV (เปรียบเทียบ) สำเร็จ", "success");
+        });
+
+        compareTabJsInitialized = true; // Set flag to true after attaching listeners
+      }
+
+      // Call initialization for compare tab on DOMContentLoaded.
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize other tabs/main functionalities if they also have specific JS initializations here
+        // For now, specifically calling initializeCompareTab if needed (e.g. if it's the default active tab)
+        // However, the openTab override handles initialization when switching to the 'compare' tab.
+        // Let's ensure it's called if 'compare' is the initial active tab (though unlikely by default)
+        if (
+          document.getElementById("compare") &&
+          document.getElementById("compare").classList.contains("active")
+        ) {
+          initializeCompareTab();
+        }
       });
     </script>
   </body>
