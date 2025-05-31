@@ -40,18 +40,18 @@ function addDebugInfo(type, data) {
 function updateDebugInfoDisplay() {
   const debugInfoContent = document.getElementById("debug-info-content");
   if (!debugInfoContent) return;
-  let content = "=== DEBUG INFO ===\n\n";
-  content += "--- LAST REQUEST ---\n";
+  let content = "=== ข้อมูลดีบัก ===\n\n";
+  content += "--- คำขอล่าสุด ---\n";
   content += debugInfo.lastRequest
     ? JSON.stringify(debugInfo.lastRequest, null, 2)
-    : "No request data";
+    : "ไม่มีข้อมูลคำขอ";
   content += "\n\n";
-  content += "--- LAST RESPONSE ---\n";
+  content += "--- การตอบกลับล่าสุด ---\n";
   content += debugInfo.lastResponse
     ? JSON.stringify(debugInfo.lastResponse, null, 2)
-    : "No response data";
+    : "ไม่มีข้อมูลการตอบกลับ";
   content += "\n\n";
-  content += "--- ERRORS ---\n";
+  content += "--- ข้อผิดพลาด ---\n";
   if (debugInfo.errors.length > 0) {
     debugInfo.errors.forEach((error, index) => {
       let errorMsg = error.error;
@@ -63,7 +63,7 @@ function updateDebugInfoDisplay() {
       content += `[${error.time}] Error ${index + 1}: ${errorMsg}\n`;
     });
   } else {
-    content += "No errors";
+    content += "ไม่พบข้อผิดพลาด";
   }
   debugInfoContent.textContent = content;
 }
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   setTimeout(() => {
     showCustomMessage(
-      "ยินดีต้อนรับสู่โปรแกรมจำลองการตีลูกสควอช (3D Enhanced)!",
+      "ยินดีต้อนรับสู่โปรแกรมจำลองการตีลูกสควอช (3มิติ ขั้นสูง)!",
       "info"
     );
   }, 1000);
@@ -210,7 +210,7 @@ function checkConflictingOptimizeOptions() {
   if (optimizeBtn) {
     if (fixElevation && fixAzimuth && fixVelocity) {
       showCustomMessage(
-        "Cannot optimize if all parameters (Elevation, Azimuth, Velocity) are fixed.",
+        "ไม่สามารถปรับให้เหมาะสมได้หากพารามิเตอร์ทั้งหมด (มุมเงย, มุมทิศ, ความเร็ว) ถูกตรึงค่า",
         "warning"
       );
       optimizeBtn.disabled = true;
@@ -559,20 +559,20 @@ function optimizeSettings() {
 function updateSimulationResultsUI(result) {
   document.getElementById("landing-position-x").textContent =
     result.landing_position_x !== undefined
-      ? result.landing_position_x.toFixed(2) + " m"
-      : "N/A";
+      ? result.landing_position_x.toFixed(2) + " ม"
+      : "ไม่มีข้อมูล";
   document.getElementById("landing-position-z").textContent =
     result.landing_position_z !== undefined
-      ? result.landing_position_z.toFixed(2) + " m"
-      : "N/A";
+      ? result.landing_position_z.toFixed(2) + " ม"
+      : "ไม่มีข้อมูล";
   document.getElementById("landing-distance-radial").textContent =
     result.landing_distance_radial !== undefined
-      ? result.landing_distance_radial.toFixed(2) + " m"
-      : "N/A";
+      ? result.landing_distance_radial.toFixed(2) + " ม"
+      : "ไม่มีข้อมูล";
   document.getElementById("strike-time").textContent =
     result.strike_time !== undefined
-      ? result.strike_time.toFixed(2) + " s"
-      : "N/A";
+      ? result.strike_time.toFixed(2) + " วิ"
+      : "ไม่มีข้อมูล";
 
   const targetZoneHitEl = document.getElementById("target-zone-hit");
   const zoneIndex = result.target_zone ? result.target_zone - 1 : -1;
@@ -585,12 +585,12 @@ function updateSimulationResultsUI(result) {
     const zoneDef = currentRawZonesData[zoneIndex];
     targetZoneHitEl.textContent = zoneDef.id
       ? zoneDef.id
-      : "Zone " + (zoneIndex + 1);
+      : "โซน " + (zoneIndex + 1);
     const zoneColor =
       zoneDef.color || zoneColors[zoneIndex % zoneColors.length];
     targetZoneHitEl.style.color = zoneColor;
   } else {
-    targetZoneHitEl.textContent = "None";
+    targetZoneHitEl.textContent = "ไม่พบ";
     targetZoneHitEl.style.color = "";
   }
 
@@ -605,12 +605,12 @@ function updateSimulationResultsUI(result) {
   if (result.ideal_trajectory_x && idealGroup) {
     document.getElementById("ideal-landing-x").textContent =
       result.ideal_landing_position_x !== undefined
-        ? result.ideal_landing_position_x.toFixed(2) + " m"
-        : "N/A";
+        ? result.ideal_landing_position_x.toFixed(2) + " ม"
+        : "ไม่มีข้อมูล";
     document.getElementById("ideal-landing-z").textContent =
       result.ideal_landing_position_z !== undefined
-        ? result.ideal_landing_position_z.toFixed(2) + " m"
-        : "N/A";
+        ? result.ideal_landing_position_z.toFixed(2) + " ม"
+        : "ไม่มีข้อมูล";
     idealGroup.style.display = "grid";
     updateIdealTrajectoryCharts(
       result.ideal_trajectory_x,
@@ -635,54 +635,54 @@ function updateOptimizedParamsUI(result) {
   document.getElementById("optimized-elevation-angle-value").textContent =
     result.elevation_angle !== undefined
       ? result.elevation_angle.toFixed(2) + "°"
-      : "N/A";
+      : "ไม่มีข้อมูล";
   document.getElementById("optimized-elevation-angle-range").textContent =
     result.elevation_angle_min !== undefined &&
     result.elevation_angle_max !== undefined
       ? `${result.elevation_angle_min.toFixed(
           2
         )}° - ${result.elevation_angle_max.toFixed(2)}°`
-      : "N/A";
+      : "ไม่มีข้อมูล";
 
   document.getElementById("optimized-azimuth-angle-value").textContent =
     result.azimuth_angle !== undefined
       ? result.azimuth_angle.toFixed(2) + "°"
-      : "N/A";
+      : "ไม่มีข้อมูล";
   document.getElementById("optimized-azimuth-angle-range").textContent =
     result.azimuth_angle_min !== undefined &&
     result.azimuth_angle_max !== undefined
       ? `${result.azimuth_angle_min.toFixed(
           2
         )}° - ${result.azimuth_angle_max.toFixed(2)}°`
-      : "N/A";
+      : "ไม่มีข้อมูล";
 
   document.getElementById("optimized-velocity-value").textContent =
-    result.velocity !== undefined ? result.velocity.toFixed(2) + " m/s" : "N/A";
+    result.velocity !== undefined ? result.velocity.toFixed(2) + " ม/ว" : "ไม่มีข้อมูล";
   document.getElementById("optimized-velocity-range").textContent =
     result.velocity_min !== undefined && result.velocity_max !== undefined
       ? `${result.velocity_min.toFixed(2)} - ${result.velocity_max.toFixed(
           2
-        )} m/s`
-      : "N/A";
+        )} ม/ว`
+      : "ไม่มีข้อมูล";
 
   document.getElementById("optimized-actual-landing-x").textContent =
     result.actual_landing_x !== undefined
-      ? result.actual_landing_x.toFixed(2) + " m"
-      : "N/A";
+      ? result.actual_landing_x.toFixed(2) + " ม"
+      : "ไม่มีข้อมูล";
   document.getElementById("optimized-actual-landing-z").textContent =
     result.actual_landing_z !== undefined
-      ? result.actual_landing_z.toFixed(2) + " m"
-      : "N/A";
+      ? result.actual_landing_z.toFixed(2) + " ม"
+      : "ไม่มีข้อมูล";
   document.getElementById("optimized-target-xz").textContent =
     result.target_x !== undefined && result.target_z !== undefined
-      ? `(${result.target_x.toFixed(2)}, ${result.target_z.toFixed(2)}) m`
-      : "N/A";
+      ? `(${result.target_x.toFixed(2)}, ${result.target_z.toFixed(2)}) ม`
+      : "ไม่มีข้อมูล";
   document.getElementById("optimized-error-dist").textContent =
     result.error_distance !== undefined && result.error_percent !== undefined
-      ? `${result.error_distance.toFixed(2)} m (${result.error_percent.toFixed(
+      ? `${result.error_distance.toFixed(2)} ม (${result.error_percent.toFixed(
           2
         )}%)`
-      : "N/A";
+      : "ไม่มีข้อมูล";
 
   displayDiv.style.display = "block";
 }
@@ -771,7 +771,7 @@ function draw1DRadialZonesOnChart(chartInstance, zonesData, viewType) {
     const min_r = zoneDef.r_min;
     const max_r = zoneDef.r_max;
     const color = zoneDef.color || zoneColors[index % zoneColors.length];
-    const label = zoneDef.id || `RZone ${index + 1}`;
+    const label = zoneDef.id || `โซนรัศมี ${index + 1}`;
 
     if (viewType === "side" && min_r !== undefined && max_r !== undefined) {
       annotations[`zoneBox_side_${index}`] = {
@@ -831,7 +831,7 @@ function draw2DFieldZonesOnChart(chartInstance, zonesData, viewType) {
   const annotations = {};
   applicableZones.forEach((zoneDef, index) => {
     const color = zoneDef.color || zoneColors[index % zoneColors.length];
-    const label = zoneDef.id || `Zone ${index + 1}`;
+    const label = zoneDef.id || `โซน ${index + 1}`;
     const annotationId = `zone_ann_top_${
       zoneDef.id ? zoneDef.id.replace(/\s+/g, "_") : index
     }`;
@@ -931,7 +931,7 @@ function updateTargetZoneIndicator2D() {
     !Array.isArray(currentRawZonesData) ||
     currentRawZonesData.length === 0
   ) {
-    indicatorEl.textContent = "N/A";
+    indicatorEl.textContent = "ไม่มีข้อมูล";
     indicatorEl.style.backgroundColor = "#607D8B";
     return;
   }
@@ -994,11 +994,11 @@ function updateTargetZoneIndicator2D() {
   }
 
   if (hitZoneDef) {
-    indicatorEl.textContent = hitZoneDef.id || `Zone ${zoneHitIndex + 1}`;
+    indicatorEl.textContent = hitZoneDef.id || `โซน ${zoneHitIndex + 1}`;
     indicatorEl.style.backgroundColor =
       hitZoneDef.color || zoneColors[zoneHitIndex % zoneColors.length];
   } else {
-    indicatorEl.textContent = "None";
+    indicatorEl.textContent = "ไม่พบ";
     indicatorEl.style.backgroundColor = "#607D8B";
   }
 }
@@ -1042,11 +1042,11 @@ function resetSimulation() {
   document.getElementById("fix-velocity").checked = false;
   checkConflictingOptimizeOptions();
 
-  document.getElementById("landing-position-x").textContent = "0.00 m";
-  document.getElementById("landing-position-z").textContent = "0.00 m";
-  document.getElementById("landing-distance-radial").textContent = "0.00 m";
-  document.getElementById("target-zone-hit").textContent = "None";
-  document.getElementById("strike-time").textContent = "0.00 s";
+  document.getElementById("landing-position-x").textContent = "0.00 ม";
+  document.getElementById("landing-position-z").textContent = "0.00 ม";
+  document.getElementById("landing-distance-radial").textContent = "0.00 ม";
+  document.getElementById("target-zone-hit").textContent = "ไม่พบ";
+  document.getElementById("strike-time").textContent = "0.00 วิ";
 
   const idealGroup = document.querySelector(".ideal-result-group");
   if (idealGroup) idealGroup.style.display = "none";
@@ -1127,7 +1127,7 @@ function setupTrajectoryChartSideView() {
     data: {
       datasets: [
         {
-          label: "Ball Trajectory (Z-Y)",
+          label: "วิถีโคจรของลูก (Z-Y)",
           data: [],
           borderColor: "#03a9f4",
           backgroundColor: "#03a9f4",
@@ -1136,7 +1136,7 @@ function setupTrajectoryChartSideView() {
           tension: 0.1,
         },
         {
-          label: "Ideal Trajectory (Z-Y)",
+          label: "วิถีโคจรในอุดมคติ (Z-Y)",
           data: [],
           borderColor: "#e53935",
           backgroundColor: "#e53935",
@@ -1147,7 +1147,7 @@ function setupTrajectoryChartSideView() {
           tension: 0.1,
         },
         {
-          label: "Landing Point (Z)",
+          label: "จุดตกกระทบ (Z)",
           data: [],
           backgroundColor: "#ffc107",
           borderColor: "#ffc107",
@@ -1162,12 +1162,12 @@ function setupTrajectoryChartSideView() {
       maintainAspectRatio: false,
       scales: {
         x: {
-          title: { display: true, text: "Forward Distance (Z, m)" },
+          title: { display: true, text: "ระยะทางด้านหน้า (Z, ม)" },
           grid: { color: "#424242" },
           ticks: { color: "#e0e0e0" },
         },
         y: {
-          title: { display: true, text: "Height (Y, m)" },
+          title: { display: true, text: "ความสูง (Y, ม)" },
           beginAtZero: true,
           grid: { color: "#424242" },
           ticks: { color: "#e0e0e0" },
@@ -1194,7 +1194,7 @@ function setupTrajectoryChartTopView() {
     data: {
       datasets: [
         {
-          label: "Ball Trajectory (X-Z)",
+          label: "วิถีโคจรของลูก (X-Z)",
           data: [],
           borderColor: "#4caf50",
           backgroundColor: "#4caf50",
@@ -1203,7 +1203,7 @@ function setupTrajectoryChartTopView() {
           tension: 0.1,
         },
         {
-          label: "Ideal Trajectory (X-Z)",
+          label: "วิถีโคจรในอุดมคติ (X-Z)",
           data: [],
           borderColor: "#ff9800",
           backgroundColor: "#ff9800",
@@ -1214,7 +1214,7 @@ function setupTrajectoryChartTopView() {
           tension: 0.1,
         },
         {
-          label: "Landing Point (X-Z)",
+          label: "จุดตกกระทบ (X-Z)",
           data: [],
           backgroundColor: "#ffeb3b",
           borderColor: "#ffeb3b",
@@ -1229,12 +1229,12 @@ function setupTrajectoryChartTopView() {
       maintainAspectRatio: false,
       scales: {
         x: {
-          title: { display: true, text: "Side Distance (X, m)" },
+          title: { display: true, text: "ระยะทางด้านข้าง (X, ม)" },
           grid: { color: "#424242" },
           ticks: { color: "#e0e0e0" },
         },
         y: {
-          title: { display: true, text: "Forward Distance (Z, m)" },
+          title: { display: true, text: "ระยะทางด้านหน้า (Z, ม)" },
           grid: { color: "#424242" },
           ticks: { color: "#e0e0e0" },
         },
@@ -1262,14 +1262,14 @@ function setupFieldChart2D() {
       maintainAspectRatio: false,
       scales: {
         x: {
-          title: { display: true, text: "X Distance (m)" },
+          title: { display: true, text: "ระยะทาง X (ม)" },
           grid: { color: "#424242" },
           suggestedMin: -2.6,
           suggestedMax: 2.6,
           ticks: { color: "#e0e0e0" },
         },
         y: {
-          title: { display: true, text: "Z Distance (Forward, m)" },
+          title: { display: true, text: "ระยะทาง Z (ด้านหน้า, ม)" },
           grid: { color: "#424242" },
           suggestedMin: 0,
           suggestedMax: 5.0,
@@ -1511,7 +1511,7 @@ function updateFieldChart2D() {
       return;
     }
     const color = zoneDef.color || zoneColors[index % zoneColors.length];
-    const zoneLabel = zoneDef.id || `Zone ${index + 1}`;
+    const zoneLabel = zoneDef.id || `โซน ${index + 1}`;
     const annotationId = `zone_ann_${
       zoneDef.id ? zoneDef.id.replace(/\s+/g, "_") : index
     }`;
@@ -1638,7 +1638,7 @@ function updateFieldChart2D() {
     radius: 6,
     borderWidth: 2,
     label: {
-      content: "Striker",
+      content: "จุดเริ่มต้นการตี",
       enabled: true,
       font: { size: 10 },
       yAdjust: -15,

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Squash Ball Striker Simulator - 3D Enhanced</title>
+    <title>โปรแกรมจำลองการตีลูกสควอช - 3มิติ</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
@@ -101,7 +101,7 @@
   </head>
   <body>
     <div id="loading-screen" class="loading-screen">
-      <h1 class="loading-title">Group 11 Simulation</h1>
+      <h1 class="loading-title">โปรเเกรมจำลองการตีลูกสควอซ กลุ่ม 11</h1>
       <div class="loading-spinner"></div>
     </div>
 
@@ -116,39 +116,39 @@
       <div class="container">
         <h1>
           <i class="fas fa-bullseye" style="margin-right: 10px"></i>
-          Squash Ball Striker Simulator (3D)
+          โปรแกรมจำลองการตีลูกสควอช (3มิติ)
         </h1>
 
         <div class="tabs">
           <button class="tab-btn active" onclick="openTab('simulator')">
-            <i class="fas fa-sliders-h"></i> Simulator
+            <i class="fas fa-sliders-h"></i> เครื่องจำลอง
           </button>
           <button class="tab-btn" onclick="openTab('results')">
-            <i class="fas fa-chart-line"></i> Results
+            <i class="fas fa-chart-line"></i> ผลลัพธ์
           </button>
           <button class="tab-btn" onclick="openTab('field')">
-            <i class="fas fa-map-marked-alt"></i> Field
+            <i class="fas fa-map-marked-alt"></i> สนาม
           </button>
           <button class="tab-btn" onclick="openTab('settings')">
-            <i class="fas fa-cog"></i> Settings
+            <i class="fas fa-cog"></i> ตั้งค่า
           </button>
         </div>
 
         <div id="simulator" class="tab-content active">
           <div class="card">
-            <h2><i class="fas fa-sliders-h"></i> Main Settings</h2>
+            <h2><i class="fas fa-sliders-h"></i> ตั้งค่าหลัก</h2>
 
             <div class="control-group">
-              <label for="release-height">Release Height</label>
+              <label for="release-height">ความสูงในการปล่อยลูก</label>
               <select id="release-height" class="select-control">
-                <option value="1.0">1.0m (Low)</option>
-                <option value="1.5">1.5m (Medium)</option>
-                <option value="2.0" selected>2.0m (High)</option>
+                <option value="1.0">1.0ม (ต่ำ)</option>
+                <option value="1.5">1.5ม (ปานกลาง)</option>
+                <option value="2.0" selected>2.0ม (สูง)</option>
               </select>
             </div>
 
             <div class="control-group">
-              <label for="strike-height">Strike Height</label>
+              <label for="strike-height">ความสูงในการตี</label>
               <div class="control-slider">
                 <input
                   type="range"
@@ -158,13 +158,13 @@
                   step="0.01"
                   value="0.35"
                 />
-                <span id="height-value" class="value">0.35m</span>
+                <span id="height-value" class="value">0.35ม</span>
               </div>
             </div>
 
             <div class="control-group">
               <label for="strike-angle-elevation"
-                >Strike Elevation Angle (Vertical)</label
+                >มุมเงยในการตี (แนวตั้ง)</label
               >
               <div class="control-slider">
                 <input
@@ -181,7 +181,7 @@
 
             <div class="control-group">
               <label for="strike-azimuth-angle"
-                >Strike Azimuth Angle (Horizontal)</label
+                >มุมทิศในการตี (แนวนอน)</label
               >
               <div class="control-slider">
                 <input
@@ -197,7 +197,7 @@
             </div>
 
             <div class="control-group">
-              <label for="strike-velocity">Strike Velocity</label>
+              <label for="strike-velocity">ความเร็วในการตี</label>
               <div class="control-slider">
                 <input
                   type="range"
@@ -207,7 +207,7 @@
                   step="0.1"
                   value="5.25"
                 />
-                <span id="velocity-value" class="value">5.25 m/s</span>
+                <span id="velocity-value" class="value">5.25 ม/ว</span>
               </div>
             </div>
 
@@ -215,17 +215,17 @@
               <div class="checkbox-control">
                 <input type="checkbox" id="ideal-comparison" />
                 <label for="ideal-comparison"
-                  >Show ideal trajectory comparison</label
+                  >แสดงการเปรียบเทียบวิถีในอุดมคติ</label
                 >
               </div>
             </div>
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-crosshairs"></i> Target Coordinates</h2>
+            <h2><i class="fas fa-crosshairs"></i> พิกัดเป้าหมาย</h2>
             <div class="target-inputs">
               <div class="control-group">
-                <label for="target-x">Target X (m)</label>
+                <label for="target-x">เป้าหมาย X (ม)</label>
                 <input
                   type="number"
                   id="target-x"
@@ -235,7 +235,7 @@
                 />
               </div>
               <div class="control-group">
-                <label for="target-z">Target Z (m, Forward)</label>
+                <label for="target-z">เป้าหมาย Z (ม, ด้านหน้า)</label>
                 <input
                   type="number"
                   id="target-z"
@@ -246,37 +246,37 @@
               </div>
             </div>
             <div class="zone-indicator" style="margin-top: var(--spacing-sm)">
-              <span>Target Zone (from X,Z): </span>
-              <span id="indicator-zone-2d" class="zone-badge">Zone ?</span>
+              <span>โซนเป้าหมาย (จาก X,Z): </span>
+              <span id="indicator-zone-2d" class="zone-badge">โซน ?</span>
             </div>
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-cogs"></i> Optimization Settings</h2>
+            <h2><i class="fas fa-cogs"></i> ตั้งค่าการปรับให้เหมาะสม</h2>
             <div class="control-group">
               <div class="checkbox-control">
                 <input type="checkbox" id="fix-elevation-angle" />
                 <label for="fix-elevation-angle"
-                  >Fix current Elevation Angle</label
+                  >ตรึงค่ามุมเงยปัจจุบัน</label
                 >
               </div>
             </div>
             <div class="control-group">
               <div class="checkbox-control">
                 <input type="checkbox" id="fix-azimuth-angle" />
-                <label for="fix-azimuth-angle">Fix current Azimuth Angle</label>
+                <label for="fix-azimuth-angle">ตรึงค่ามุมทิศปัจจุบัน</label>
               </div>
             </div>
             <div class="control-group">
               <div class="checkbox-control">
                 <input type="checkbox" id="fix-velocity" />
-                <label for="fix-velocity">Fix current Velocity</label>
+                <label for="fix-velocity">ตรึงค่าความเร็วปัจจุบัน</label>
               </div>
             </div>
             <p class="help-text">
-              <i class="fas fa-info-circle"></i> If no options are selected, the
-              system will optimize all three parameters (Elevation, Azimuth,
-              Velocity).
+              <i class="fas fa-info-circle"></i> หากไม่เลือกตัวเลือกใดเลย
+              ระบบจะปรับพารามิเตอร์ทั้งสามให้เหมาะสม (มุมเงย, มุมทิศ,
+              ความเร็ว)
             </p>
           </div>
 
@@ -285,7 +285,7 @@
             class="btn-primary btn-full pulse"
             onclick="startSimulation()"
           >
-            <i class="fas fa-play"></i>Run Simulation
+            <i class="fas fa-play"></i>เริ่มการจำลอง
           </button>
 
           <button
@@ -293,7 +293,7 @@
             class="btn-accent btn-full"
             onclick="optimizeSettings()"
           >
-            <i class="fas fa-magic"></i>Find Optimal Settings
+            <i class="fas fa-magic"></i>ค้นหาค่าที่เหมาะสมที่สุด
           </button>
 
           <button
@@ -301,35 +301,35 @@
             class="btn-secondary btn-full"
             onclick="resetSimulation()"
           >
-            <i class="fas fa-redo"></i>Reset All Settings
+            <i class="fas fa-redo"></i>รีเซ็ตการตั้งค่าทั้งหมด
           </button>
         </div>
 
         <div id="results" class="tab-content">
           <div class="card">
-            <h2><i class="fas fa-chart-line"></i> Simulation Results</h2>
+            <h2><i class="fas fa-chart-line"></i> ผลลัพธ์การจำลอง</h2>
             <div class="results-grid">
               <div class="result-card">
-                <div class="result-label">Landing X</div>
-                <div id="landing-position-x" class="result-value">0.00 m</div>
+                <div class="result-label">ตำแหน่งตกกระทบ X</div>
+                <div id="landing-position-x" class="result-value">0.00 ม</div>
               </div>
               <div class="result-card">
-                <div class="result-label">Landing Z (Forward)</div>
-                <div id="landing-position-z" class="result-value">0.00 m</div>
+                <div class="result-label">ตำแหน่งตกกระทบ Z (ด้านหน้า)</div>
+                <div id="landing-position-z" class="result-value">0.00 ม</div>
               </div>
               <div class="result-card">
-                <div class="result-label">Radial Distance</div>
+                <div class="result-label">ระยะห่างแนวรัศมี</div>
                 <div id="landing-distance-radial" class="result-value">
-                  0.00 m
+                  0.00 ม
                 </div>
               </div>
               <div class="result-card">
-                <div class="result-label">Target Zone Hit</div>
-                <div id="target-zone-hit" class="result-value">None</div>
+                <div class="result-label">โซนเป้าหมายที่โดน</div>
+                <div id="target-zone-hit" class="result-value">ไม่มี</div>
               </div>
               <div class="result-card">
-                <div class="result-label">Strike Time</div>
-                <div id="strike-time" class="result-value">0.00 s</div>
+                <div class="result-label">เวลาที่ใช้ในการตี</div>
+                <div id="strike-time" class="result-value">0.00 วิ</div>
               </div>
             </div>
             <div
@@ -337,26 +337,26 @@
               style="display: none; margin-top: var(--spacing-sm)"
             >
               <div class="result-card">
-                <div class="result-label">Ideal Landing X</div>
-                <div id="ideal-landing-x" class="result-value">0.00 m</div>
+                <div class="result-label">ตำแหน่งตกกระทบ X (อุดมคติ)</div>
+                <div id="ideal-landing-x" class="result-value">0.00 ม</div>
               </div>
               <div class="result-card">
-                <div class="result-label">Ideal Landing Z</div>
-                <div id="ideal-landing-z" class="result-value">0.00 m</div>
+                <div class="result-label">ตำแหน่งตกกระทบ Z (อุดมคติ)</div>
+                <div id="ideal-landing-z" class="result-value">0.00 ม</div>
               </div>
             </div>
           </div>
 
           <div class="card">
             <h2>
-              <i class="fas fa-project-diagram"></i> Trajectory Visualizations
+              <i class="fas fa-project-diagram"></i> การแสดงผลวิถีโคจร
             </h2>
             <div class="chart-container-grid">
               <div class="chart-container">
                 <h3
                   style="text-align: center; margin-bottom: var(--spacing-sm)"
                 >
-                  Side View (Z-Y Projection)
+                  มุมมองด้านข้าง (แกน Z-Y)
                 </h3>
                 <canvas id="trajectory-chart-side-view"></canvas>
               </div>
@@ -364,7 +364,7 @@
                 <h3
                   style="text-align: center; margin-bottom: var(--spacing-sm)"
                 >
-                  Top-Down View (X-Z Projection)
+                  มุมมองด้านบน (แกน X-Z)
                 </h3>
                 <canvas id="trajectory-chart-top-view"></canvas>
               </div>
@@ -376,10 +376,10 @@
             style="display: none; margin-top: 16px"
           >
             <div class="card">
-              <h3><i class="fas fa-bullseye"></i> Optimized Parameters</h3>
+              <h3><i class="fas fa-bullseye"></i> พารามิเตอร์ที่ปรับให้เหมาะสมที่สุด</h3>
               <div class="results-grid">
                 <div class="result-card">
-                  <div class="result-label">Optimal Elevation Angle</div>
+                  <div class="result-label">มุมเงยที่เหมาะสมที่สุด</div>
                   <div
                     id="optimized-elevation-angle-value"
                     class="result-value"
@@ -387,53 +387,53 @@
                     0.00°
                   </div>
                   <div class="result-detail">
-                    Range:
+                    ช่วง:
                     <span id="optimized-elevation-angle-range">0° - 0°</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">Optimal Azimuth Angle</div>
+                  <div class="result-label">มุมทิศที่เหมาะสมที่สุด</div>
                   <div id="optimized-azimuth-angle-value" class="result-value">
                     0.00°
                   </div>
                   <div class="result-detail">
-                    Range:
+                    ช่วง:
                     <span id="optimized-azimuth-angle-range">0° - 0°</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">Optimal Velocity</div>
+                  <div class="result-label">ความเร็วที่เหมาะสมที่สุด</div>
                   <div id="optimized-velocity-value" class="result-value">
-                    0.00 m/s
+                    0.00 ม/ว
                   </div>
                   <div class="result-detail">
-                    Range: <span id="optimized-velocity-range">0 - 0 m/s</span>
+                    ช่วง: <span id="optimized-velocity-range">0 - 0 ม/ว</span>
                   </div>
                 </div>
               </div>
               <div class="results-grid" style="margin-top: var(--spacing-sm)">
                 <div class="result-card">
-                  <div class="result-label">Expected Landing X</div>
+                  <div class="result-label">ตำแหน่งตกกระทบ X ที่คาดหวัง</div>
                   <div id="optimized-actual-landing-x" class="result-value">
-                    0.00 m
+                    0.00 ม
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">Expected Landing Z</div>
+                  <div class="result-label">ตำแหน่งตกกระทบ Z ที่คาดหวัง</div>
                   <div id="optimized-actual-landing-z" class="result-value">
-                    0.00 m
+                    0.00 ม
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">Target X, Z</div>
+                  <div class="result-label">เป้าหมาย X, Z</div>
                   <div id="optimized-target-xz" class="result-value">
-                    (0.00, 0.00) m
+                    (0.00, 0.00) ม
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">Error Distance</div>
+                  <div class="result-label">ระยะคลาดเคลื่อน</div>
                   <div id="optimized-error-dist" class="result-value">
-                    0.00 m (0.00%)
+                    0.00 ม (0.00%)
                   </div>
                 </div>
               </div>
@@ -441,10 +441,10 @@
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-bug"></i> Debug Information</h2>
+            <h2><i class="fas fa-bug"></i> ข้อมูลดีบัก</h2>
             <div class="debug-info">
               <button onclick="toggleDebugInfo()" class="btn-secondary">
-                <i class="fas fa-code"></i> Show/Hide Debug Info
+                <i class="fas fa-code"></i> แสดง/ซ่อนข้อมูลดีบัก
               </button>
               <div id="debug-info-content" style="display: none"></div>
             </div>
@@ -453,13 +453,13 @@
 
         <div id="field" class="tab-content">
           <div class="card">
-            <h2><i class="fas fa-th"></i> Field Layout & Targeting</h2>
+            <h2><i class="fas fa-th"></i> รูปแบบสนาม & การกำหนดเป้าหมาย</h2>
             <div class="control-group">
-              <label for="field-type">Select Field Layout</label>
+              <label for="field-type">เลือกรูปแบบสนาม</label>
               <select id="field-type" onchange="handleFieldTypeChange()">
-                <option value="standard" selected>Standard (1D Radial)</option>
-                <option value="extra1">Extended Range (1D Radial)</option>
-                <option value="extra2">Angled Field (2D X-Z)</option>
+                <option value="standard" selected>มาตรฐาน (1มิติ แนวรัศมี)</option>
+                <option value="extra1">ขยายระยะ (1มิติ แนวรัศมี)</option>
+                <option value="extra2">สนามทำมุม (2มิติ X-Z)</option>
               </select>
             </div>
             <div class="chart-container" style="height: 400px">
@@ -472,8 +472,8 @@
             >
               <p>
                 <i class="fas fa-info-circle"></i>
-                For 2D fields (like Extra2), click on the chart to set Target X,
-                Z. For 1D fields, zones are radial.
+                สำหรับสนาม 2มิติ (เช่น Extra2), คลิกบนแผนภูมิเพื่อตั้งค่าเป้าหมาย X,
+                Z. สำหรับสนาม 1มิติ, โซนจะเป็นแนวรัศมี
               </p>
             </div>
           </div>
@@ -482,16 +482,15 @@
         <div id="settings" class="tab-content">
           <div class="card">
             <h2>
-              <i class="fas fa-ruler-combined"></i> Custom Field Parameters
-              (Mainly for 1D Fields)
+              <i class="fas fa-ruler-combined"></i> พารามิเตอร์สนามแบบกำหนดเอง
+              (ส่วนใหญ่สำหรับสนาม 1มิติ)
             </h2>
             <p class="help-text">
-              These settings primarily apply to 'Standard' or 'Extended Range'
-              1D radial fields if you were to define them as 'Custom'. 'Angled
-              Field (2D)' uses predefined zone data.
+              การตั้งค่าเหล่านี้ส่วนใหญ่ใช้กับสนามแนวรัศมี 1มิติ 'มาตรฐาน' หรือ 'ขยายระยะ'
+              หากคุณกำหนดให้เป็น 'กำหนดเอง' ส่วน 'สนามทำมุม (2มิติ)' จะใช้ข้อมูลโซนที่กำหนดไว้ล่วงหน้า
             </p>
             <div class="control-group">
-              <label for="min-distance">Min Radial Distance (m)</label>
+              <label for="min-distance">ระยะรัศมีต่ำสุด (ม)</label>
               <input
                 type="number"
                 id="min-distance"
@@ -502,7 +501,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="max-distance">Max Radial Distance (m)</label>
+              <label for="max-distance">ระยะรัศมีสูงสุด (ม)</label>
               <input
                 type="number"
                 id="max-distance"
@@ -513,7 +512,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="zone-width">Radial Zone Width (m)</label>
+              <label for="zone-width">ความกว้างโซนแนวรัศมี (ม)</label>
               <input
                 type="number"
                 id="zone-width"
@@ -526,9 +525,9 @@
           </div>
 
           <div class="card">
-            <h2><i class="fas fa-atom"></i> Advanced Physics Settings</h2>
+            <h2><i class="fas fa-atom"></i> ตั้งค่าฟิสิกส์ขั้นสูง</h2>
             <div class="control-group">
-              <label for="gravity">Gravity (m/s²)</label>
+              <label for="gravity">แรงโน้มถ่วง (ม/วิ²)</label>
               <input
                 type="number"
                 id="gravity"
@@ -539,7 +538,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="ball-mass">Ball Mass (kg)</label>
+              <label for="ball-mass">มวลลูกบอล (กก)</label>
               <input
                 type="number"
                 id="ball-mass"
@@ -550,7 +549,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="air-density">Air Density (kg/m³)</label>
+              <label for="air-density">ความหนาแน่นอากาศ (กก/ลบ.ม.)</label>
               <input
                 type="number"
                 id="air-density"
@@ -561,7 +560,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="drag-coefficient">Drag Coefficient</label>
+              <label for="drag-coefficient">สัมประสิทธิ์แรงต้าน</label>
               <input
                 type="number"
                 id="drag-coefficient"
@@ -572,7 +571,7 @@
               />
             </div>
             <div class="control-group">
-              <label for="elasticity">Elasticity (Ball Restitution)</label>
+              <label for="elasticity">ค่าความยืดหยุ่น (การคืนตัวของลูกบอล)</label>
               <input
                 type="number"
                 id="elasticity"
@@ -589,19 +588,19 @@
       <div class="mobile-nav">
         <button class="nav-btn active" onclick="openTab('simulator')">
           <i class="fas fa-sliders-h"></i>
-          <span>Simulator</span>
+          <span>เครื่องจำลอง</span>
         </button>
         <button class="nav-btn" onclick="openTab('results')">
           <i class="fas fa-chart-line"></i>
-          <span>Results</span>
+          <span>ผลลัพธ์</span>
         </button>
         <button class="nav-btn" onclick="openTab('field')">
           <i class="fas fa-map-marked-alt"></i>
-          <span>Field</span>
+          <span>สนาม</span>
         </button>
         <button class="nav-btn" onclick="openTab('settings')">
           <i class="fas fa-cog"></i>
-          <span>Settings</span>
+          <span>ตั้งค่า</span>
         </button>
       </div>
     </div>

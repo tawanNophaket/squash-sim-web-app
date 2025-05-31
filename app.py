@@ -30,7 +30,7 @@ def calculate():
         return (
             jsonify(
                 {
-                    "error": "Simulation engine failed to initialize. Please check server logs."
+                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
                 }
             ),
             500,
@@ -107,7 +107,7 @@ def calculate():
         app.logger.error(f"Error in /api/calculate: {e}", exc_info=True)
         return (
             jsonify(
-                {"error": f"An unexpected error occurred in calculate API: {str(e)}"}
+                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การคำนวณ: {str(e)}"}
             ),
             500,
         )
@@ -119,7 +119,7 @@ def optimize():
         return (
             jsonify(
                 {
-                    "error": "Simulation engine failed to initialize. Please check server logs."
+                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
                 }
             ),
             500,
@@ -167,7 +167,7 @@ def optimize():
             return (
                 jsonify(
                     {
-                        "error": "Optimization function (calculate_optimal_parameters) not found in simulation core."
+                        "error": "ไม่พบฟังก์ชันการปรับให้เหมาะสม (calculate_optimal_parameters) ในแกนกลางของระบบจำลอง"
                     }
                 ),
                 501,
@@ -234,7 +234,7 @@ def optimize():
                     "target_z": target_z,
                     "error_distance": error_distance,
                     "error_percent": error_percent,
-                    "message": "Optimal parameters found.",
+                    "message": "พบค่าพารามิเตอร์ที่เหมาะสมที่สุดแล้ว",
                 }
             )
         else:
@@ -244,7 +244,7 @@ def optimize():
         app.logger.error(f"Error in /api/optimize: {e}", exc_info=True)
         return (
             jsonify(
-                {"error": f"An unexpected error occurred in optimize API: {str(e)}"}
+                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การปรับให้เหมาะสม: {str(e)}"}
             ),
             500,
         )
@@ -256,7 +256,7 @@ def field_info():
         return (
             jsonify(
                 {
-                    "error": "Simulation engine failed to initialize. Please check server logs."
+                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
                 }
             ),
             500,
@@ -288,7 +288,7 @@ def field_info():
         app.logger.error(f"Error in /api/field_info: {e}", exc_info=True)
         return (
             jsonify(
-                {"error": f"An unexpected error occurred in field_info API: {str(e)}"}
+                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API ข้อมูลสนาม: {str(e)}"}
             ),
             500,
         )
@@ -300,7 +300,7 @@ def change_field():
         return (
             jsonify(
                 {
-                    "error": "Simulation engine failed to initialize. Please check server logs."
+                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
                 }
             ),
             500,
@@ -327,14 +327,14 @@ def change_field():
             {
                 "dimensions": response_dimensions,
                 "zones_data": new_field_data.get("raw_zones_data"),
-                "message": f"Changed field type to {field_type}",
+                "message": f"เปลี่ยนประเภทสนามเป็น {field_type} แล้ว",
             }
         )
     except Exception as e:
         app.logger.error(f"Error in /api/change_field: {e}", exc_info=True)
         return (
             jsonify(
-                {"error": f"An unexpected error occurred in change_field API: {str(e)}"}
+                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การเปลี่ยนสนาม: {str(e)}"}
             ),
             500,
         )
@@ -347,7 +347,7 @@ def sensitivity_analysis():
         return (
             jsonify(
                 {
-                    "error": "Simulation engine failed to initialize. Please check server logs."
+                    "error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"
                 }
             ),
             500,
@@ -425,7 +425,7 @@ def sensitivity_analysis():
         return (
             jsonify(
                 {
-                    "error": f"An unexpected error occurred in sensitivity_analysis API: {str(e)}"
+                    "error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การวิเคราะห์ความไว: {str(e)}"
                 }
             ),
             500,
@@ -442,7 +442,7 @@ if __name__ == "__main__":
 
     if simulation is None:
         print(
-            "Failed to start the Flask application because the Simulation object could not be initialized."
+            "ไม่สามารถเริ่มแอปพลิเคชัน Flask ได้เนื่องจากไม่สามารถเริ่มต้นอ็อบเจ็กต์ Simulation"
         )
     else:
-        app.run(host="0.0.0.0", port=10000, debug=True)
+        app.run(host="0.0.0.0", port=5000, debug=True)
