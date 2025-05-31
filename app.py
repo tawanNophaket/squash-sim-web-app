@@ -193,35 +193,37 @@ def optimize():
 
             return jsonify(
                 {
-                    "elevation_angle": el_angle,
-                    "azimuth_angle": az_angle,
-                    "velocity": vel,
-                    "elevation_angle_min": (
-                        el_angle - el_angle_tolerance
-                        if "elevation_angle" not in fixed_params
-                        else el_angle
-                    ),
-                    "elevation_angle_max": (
-                        el_angle + el_angle_tolerance
-                        if "elevation_angle" not in fixed_params
-                        else el_angle
-                    ),
-                    "azimuth_angle_min": (
-                        az_angle - az_angle_tolerance
-                        if "azimuth_angle" not in fixed_params
-                        else az_angle
-                    ),
-                    "azimuth_angle_max": (
-                        az_angle + az_angle_tolerance
-                        if "azimuth_angle" not in fixed_params
-                        else az_angle
-                    ),
-                    "velocity_min": (
-                        vel - vel_tolerance if "velocity" not in fixed_params else vel
-                    ),
-                    "velocity_max": (
-                        vel + vel_tolerance if "velocity" not in fixed_params else vel
-                    ),
+                    "strike_angle_elevation": el_angle,
+                    "strike_azimuth_angle": az_angle,
+                    "strike_velocity": vel,
+                    "strike_angle_elevation_range": [
+                        (
+                            el_angle - el_angle_tolerance
+                            if "elevation_angle" not in fixed_params
+                            else el_angle
+                        ),
+                        (
+                            el_angle + el_angle_tolerance
+                            if "elevation_angle" not in fixed_params
+                            else el_angle
+                        ),
+                    ],
+                    "strike_azimuth_angle_range": [
+                        (
+                            az_angle - az_angle_tolerance
+                            if "azimuth_angle" not in fixed_params
+                            else az_angle
+                        ),
+                        (
+                            az_angle + az_angle_tolerance
+                            if "azimuth_angle" not in fixed_params
+                            else az_angle
+                        ),
+                    ],
+                    "strike_velocity_range": [
+                        (vel - vel_tolerance if "velocity" not in fixed_params else vel),
+                        (vel + vel_tolerance if "velocity" not in fixed_params else vel),
+                    ],
                     "actual_landing_x": opt_result_data["landing_x"],
                     "actual_landing_z": opt_result_data["landing_z"],
                     "target_x": target_x,

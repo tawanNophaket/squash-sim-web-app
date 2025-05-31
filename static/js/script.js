@@ -223,6 +223,108 @@ function initializeEventListeners() {
     }
   });
 
+  const adjElInput = document.getElementById("adjusted-elevation-angle-input");
+  const adjAzInput = document.getElementById("adjusted-azimuth-angle-input");
+  const adjVelInput = document.getElementById("adjusted-velocity-input");
+
+  if (adjElInput) adjElInput.addEventListener("input", () => validateNumericInputAgainstRange(adjElInput));
+  if (adjAzInput) adjAzInput.addEventListener("input", () => validateNumericInputAgainstRange(adjAzInput));
+  if (adjVelInput) adjVelInput.addEventListener("input", () => validateNumericInputAgainstRange(adjVelInput));
+
+  const simulateAdjustedBtn = document.getElementById("simulate-adjusted-optimal-btn");
+  if (simulateAdjustedBtn) {
+    simulateAdjustedBtn.addEventListener("click", () => {
+      const elValid = adjElInput ? validateNumericInputAgainstRange(adjElInput) : true;
+      const azValid = adjAzInput ? validateNumericInputAgainstRange(adjAzInput) : true;
+      const velValid = adjVelInput ? validateNumericInputAgainstRange(adjVelInput) : true;
+
+      if (!elValid || !azValid || !velValid) {
+        showCustomMessage("ค่าที่ป้อนสำหรับทดลองอยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข", "warning");
+        return;
+      }
+
+      const newElevation = parseFloat(adjElInput.value);
+      const newAzimuth = parseFloat(adjAzInput.value);
+      const newVelocity = parseFloat(adjVelInput.value);
+
+      // Update main simulator sliders and their display values
+      const mainElSlider = document.getElementById("strike-angle-elevation");
+      const mainElValue = document.getElementById("angle-elevation-value");
+      if (mainElSlider && mainElValue && !isNaN(newElevation)) {
+        mainElSlider.value = newElevation.toFixed(1);
+        mainElValue.textContent = newElevation.toFixed(1) + "°";
+      }
+
+      const mainAzSlider = document.getElementById("strike-azimuth-angle");
+      const mainAzValue = document.getElementById("angle-azimuth-value");
+      if (mainAzSlider && mainAzValue && !isNaN(newAzimuth)) {
+        mainAzSlider.value = newAzimuth.toFixed(1);
+        mainAzValue.textContent = newAzimuth.toFixed(1) + "°";
+      }
+
+      const mainVelSlider = document.getElementById("strike-velocity");
+      const mainVelValue = document.getElementById("velocity-value");
+      if (mainVelSlider && mainVelValue && !isNaN(newVelocity)) {
+        mainVelSlider.value = newVelocity.toFixed(2);
+        mainVelValue.textContent = newVelocity.toFixed(2) + " m/s";
+      }
+      
+      showCustomMessage("กำลังจำลองด้วยค่าที่ปรับแล้วจากส่วนทดลอง...", "info");
+      setTimeout(() => startSimulation(), 100); 
+    });
+  }
+
+  const optElInput = document.getElementById("optimized-elevation-angle-input");
+  const optAzInput = document.getElementById("optimized-azimuth-angle-input");
+  const optVelInput = document.getElementById("optimized-velocity-input");
+
+  if (optElInput) optElInput.addEventListener("input", () => validateNumericInputAgainstRange(optElInput));
+  if (optAzInput) optAzInput.addEventListener("input", () => validateNumericInputAgainstRange(optAzInput));
+  if (optVelInput) optVelInput.addEventListener("input", () => validateNumericInputAgainstRange(optVelInput));
+
+  const simulateWithOptimalBtn = document.getElementById("simulate-with-optimal-inputs-btn");
+  if (simulateWithOptimalBtn) {
+    simulateWithOptimalBtn.addEventListener("click", () => {
+      const elValid = optElInput ? validateNumericInputAgainstRange(optElInput) : true;
+      const azValid = optAzInput ? validateNumericInputAgainstRange(optAzInput) : true;
+      const velValid = optVelInput ? validateNumericInputAgainstRange(optVelInput) : true;
+
+      if (!elValid || !azValid || !velValid) {
+        showCustomMessage("ค่าที่ป้อนสำหรับมุม/ความเร็วที่เหมาะสมที่สุด อยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข", "warning");
+        return;
+      }
+
+      const newElevation = parseFloat(optElInput.value);
+      const newAzimuth = parseFloat(optAzInput.value);
+      const newVelocity = parseFloat(optVelInput.value);
+
+      // Update main simulator sliders and their display values
+      const mainElSlider = document.getElementById("strike-angle-elevation");
+      const mainElValue = document.getElementById("angle-elevation-value");
+      if (mainElSlider && mainElValue && !isNaN(newElevation)) {
+        mainElSlider.value = newElevation.toFixed(1);
+        mainElValue.textContent = newElevation.toFixed(1) + "°";
+      }
+
+      const mainAzSlider = document.getElementById("strike-azimuth-angle");
+      const mainAzValue = document.getElementById("angle-azimuth-value");
+      if (mainAzSlider && mainAzValue && !isNaN(newAzimuth)) {
+        mainAzSlider.value = newAzimuth.toFixed(1);
+        mainAzValue.textContent = newAzimuth.toFixed(1) + "°";
+      }
+
+      const mainVelSlider = document.getElementById("strike-velocity");
+      const mainVelValue = document.getElementById("velocity-value");
+      if (mainVelSlider && mainVelValue && !isNaN(newVelocity)) {
+        mainVelSlider.value = newVelocity.toFixed(2);
+        mainVelValue.textContent = newVelocity.toFixed(2) + " m/s";
+      }
+      
+      showCustomMessage("กำลังจำลองด้วยค่าที่แสดง/ปรับแล้วจากส่วน Optimized Parameters...", "info");
+      setTimeout(() => startSimulation(), 100); 
+    });
+  }
+
   checkConflictingOptimizeOptions();
 }
 
@@ -547,27 +649,27 @@ function optimizeSettings() {
 
       if (
         !payload.fixed_params.elevation_angle &&
-        result.elevation_angle !== undefined
+        result.strike_angle_elevation !== undefined
       ) {
         document.getElementById("strike-angle-elevation").value =
-          result.elevation_angle.toFixed(1);
+          result.strike_angle_elevation.toFixed(1);
         document.getElementById("angle-elevation-value").textContent =
-          result.elevation_angle.toFixed(1) + "°";
+          result.strike_angle_elevation.toFixed(1) + "°";
       }
       if (
         !payload.fixed_params.azimuth_angle &&
-        result.azimuth_angle !== undefined
+        result.strike_azimuth_angle !== undefined
       ) {
         document.getElementById("strike-azimuth-angle").value =
-          result.azimuth_angle.toFixed(1);
+          result.strike_azimuth_angle.toFixed(1);
         document.getElementById("angle-azimuth-value").textContent =
-          result.azimuth_angle.toFixed(1) + "°";
+          result.strike_azimuth_angle.toFixed(1) + "°";
       }
-      if (!payload.fixed_params.velocity && result.velocity !== undefined) {
+      if (!payload.fixed_params.velocity && result.strike_velocity !== undefined) {
         document.getElementById("strike-velocity").value =
-          result.velocity.toFixed(2);
+          result.strike_velocity.toFixed(2);
         document.getElementById("velocity-value").textContent =
-          result.velocity.toFixed(2) + " m/s";
+          result.strike_velocity.toFixed(2) + " m/s";
       }
 
       showCustomMessage(
@@ -670,61 +772,84 @@ function updateSimulationResultsUI(result) {
 function updateOptimizedParamsUI(data) {
   document.getElementById("optimal-params-display").style.display = "block";
 
-  // ป้องกัน error กรณีข้อมูลไม่ครบหรือ undefined
   const safe = (v, d = 0) => (typeof v === "number" && !isNaN(v) ? v : d);
   const safeArr = (arr, idx, d = 0) =>
     Array.isArray(arr) && typeof arr[idx] === "number" && !isNaN(arr[idx])
       ? arr[idx]
       : d;
 
-  document.getElementById("optimized-elevation-angle-value").textContent =
-    safe(data.strike_angle_elevation).toFixed(2) + "°";
-  document.getElementById("optimized-elevation-angle-range").textContent =
-    data.strike_angle_elevation_range &&
-    Array.isArray(data.strike_angle_elevation_range)
-      ? `${safeArr(data.strike_angle_elevation_range, 0).toFixed(
-          1
-        )}° - ${safeArr(data.strike_angle_elevation_range, 1).toFixed(1)}°`
-      : "N/A";
+  // Update Read-only System Optimized Values
+  const sysElVal = document.getElementById("system-optimal-elevation-value");
+  const sysAzVal = document.getElementById("system-optimal-azimuth-value");
+  const sysVelVal = document.getElementById("system-optimal-velocity-value");
 
-  document.getElementById("optimized-azimuth-angle-value").textContent =
-    safe(data.strike_azimuth_angle).toFixed(2) + "°";
-  document.getElementById("optimized-azimuth-angle-range").textContent =
-    data.strike_azimuth_angle_range &&
-    Array.isArray(data.strike_azimuth_angle_range)
-      ? `${safeArr(data.strike_azimuth_angle_range, 0).toFixed(1)}° - ${safeArr(
-          data.strike_azimuth_angle_range,
-          1
-        ).toFixed(1)}°`
-      : "N/A";
+  if (sysElVal) sysElVal.textContent = safe(data.strike_angle_elevation).toFixed(1) + "°";
+  if (sysAzVal) sysAzVal.textContent = safe(data.strike_azimuth_angle).toFixed(1) + "°";
+  if (sysVelVal) sysVelVal.textContent = safe(data.strike_velocity).toFixed(2) + " m/s";
 
-  document.getElementById("optimized-velocity-value").textContent =
-    safe(data.strike_velocity).toFixed(2) + " m/s";
-  document.getElementById("optimized-velocity-range").textContent =
-    data.strike_velocity_range && Array.isArray(data.strike_velocity_range)
-      ? `${safeArr(data.strike_velocity_range, 0).toFixed(1)} - ${safeArr(
-          data.strike_velocity_range,
-          1
-        ).toFixed(1)} m/s`
-      : "N/A";
-
-  document.getElementById("optimized-target-xz").textContent = `(${safe(
-    data.target_x
-  ).toFixed(2)}, ${safe(data.target_z).toFixed(2)}) m`;
-  let errorPercentage = 0;
-  const targetMagnitude = Math.sqrt(
-    safe(data.target_x) ** 2 + safe(data.target_z) ** 2
-  );
-  if (targetMagnitude > 0) {
-    errorPercentage = (safe(data.error_distance) / targetMagnitude) * 100;
+  // Update Adjustable Input Fields and their Ranges
+  const elInput = document.getElementById("optimized-elevation-angle-input");
+  const elRangeSpan = document.getElementById("optimized-elevation-angle-range");
+  if (elInput) elInput.value = safe(data.strike_angle_elevation).toFixed(1);
+  if (elRangeSpan && elInput) {
+    const rangeArray = data.strike_angle_elevation_range;
+    if (rangeArray && Array.isArray(rangeArray)) {
+      elRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(1)}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
+      elInput.dataset.min = safeArr(rangeArray, 0).toFixed(1);
+      elInput.dataset.max = safeArr(rangeArray, 1).toFixed(1);
+      elInput.style.borderColor = ''; 
+    } else {
+      elRangeSpan.textContent = "N/A";
+    }
   }
-  document.getElementById("optimized-error-dist").textContent = `${safe(
-    data.error_distance
-  ).toFixed(3)} m (${errorPercentage.toFixed(2)}%)`;
-  document.getElementById("optimized-actual-landing-x").textContent =
-    safe(data.actual_landing_x).toFixed(3) + " m";
-  document.getElementById("optimized-actual-landing-z").textContent =
-    safe(data.actual_landing_z).toFixed(3) + " m";
+  
+  const azInput = document.getElementById("optimized-azimuth-angle-input");
+  const azRangeSpan = document.getElementById("optimized-azimuth-angle-range");
+  if (azInput) azInput.value = safe(data.strike_azimuth_angle).toFixed(1);
+  if (azRangeSpan && azInput) {
+    const rangeArray = data.strike_azimuth_angle_range;
+    if (rangeArray && Array.isArray(rangeArray)) {
+      azRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(1)}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
+      azInput.dataset.min = safeArr(rangeArray, 0).toFixed(1);
+      azInput.dataset.max = safeArr(rangeArray, 1).toFixed(1);
+      azInput.style.borderColor = ''; 
+    } else {
+      azRangeSpan.textContent = "N/A";
+    }
+  }
+
+  const velInput = document.getElementById("optimized-velocity-input");
+  const velRangeSpan = document.getElementById("optimized-velocity-range");
+  if (velInput) velInput.value = safe(data.strike_velocity).toFixed(2);
+  if (velRangeSpan && velInput) {
+    const rangeArray = data.strike_velocity_range;
+    if (rangeArray && Array.isArray(rangeArray)) {
+      velRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(2)} - ${safeArr(rangeArray, 1).toFixed(2)} m/s`;
+      velInput.dataset.min = safeArr(rangeArray, 0).toFixed(2);
+      velInput.dataset.max = safeArr(rangeArray, 1).toFixed(2);
+      velInput.style.borderColor = ''; 
+    } else {
+      velRangeSpan.textContent = "N/A";
+    }
+  }
+  
+  // The following elements for target_x, target_z, error_distance, actual_landing_x, actual_landing_z
+  // were removed from HTML, so their update lines are removed from here.
+}
+
+// Function to validate input fields (can be reused)
+function validateNumericInputAgainstRange(inputElement) {
+  const value = parseFloat(inputElement.value);
+  const min = parseFloat(inputElement.dataset.min);
+  const max = parseFloat(inputElement.dataset.max);
+
+  if (isNaN(value) || value < min || value > max) {
+    inputElement.style.borderColor = 'red';
+    return false;
+  } else {
+    inputElement.style.borderColor = ''; // Or your default border color
+    return true;
+  }
 }
 
 function updateTrajectoryCharts(trajX, trajY, trajZ, zonesDataFromCalc) {

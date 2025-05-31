@@ -432,80 +432,61 @@
             <div class="card">
               <h3>
                 <i class="fas fa-bullseye"></i>
-                พารามิเตอร์ที่ปรับให้เหมาะสมที่สุด (Optimized Parameters)
+                พารามิเตอร์ที่เหมาะสมที่สุด
               </h3>
+
+              <!-- Section for Read-only System Optimized Values -->
+              <h4 style="margin-top: var(--spacing-sm); margin-bottom: var(--spacing-xs); color: var(--text-secondary);">
+                <i class="fas fa-cogs"></i> ผลลัพธ์จากระบบ (ค่าตั้งต้นสำหรับการปรับ):
+              </h4>
               <div class="results-grid">
                 <div class="result-card">
-                  <div class="result-label">
-                    มุมเงยที่เหมาะสมที่สุด (Optimal Elevation)
-                  </div>
-                  <div
-                    id="optimized-elevation-angle-value"
-                    class="result-value"
-                  >
-                    0.00°
-                  </div>
+                  <div class="result-label">มุมเงย (จากระบบ)</div>
+                  <div id="system-optimal-elevation-value" class="result-value">N/A</div>
+                </div>
+                <div class="result-card">
+                  <div class="result-label">มุมทิศ (จากระบบ)</div>
+                  <div id="system-optimal-azimuth-value" class="result-value">N/A</div>
+                </div>
+                <div class="result-card">
+                  <div class="result-label">ความเร็ว (จากระบบ)</div>
+                  <div id="system-optimal-velocity-value" class="result-value">N/A</div>
+                </div>
+              </div>
+
+              <hr style="margin: var(--spacing-md) 0;">
+
+              <!-- Section for User Adjustable Inputs -->
+              <h4 style="margin-top: var(--spacing-sm); margin-bottom: var(--spacing-xs); color: var(--text-secondary);">
+                <i class="fas fa-edit"></i> ปรับค่าพารามิเตอร์เพื่อทดลอง (อ้างอิงจากผลระบบ ±5%):
+              </h4>
+              <div class="results-grid">
+                <div class="result-card">
+                  <label for="optimized-elevation-angle-input" class="result-label">มุมเงย (ปรับค่า)</label>
+                  <input type="number" id="optimized-elevation-angle-input" class="input-control optimized-param-input" step="0.1">
                   <div class="result-detail">
-                    ช่วง (Range):
-                    <span id="optimized-elevation-angle-range">0° - 0°</span>
+                    ช่วงที่แนะนำ: <span id="optimized-elevation-angle-range">N/A</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">
-                    มุมทิศที่เหมาะสมที่สุด (Optimal Azimuth)
-                  </div>
-                  <div id="optimized-azimuth-angle-value" class="result-value">
-                    0.00°
-                  </div>
+                  <label for="optimized-azimuth-angle-input" class="result-label">มุมทิศ (ปรับค่า)</label>
+                  <input type="number" id="optimized-azimuth-angle-input" class="input-control optimized-param-input" step="0.1">
                   <div class="result-detail">
-                    ช่วง (Range):
-                    <span id="optimized-azimuth-angle-range">0° - 0°</span>
+                    ช่วงที่แนะนำ: <span id="optimized-azimuth-angle-range">N/A</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <div class="result-label">
-                    ความเร็วที่เหมาะสมที่สุด (Optimal Velocity)
-                  </div>
-                  <div id="optimized-velocity-value" class="result-value">
-                    0.00 m/s
-                  </div>
+                  <label for="optimized-velocity-input" class="result-label">ความเร็ว (ปรับค่า)</label>
+                  <input type="number" id="optimized-velocity-input" class="input-control optimized-param-input" step="0.01">
                   <div class="result-detail">
-                    ช่วง (Range):
-                    <span id="optimized-velocity-range">0 - 0 m/s</span>
+                    ช่วงที่แนะนำ: <span id="optimized-velocity-range">N/A</span>
                   </div>
                 </div>
               </div>
-              <div class="results-grid" style="margin-top: var(--spacing-sm)">
-                <div class="result-card">
-                  <div class="result-label">
-                    ตำแหน่งตกกระทบ X ที่คาดหวัง (Expected Landing X)
-                  </div>
-                  <div id="optimized-actual-landing-x" class="result-value">
-                    0.00 m
-                  </div>
-                </div>
-                <div class="result-card">
-                  <div class="result-label">
-                    ตำแหน่งตกกระทบ Z ที่คาดหวัง (Expected Landing Z)
-                  </div>
-                  <div id="optimized-actual-landing-z" class="result-value">
-                    0.00 m
-                  </div>
-                </div>
-                <div class="result-card">
-                  <div class="result-label">เป้าหมาย X, Z (Target X,Z)</div>
-                  <div id="optimized-target-xz" class="result-value">
-                    (0.00, 0.00) m
-                  </div>
-                </div>
-                <div class="result-card">
-                  <div class="result-label">
-                    ระยะคลาดเคลื่อน (Error Distance)
-                  </div>
-                  <div id="optimized-error-dist" class="result-value">
-                    0.00 m (0.00%)
-                  </div>
-                </div>
+              <div style="margin-top: var(--spacing-md);">
+                <button id="simulate-with-optimal-inputs-btn" class="btn-secondary btn-full">
+                  <i class="fas fa-play-circle"></i> ใช้ค่าที่ปรับแล้วนี้จำลอง
+                </button>
               </div>
             </div>
           </div>
@@ -1343,3 +1324,5 @@
     </script>
   </body>
 </html>
+
+
