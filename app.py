@@ -273,7 +273,7 @@ def field_info():
             {
                 "dimensions": response_dimensions,
                 "zones_data": field_data.get("raw_zones_data"),
-                "available_field_types": ["standard", "extra1", "extra2", "real1"],
+                "available_field_types": ["standard", "extra1", "extra2", "real1", "extramap1", "extramap2"],
             }
         )
     except Exception as e:

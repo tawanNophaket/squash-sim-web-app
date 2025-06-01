@@ -1570,8 +1570,7 @@ function setupFieldChart2D() {
           ) {
             let targetModelX = chart.scales.x.getValueForPixel(clickXCanvas);
             let targetModelY = chart.scales.y.getValueForPixel(clickYCanvas);
-            if (currentFieldType === "real1") {
-              // สลับค่าตอนกด: target-x = Y - 1, target-z = X - 0.375
+            if (currentFieldType === "real1" || currentFieldType === "extramap1" || currentFieldType === "extramap2") {
               document.getElementById("target-x").value = (targetModelY - 1).toFixed(2);
               document.getElementById("target-z").value = (targetModelX - 0.375).toFixed(2);
               showCustomMessage(
@@ -1865,35 +1864,34 @@ function updateFieldChart2D() {
 
   // Custom background for real1
   const canvas = document.getElementById("field-chart-2d");
-  if (currentFieldType === "real1") {
+  if (currentFieldType === "real1" || currentFieldType === "extramap1" || currentFieldType === "extramap2") {
     if (canvas) {
-      canvas.style.backgroundImage = "url('/static/images/field_diagram.PNG')";
+      let imgUrl = "/static/images/field_diagram.PNG";
+      let widthPx = 1130;
+      if (currentFieldType === "extramap1") { imgUrl = "/static/images/extramap1.png"; widthPx = 1510; }
+      if (currentFieldType === "extramap2") { imgUrl = "/static/images/extramap2.png"; widthPx = 1130; }
+      canvas.style.backgroundImage = `url('${imgUrl}')`;
       canvas.style.backgroundSize = "100% 100%";
       canvas.style.backgroundRepeat = "no-repeat";
-      canvas.width = 1130;
+      canvas.width = widthPx;
       canvas.height = 755;
       canvas.style.width = "100%";
       canvas.style.height = "auto";
     }
-    // สลับ label และ reverse ทิศแกน X
     if (fieldChart2D.options.scales.x) {
       fieldChart2D.options.scales.x.min = 0;
-      fieldChart2D.options.scales.x.max = 3;
+      fieldChart2D.options.scales.x.max = currentFieldType === "extramap1" ? 4 : 3;
       fieldChart2D.options.scales.x.title.text = "ระยะทาง Z (ม)";
       fieldChart2D.options.scales.x.reverse = true;
+      fieldChart2D.options.scales.x.display = false;
+      fieldChart2D.options.scales.x.grid = { display: false };
+      fieldChart2D.options.scales.x.ticks = { display: false };
     }
     if (fieldChart2D.options.scales.y) {
       fieldChart2D.options.scales.y.min = 0;
       fieldChart2D.options.scales.y.max = 2;
       fieldChart2D.options.scales.y.title.text = "ระยะทาง X (ม)";
       fieldChart2D.options.scales.y.reverse = false;
-    }
-    if (fieldChart2D.options.scales.x) {
-      fieldChart2D.options.scales.x.display = false;
-      fieldChart2D.options.scales.x.grid = { display: false };
-      fieldChart2D.options.scales.x.ticks = { display: false };
-    }
-    if (fieldChart2D.options.scales.y) {
       fieldChart2D.options.scales.y.display = false;
       fieldChart2D.options.scales.y.grid = { display: false };
       fieldChart2D.options.scales.y.ticks = { display: false };
@@ -1901,6 +1899,7 @@ function updateFieldChart2D() {
     if (fieldChart2D.options.plugins.legend) {
       fieldChart2D.options.plugins.legend.display = false;
     }
+    fieldChart2D.update();
   } else {
     if (canvas) {
       canvas.style.backgroundImage = "";
@@ -1921,7 +1920,7 @@ function updateFieldChart2D() {
       fieldChart2D.options.scales.x.display = true;
       fieldChart2D.options.scales.x.grid = { display: true };
       fieldChart2D.options.scales.x.ticks = { display: true };
-    }
+    } 
     if (fieldChart2D.options.scales.y) {
       fieldChart2D.options.scales.y.display = true;
       fieldChart2D.options.scales.y.grid = { display: true };
@@ -1933,3 +1932,4 @@ function updateFieldChart2D() {
   }
   fieldChart2D.update();
 }
+  

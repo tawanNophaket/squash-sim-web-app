@@ -344,6 +344,30 @@ class TargetArea:
                 "target_point": {"x": 1.5, "z": 1.0},
             })
 
+        if self.field_type == "extramap1":
+            zones.append({
+                "id": "EXTRAMAP1_FIELD",
+                "shape": "rect",
+                "x_min": 0.0,
+                "x_max": 4.0,
+                "z_min": 0.0,
+                "z_max": 2.0,
+                "color": "#607D8B",
+                "target_point": {"x": 2.0, "z": 1.0},
+            })
+
+        if self.field_type == "extramap2":
+            zones.append({
+                "id": "EXTRAMAP2_FIELD",
+                "shape": "rect",
+                "x_min": 0.0,
+                "x_max": 3.0,
+                "z_min": 0.0,
+                "z_max": 2.0,
+                "color": "#607D8B",
+                "target_point": {"x": 1.5, "z": 1.0},
+            })
+
         return zones
 
     def get_zone_for_position(self, x, z):
@@ -393,6 +417,14 @@ class TargetArea:
             # min_distance, max_distance for extra2 will be derived from its zones in get_field_dimensions
             pass
         elif field_type == "real1":
+            self.min_distance = 0.0
+            self.max_distance = 3.0
+            self.zone_width = 3.0
+        elif field_type == "extramap1":
+            self.min_distance = 0.0
+            self.max_distance = 4.0
+            self.zone_width = 4.0
+        elif field_type == "extramap2":
             self.min_distance = 0.0
             self.max_distance = 3.0
             self.zone_width = 3.0
