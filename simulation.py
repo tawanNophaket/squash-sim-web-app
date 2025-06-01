@@ -331,6 +331,19 @@ class TargetArea:
             )
             current_distance = next_distance
             idx += 1
+
+        if self.field_type == "real1":
+            zones.append({
+                "id": "REAL1_FIELD",
+                "shape": "rect",
+                "x_min": 0.0,
+                "x_max": 3.0,
+                "z_min": 0.0,
+                "z_max": 2.0,
+                "color": "#607D8B",
+                "target_point": {"x": 1.5, "z": 1.0},
+            })
+
         return zones
 
     def get_zone_for_position(self, x, z):
@@ -379,6 +392,10 @@ class TargetArea:
         elif field_type == "extra2":
             # min_distance, max_distance for extra2 will be derived from its zones in get_field_dimensions
             pass
+        elif field_type == "real1":
+            self.min_distance = 0.0
+            self.max_distance = 3.0
+            self.zone_width = 3.0
 
         self.zones = self._calculate_zones()
 
@@ -402,6 +419,9 @@ class TargetArea:
             if self.field_type == "standard" or self.field_type == "extra1":
                 overall_min_r_val = self.min_distance
                 overall_max_r_val = self.max_distance
+            elif self.field_type == "real1":
+                overall_min_r_val = 0.0
+                overall_max_r_val = 3.0
             else:
                 overall_min_r_val = 0.0
                 overall_max_r_val = 3.0

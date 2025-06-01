@@ -1568,43 +1568,25 @@ function setupFieldChart2D() {
             clickYCanvas >= chart.chartArea.top &&
             clickYCanvas <= chart.chartArea.bottom
           ) {
-            const targetModelX = chart.scales.x.getValueForPixel(clickXCanvas);
-            const targetModelZ = chart.scales.y.getValueForPixel(clickYCanvas);
-
-            console.log(
-              "onClick - Model Coordinates (targetModelX, targetModelZ):",
-              targetModelX,
-              targetModelZ
-            );
-
-            if (
-              targetModelX !== undefined &&
-              !isNaN(targetModelX) &&
-              targetModelZ !== undefined &&
-              !isNaN(targetModelZ)
-            ) {
-              document.getElementById("target-x").value =
-                targetModelX.toFixed(2);
-              document.getElementById("target-z").value =
-                targetModelZ.toFixed(2);
-              updateTargetZoneIndicator2D();
+            let targetModelX = chart.scales.x.getValueForPixel(clickXCanvas);
+            let targetModelY = chart.scales.y.getValueForPixel(clickYCanvas);
+            if (currentFieldType === "real1") {
+              // สลับค่าตอนกด: target-x = Y - 1, target-z = X - 0.375
+              document.getElementById("target-x").value = (targetModelY - 1).toFixed(2);
+              document.getElementById("target-z").value = (targetModelX - 0.375).toFixed(2);
               showCustomMessage(
-                `ตั้งเป้าหมายเป็น X: ${targetModelX.toFixed(
-                  2
-                )}m, Z: ${targetModelZ.toFixed(2)}m`,
+                `ตั้งเป้าหมายเป็น X: ${(targetModelY - 1).toFixed(2)}m, Z: ${(targetModelX - 0.375).toFixed(2)}m`,
                 "info"
               );
-              openTab("simulator");
             } else {
-              console.warn(
-                "Failed to get model coordinates from click. getValueForPixel returned invalid.",
-                { targetModelX, targetModelZ }
-              );
+              document.getElementById("target-x").value = targetModelX.toFixed(2);
+              document.getElementById("target-z").value = targetModelY.toFixed(2);
               showCustomMessage(
-                "ไม่สามารถกำหนดเป้าหมายจากจุดที่คลิกได้ (invalid coordinates).",
-                "warning"
+                `ตั้งเป้าหมายเป็น X: ${targetModelX.toFixed(2)}m, Z: ${targetModelY.toFixed(2)}m`,
+                "info"
               );
             }
+            updateTargetZoneIndicator2D();
           } else {
             console.warn(
               "Click was outside the chart area. Click (rel):",
@@ -1880,4 +1862,74 @@ function updateFieldChart2D() {
     JSON.parse(JSON.stringify(annotations))
   );
   fieldChart2D.update("none");
+
+  // Custom background for real1
+  const canvas = document.getElementById("field-chart-2d");
+  if (currentFieldType === "real1") {
+    if (canvas) {
+      canvas.style.backgroundImage = "url('/static/images/field_diagram.PNG')";
+      canvas.style.backgroundSize = "100% 100%";
+      canvas.style.backgroundRepeat = "no-repeat";
+      canvas.width = 1130;
+      canvas.height = 755;
+      canvas.style.width = "100%";
+      canvas.style.height = "auto";
+    }
+    // สลับ label และ reverse ทิศแกน X
+    if (fieldChart2D.options.scales.x) {
+      fieldChart2D.options.scales.x.min = 0;
+      fieldChart2D.options.scales.x.max = 3;
+      fieldChart2D.options.scales.x.title.text = "ระยะทาง Z (ม)";
+      fieldChart2D.options.scales.x.reverse = true;
+    }
+    if (fieldChart2D.options.scales.y) {
+      fieldChart2D.options.scales.y.min = 0;
+      fieldChart2D.options.scales.y.max = 2;
+      fieldChart2D.options.scales.y.title.text = "ระยะทาง X (ม)";
+      fieldChart2D.options.scales.y.reverse = false;
+    }
+    if (fieldChart2D.options.scales.x) {
+      fieldChart2D.options.scales.x.display = false;
+      fieldChart2D.options.scales.x.grid = { display: false };
+      fieldChart2D.options.scales.x.ticks = { display: false };
+    }
+    if (fieldChart2D.options.scales.y) {
+      fieldChart2D.options.scales.y.display = false;
+      fieldChart2D.options.scales.y.grid = { display: false };
+      fieldChart2D.options.scales.y.ticks = { display: false };
+    }
+    if (fieldChart2D.options.plugins.legend) {
+      fieldChart2D.options.plugins.legend.display = false;
+    }
+  } else {
+    if (canvas) {
+      canvas.style.backgroundImage = "";
+      canvas.width = 600;
+      canvas.height = 400;
+      canvas.style.width = "100%";
+      canvas.style.height = "400px";
+    }
+    if (fieldChart2D.options.scales.x) {
+      fieldChart2D.options.scales.x.title.text = "ระยะทาง X (ม)";
+      fieldChart2D.options.scales.x.reverse = false;
+    }
+    if (fieldChart2D.options.scales.y) {
+      fieldChart2D.options.scales.y.title.text = "ระยะทาง Z (ด้านหน้า, ม)";
+      fieldChart2D.options.scales.y.reverse = false;
+    }
+    if (fieldChart2D.options.scales.x) {
+      fieldChart2D.options.scales.x.display = true;
+      fieldChart2D.options.scales.x.grid = { display: true };
+      fieldChart2D.options.scales.x.ticks = { display: true };
+    }
+    if (fieldChart2D.options.scales.y) {
+      fieldChart2D.options.scales.y.display = true;
+      fieldChart2D.options.scales.y.grid = { display: true };
+      fieldChart2D.options.scales.y.ticks = { display: true };
+    }
+    if (fieldChart2D.options.plugins.legend) {
+      fieldChart2D.options.plugins.legend.display = false;
+    }
+  }
+  fieldChart2D.update();
 }
