@@ -362,14 +362,6 @@
               </div>
               <div class="result-card">
                 <div class="result-label">
-                  ระยะห่างแนวรัศมี (Radial Distance)
-                </div>
-                <div id="landing-distance-radial" class="result-value">
-                  0.00 m
-                </div>
-              </div>
-              <div class="result-card">
-                <div class="result-label">
                   โซนเป้าหมายที่โดน (Target Zone Hit)
                 </div>
                 <div id="target-zone-hit" class="result-value">
@@ -607,10 +599,6 @@
                   <tr>
                     <td>ตำแหน่งตกกระทบ Z (จำลอง) (Simulated Landing Z)</td>
                     <td id="compare-sim-landing-z">-</td>
-                  </tr>
-                  <tr>
-                    <td>ระยะทางแนวรัศมี (จำลอง) (Simulated Radial Dist.)</td>
-                    <td id="compare-sim-radial-dist">-</td>
                   </tr>
                   <tr>
                     <td>เวลาที่ใช้ (จำลอง) (Simulated Time)</td>
@@ -1007,7 +995,6 @@
                 simResultsCompare = {
                   landing_position_x: data.landing_position_x,
                   landing_position_z: data.landing_position_z,
-                  landing_distance_radial: data.landing_distance_radial,
                   strike_time: data.strike_time,
                 };
                 updateSimResultsTableForCompareTab(simResultsCompare);
@@ -1043,10 +1030,6 @@
           document.getElementById("compare-sim-landing-z").textContent =
             results.landing_position_z !== undefined
               ? safe(results.landing_position_z).toFixed(3) + " m"
-              : "-";
-          document.getElementById("compare-sim-radial-dist").textContent =
-            results.landing_distance_radial !== undefined
-              ? safe(results.landing_distance_radial).toFixed(3) + " m"
               : "-";
           document.getElementById("compare-sim-strike-time").textContent =
             results.strike_time !== undefined
@@ -1165,47 +1148,47 @@
 
 
           let csvContent = "data:text/csv;charset=utf-8,";
-          csvContent += "Parameter,Simulated Value,Actual Value,Difference,Percentage Error\\r\\n";
+          csvContent += "Parameter,Simulated Value,Actual Value,Difference,Percentage Error\r\n";
           csvContent +=
             "Release Height (m)," +
             simParamsCompare.release_height +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Strike Height (m)," +
             simParamsCompare.strike_height +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Strike Angle Elevation (°)," +
             simParamsCompare.strike_angle_elevation +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Strike Azimuth Angle (°)," +
             simParamsCompare.strike_azimuth_angle +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Strike Velocity (m/s)," +
             simParamsCompare.strike_velocity +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Gravity (m/s²)," +
             (simParamsCompare.physics ? simParamsCompare.physics.gravity : 'N/A') +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Ball Mass (kg)," +
             (simParamsCompare.physics ? simParamsCompare.physics.ball_mass : 'N/A') +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Air Density (kg/m³)," +
             (simParamsCompare.physics ? simParamsCompare.physics.air_density : 'N/A') +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Drag Coefficient," +
             (simParamsCompare.physics ? simParamsCompare.physics.drag_coefficient : 'N/A') +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Elasticity," +
             (simParamsCompare.physics ? simParamsCompare.physics.elasticity : 'N/A') +
-            ",N/A,N/A,N/A\\r\\n";
+            ",N/A,N/A,N/A\r\n";
 
           const simX = simResultsCompare.landing_position_x;
           const simZ = simResultsCompare.landing_position_z;
@@ -1236,7 +1219,7 @@
             diffX_val +
             "," +
             percErrorX_val +
-            "\\r\\n";
+            "\r\n";
 
           let diffZ_val = (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) ? safe(simZ - actZ).toFixed(3) : "";
           let percErrorZ_val = "";
@@ -1259,14 +1242,7 @@
             diffZ_val +
             "," +
             percErrorZ_val +
-            "\\r\\n";
-
-          csvContent +=
-            "Radial Distance (m)," +
-            (simResultsCompare.landing_distance_radial !== undefined
-              ? safe(simResultsCompare.landing_distance_radial).toFixed(3)
-              : "") +
-            ",N/A,N/A,N/A\\r\\n"; // Actual Radial and Diff Radial not directly asked for, keep as N/A
+            "\r\n";
 
           let diffTime_val = (simTime !== undefined && actTime !== undefined && !isNaN(actTime)) ? safe(simTime - actTime).toFixed(3) : "";
           csvContent +=
@@ -1276,7 +1252,7 @@
             (actTime !== undefined && !isNaN(actTime) ? safe(actTime).toFixed(3) : "") +
             "," +
             diffTime_val +
-            ",N/A\\r\\n"; // Percentage error for time usually not standard, keep as N/A
+            ",N/A\r\n"; // Percentage error for time usually not standard, keep as N/A
 
           const encodedUri = encodeURI(csvContent);
           const link = document.createElement("a");

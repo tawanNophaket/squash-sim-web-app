@@ -739,8 +739,6 @@ function updateSimulationResultsUI(result) {
     result.landing_position_x.toFixed(3) + " m";
   document.getElementById("landing-position-z").textContent =
     result.landing_position_z.toFixed(3) + " m";
-  document.getElementById("landing-distance-radial").textContent =
-    result.landing_distance_radial.toFixed(3) + " m";
   document.getElementById("strike-time").textContent =
     result.strike_time.toFixed(3) + " s";
 
@@ -1279,7 +1277,6 @@ function resetSimulation() {
 
   document.getElementById("landing-position-x").textContent = "0.00 m";
   document.getElementById("landing-position-z").textContent = "0.00 m";
-  document.getElementById("landing-distance-radial").textContent = "0.00 m";
   document.getElementById("target-zone-hit").textContent = "ไม่พบ";
   document.getElementById("strike-time").textContent = "0.00 s";
 

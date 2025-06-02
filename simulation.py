@@ -613,9 +613,6 @@ class Simulation:
         if not valid:
             return False, message
 
-        _, _, self.strike_time = self.ball_physics.simulate_free_fall(
-            self.striker_settings.release_height, self.striker_settings.strike_height
-        )
         vel = self.striker_settings.strike_velocity
         if vel <= 0 and self.striker_settings.striker_power > 0:
             vel = self.striker_settings.convert_power_to_velocity()
@@ -625,7 +622,7 @@ class Simulation:
         self.ball_physics.air_density = self.air_density
         self.ball_physics.drag_coefficient = self.drag_coefficient
 
-        self.trajectory_x, self.trajectory_y, self.trajectory_z, _ = (
+        self.trajectory_x, self.trajectory_y, self.trajectory_z, times = (
             self.ball_physics.calculate_trajectory(
                 self.striker_settings.release_height,
                 vel,
@@ -634,6 +631,7 @@ class Simulation:
                 self.striker_settings.strike_height,
             )
         )
+        self.strike_time = times[-1] if times else 0.0
         if self.trajectory_x:
             land_x, land_z = self.trajectory_x[-1], self.trajectory_z[-1]
             self.landing_position = (land_x, land_z)
