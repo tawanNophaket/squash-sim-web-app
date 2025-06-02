@@ -19,7 +19,7 @@ class BallPhysics:
         self.time_step = 0.01
         self.ideal_mode = False
         self.air_density = 1.225
-        self.drag_coefficient = 0.5
+        self.drag_coefficient = 0.67
         self.cross_sectional_area = math.pi * (0.04**2)
 
     def calculate_trajectory(
@@ -505,15 +505,12 @@ class StrikerSettings:
         self.strike_height_max = 0.5
 
     def convert_power_to_velocity(self):
-        if self.power_max == self.power_min:
-            return self.velocity_min
-        power_factor = (self.striker_power - self.power_min) / (
-            self.power_max - self.power_min
-        )
-        power_factor = max(0, min(1, power_factor))
-        return self.velocity_min + power_factor * (
-            self.velocity_max - self.velocity_min
-        )
+        # สูตร calibrate ใหม่: v = 0.314 * V (V = self.striker_power)
+        return 0.314 * self.striker_power
+
+    def convert_velocity_to_power(self, velocity):
+        # อินเวิร์ส: V = v / 0.314
+        return velocity / 0.314
 
     def validate_settings(self):
         if self.release_height not in self.available_heights:
@@ -606,7 +603,7 @@ class Simulation:
         self.ideal_landing_position = (0.0, 0.0)
         self.show_ideal_comparison = False
         self.air_density = 1.225
-        self.drag_coefficient = 0.5
+        self.drag_coefficient = 0.67
 
     def start_simulation(self):
         valid, message = self.striker_settings.validate_settings()
@@ -763,6 +760,8 @@ class Simulation:
 
         tolerance = 0.05  # Target 5cm accuracy
         if best_params["error"] < tolerance:
+            required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+            best_params["required_voltage"] = required_voltage
             return True, best_params
 
         # Refined search if initial error is not too large (e.g. < 30cm)
@@ -833,6 +832,8 @@ class Simulation:
                             )
             # print(f"After refinement, best error: {best_params['error']:.3f}m")
             if best_params["error"] < tolerance:
+                required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+                best_params["required_voltage"] = required_voltage
                 return True, best_params
 
         return False, (

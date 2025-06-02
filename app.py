@@ -172,10 +172,10 @@ def optimize():
         )
 
         if success:
-            # opt_result_data is a dict from calculate_optimal_parameters
             el_angle = opt_result_data["elevation_angle"]
             az_angle = opt_result_data["azimuth_angle"]
             vel = opt_result_data["velocity"]
+            required_voltage = opt_result_data.get("required_voltage", None)
 
             el_angle_tolerance = el_angle * 0.05
             az_angle_tolerance = abs(
@@ -196,6 +196,7 @@ def optimize():
                     "strike_angle_elevation": el_angle,
                     "strike_azimuth_angle": az_angle,
                     "strike_velocity": vel,
+                    "required_voltage": required_voltage,
                     "strike_angle_elevation_range": [
                         (
                             el_angle - el_angle_tolerance

@@ -156,11 +156,23 @@ function initializeEventListeners() {
     });
 
   const strikeVelocitySlider = document.getElementById("strike-velocity");
-  if (strikeVelocitySlider)
+  const strikeVoltageInput = document.getElementById("strike-voltage");
+  if (strikeVelocitySlider && strikeVoltageInput) {
+    // เมื่อเปลี่ยนความเร็ว -> อัปเดตแรงดัน
     strikeVelocitySlider.addEventListener("input", (e) => {
-      document.getElementById("velocity-value").textContent =
-        parseFloat(e.target.value).toFixed(2) + " m/s";
+      const v = parseFloat(e.target.value);
+      const voltage = v / 0.314;
+      strikeVoltageInput.value = voltage.toFixed(2);
+      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
     });
+    // เมื่อเปลี่ยนแรงดัน -> อัปเดตความเร็ว
+    strikeVoltageInput.addEventListener("input", (e) => {
+      const voltage = parseFloat(e.target.value);
+      const v = 0.314 * voltage;
+      strikeVelocitySlider.value = v.toFixed(2);
+      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
+    });
+  }
 
   const targetXInput = document.getElementById("target-x");
   const targetZInput = document.getElementById("target-z");
@@ -575,7 +587,7 @@ function startSimulation() {
       gravity: getPhysicsSetting("gravity", 9.81),
       ball_mass: getPhysicsSetting("ball-mass", 0.024),
       air_density: getPhysicsSetting("air-density", 1.225),
-      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.5),
+      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.67),
       elasticity: getPhysicsSetting("elasticity", 0.4),
     },
   };
@@ -653,7 +665,7 @@ function optimizeSettings() {
       gravity: getPhysicsSetting("gravity", 9.81),
       ball_mass: getPhysicsSetting("ball-mass", 0.024),
       air_density: getPhysicsSetting("air-density", 1.225),
-      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.5),
+      drag_coefficient: getPhysicsSetting("drag-coefficient", 0.67),
       elasticity: getPhysicsSetting("elasticity", 0.4),
     },
   };
@@ -823,6 +835,7 @@ function updateOptimizedParamsUI(data) {
   const sysElVal = document.getElementById("system-optimal-elevation-value");
   const sysAzVal = document.getElementById("system-optimal-azimuth-value");
   const sysVelVal = document.getElementById("system-optimal-velocity-value");
+  const sysVoltVal = document.getElementById("system-optimal-voltage-value");
 
   if (sysElVal)
     sysElVal.textContent = safe(data.strike_angle_elevation).toFixed(1) + "°";
@@ -830,6 +843,8 @@ function updateOptimizedParamsUI(data) {
     sysAzVal.textContent = safe(data.strike_azimuth_angle).toFixed(1) + "°";
   if (sysVelVal)
     sysVelVal.textContent = safe(data.strike_velocity).toFixed(2) + " m/s";
+  if (sysVoltVal && data.required_voltage !== undefined)
+    sysVoltVal.textContent = safe(data.required_voltage).toFixed(2) + " V";
 
   // Update Adjustable Input Fields and their Ranges
   const elInput = document.getElementById("optimized-elevation-angle-input");
@@ -1264,7 +1279,7 @@ function resetSimulation() {
     gravity: 9.81,
     "ball-mass": 0.024,
     "air-density": 1.225,
-    "drag-coefficient": 0.5,
+    "drag-coefficient": 0.67,
     elasticity: 0.4,
   };
   for (const id in defaultPhysics) {
