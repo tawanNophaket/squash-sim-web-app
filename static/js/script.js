@@ -115,10 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
   fetchFieldInfo();
 
   setTimeout(() => {
-    showCustomMessage(
-      "ยินดีต้อนรับสู่โปรแกรมจำลองการตีลูกสควอช (3มิติ ขั้นสูง)!",
-      "info"
-    );
+    showCustomMessage("Welcome to Group 11 Simulation!", "info");
   }, 1000);
 
   if (document.querySelector(".tab-btn")) {
@@ -227,19 +224,39 @@ function initializeEventListeners() {
   const adjAzInput = document.getElementById("adjusted-azimuth-angle-input");
   const adjVelInput = document.getElementById("adjusted-velocity-input");
 
-  if (adjElInput) adjElInput.addEventListener("input", () => validateNumericInputAgainstRange(adjElInput));
-  if (adjAzInput) adjAzInput.addEventListener("input", () => validateNumericInputAgainstRange(adjAzInput));
-  if (adjVelInput) adjVelInput.addEventListener("input", () => validateNumericInputAgainstRange(adjVelInput));
+  if (adjElInput)
+    adjElInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(adjElInput)
+    );
+  if (adjAzInput)
+    adjAzInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(adjAzInput)
+    );
+  if (adjVelInput)
+    adjVelInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(adjVelInput)
+    );
 
-  const simulateAdjustedBtn = document.getElementById("simulate-adjusted-optimal-btn");
+  const simulateAdjustedBtn = document.getElementById(
+    "simulate-adjusted-optimal-btn"
+  );
   if (simulateAdjustedBtn) {
     simulateAdjustedBtn.addEventListener("click", () => {
-      const elValid = adjElInput ? validateNumericInputAgainstRange(adjElInput) : true;
-      const azValid = adjAzInput ? validateNumericInputAgainstRange(adjAzInput) : true;
-      const velValid = adjVelInput ? validateNumericInputAgainstRange(adjVelInput) : true;
+      const elValid = adjElInput
+        ? validateNumericInputAgainstRange(adjElInput)
+        : true;
+      const azValid = adjAzInput
+        ? validateNumericInputAgainstRange(adjAzInput)
+        : true;
+      const velValid = adjVelInput
+        ? validateNumericInputAgainstRange(adjVelInput)
+        : true;
 
       if (!elValid || !azValid || !velValid) {
-        showCustomMessage("ค่าที่ป้อนสำหรับทดลองอยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข", "warning");
+        showCustomMessage(
+          "ค่าที่ป้อนสำหรับทดลองอยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข",
+          "warning"
+        );
         return;
       }
 
@@ -268,9 +285,9 @@ function initializeEventListeners() {
         mainVelSlider.value = newVelocity.toFixed(2);
         mainVelValue.textContent = newVelocity.toFixed(2) + " m/s";
       }
-      
+
       showCustomMessage("กำลังจำลองด้วยค่าที่ปรับแล้วจากส่วนทดลอง...", "info");
-      setTimeout(() => startSimulation(), 100); 
+      setTimeout(() => startSimulation(), 100);
     });
   }
 
@@ -278,19 +295,39 @@ function initializeEventListeners() {
   const optAzInput = document.getElementById("optimized-azimuth-angle-input");
   const optVelInput = document.getElementById("optimized-velocity-input");
 
-  if (optElInput) optElInput.addEventListener("input", () => validateNumericInputAgainstRange(optElInput));
-  if (optAzInput) optAzInput.addEventListener("input", () => validateNumericInputAgainstRange(optAzInput));
-  if (optVelInput) optVelInput.addEventListener("input", () => validateNumericInputAgainstRange(optVelInput));
+  if (optElInput)
+    optElInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(optElInput)
+    );
+  if (optAzInput)
+    optAzInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(optAzInput)
+    );
+  if (optVelInput)
+    optVelInput.addEventListener("input", () =>
+      validateNumericInputAgainstRange(optVelInput)
+    );
 
-  const simulateWithOptimalBtn = document.getElementById("simulate-with-optimal-inputs-btn");
+  const simulateWithOptimalBtn = document.getElementById(
+    "simulate-with-optimal-inputs-btn"
+  );
   if (simulateWithOptimalBtn) {
     simulateWithOptimalBtn.addEventListener("click", () => {
-      const elValid = optElInput ? validateNumericInputAgainstRange(optElInput) : true;
-      const azValid = optAzInput ? validateNumericInputAgainstRange(optAzInput) : true;
-      const velValid = optVelInput ? validateNumericInputAgainstRange(optVelInput) : true;
+      const elValid = optElInput
+        ? validateNumericInputAgainstRange(optElInput)
+        : true;
+      const azValid = optAzInput
+        ? validateNumericInputAgainstRange(optAzInput)
+        : true;
+      const velValid = optVelInput
+        ? validateNumericInputAgainstRange(optVelInput)
+        : true;
 
       if (!elValid || !azValid || !velValid) {
-        showCustomMessage("ค่าที่ป้อนสำหรับมุม/ความเร็วที่เหมาะสมที่สุด อยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข", "warning");
+        showCustomMessage(
+          "ค่าที่ป้อนสำหรับมุม/ความเร็วที่เหมาะสมที่สุด อยู่นอกช่วงที่แนะนำ (±5%) กรุณาแก้ไข",
+          "warning"
+        );
         return;
       }
 
@@ -319,9 +356,12 @@ function initializeEventListeners() {
         mainVelSlider.value = newVelocity.toFixed(2);
         mainVelValue.textContent = newVelocity.toFixed(2) + " m/s";
       }
-      
-      showCustomMessage("กำลังจำลองด้วยค่าที่แสดง/ปรับแล้วจากส่วน Optimized Parameters...", "info");
-      setTimeout(() => startSimulation(), 100); 
+
+      showCustomMessage(
+        "กำลังจำลองด้วยค่าที่แสดง/ปรับแล้วจากส่วน Optimized Parameters...",
+        "info"
+      );
+      setTimeout(() => startSimulation(), 100);
     });
   }
 
@@ -665,7 +705,10 @@ function optimizeSettings() {
         document.getElementById("angle-azimuth-value").textContent =
           result.strike_azimuth_angle.toFixed(1) + "°";
       }
-      if (!payload.fixed_params.velocity && result.strike_velocity !== undefined) {
+      if (
+        !payload.fixed_params.velocity &&
+        result.strike_velocity !== undefined
+      ) {
         document.getElementById("strike-velocity").value =
           result.strike_velocity.toFixed(2);
         document.getElementById("velocity-value").textContent =
@@ -783,36 +826,45 @@ function updateOptimizedParamsUI(data) {
   const sysAzVal = document.getElementById("system-optimal-azimuth-value");
   const sysVelVal = document.getElementById("system-optimal-velocity-value");
 
-  if (sysElVal) sysElVal.textContent = safe(data.strike_angle_elevation).toFixed(1) + "°";
-  if (sysAzVal) sysAzVal.textContent = safe(data.strike_azimuth_angle).toFixed(1) + "°";
-  if (sysVelVal) sysVelVal.textContent = safe(data.strike_velocity).toFixed(2) + " m/s";
+  if (sysElVal)
+    sysElVal.textContent = safe(data.strike_angle_elevation).toFixed(1) + "°";
+  if (sysAzVal)
+    sysAzVal.textContent = safe(data.strike_azimuth_angle).toFixed(1) + "°";
+  if (sysVelVal)
+    sysVelVal.textContent = safe(data.strike_velocity).toFixed(2) + " m/s";
 
   // Update Adjustable Input Fields and their Ranges
   const elInput = document.getElementById("optimized-elevation-angle-input");
-  const elRangeSpan = document.getElementById("optimized-elevation-angle-range");
+  const elRangeSpan = document.getElementById(
+    "optimized-elevation-angle-range"
+  );
   if (elInput) elInput.value = safe(data.strike_angle_elevation).toFixed(1);
   if (elRangeSpan && elInput) {
     const rangeArray = data.strike_angle_elevation_range;
     if (rangeArray && Array.isArray(rangeArray)) {
-      elRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(1)}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
+      elRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(
+        1
+      )}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
       elInput.dataset.min = safeArr(rangeArray, 0).toFixed(1);
       elInput.dataset.max = safeArr(rangeArray, 1).toFixed(1);
-      elInput.style.borderColor = ''; 
+      elInput.style.borderColor = "";
     } else {
       elRangeSpan.textContent = "N/A";
     }
   }
-  
+
   const azInput = document.getElementById("optimized-azimuth-angle-input");
   const azRangeSpan = document.getElementById("optimized-azimuth-angle-range");
   if (azInput) azInput.value = safe(data.strike_azimuth_angle).toFixed(1);
   if (azRangeSpan && azInput) {
     const rangeArray = data.strike_azimuth_angle_range;
     if (rangeArray && Array.isArray(rangeArray)) {
-      azRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(1)}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
+      azRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(
+        1
+      )}° - ${safeArr(rangeArray, 1).toFixed(1)}°`;
       azInput.dataset.min = safeArr(rangeArray, 0).toFixed(1);
       azInput.dataset.max = safeArr(rangeArray, 1).toFixed(1);
-      azInput.style.borderColor = ''; 
+      azInput.style.borderColor = "";
     } else {
       azRangeSpan.textContent = "N/A";
     }
@@ -824,15 +876,17 @@ function updateOptimizedParamsUI(data) {
   if (velRangeSpan && velInput) {
     const rangeArray = data.strike_velocity_range;
     if (rangeArray && Array.isArray(rangeArray)) {
-      velRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(2)} - ${safeArr(rangeArray, 1).toFixed(2)} m/s`;
+      velRangeSpan.textContent = `${safeArr(rangeArray, 0).toFixed(
+        2
+      )} - ${safeArr(rangeArray, 1).toFixed(2)} m/s`;
       velInput.dataset.min = safeArr(rangeArray, 0).toFixed(2);
       velInput.dataset.max = safeArr(rangeArray, 1).toFixed(2);
-      velInput.style.borderColor = ''; 
+      velInput.style.borderColor = "";
     } else {
       velRangeSpan.textContent = "N/A";
     }
   }
-  
+
   // The following elements for target_x, target_z, error_distance, actual_landing_x, actual_landing_z
   // were removed from HTML, so their update lines are removed from here.
 }
@@ -844,10 +898,10 @@ function validateNumericInputAgainstRange(inputElement) {
   const max = parseFloat(inputElement.dataset.max);
 
   if (isNaN(value) || value < min || value > max) {
-    inputElement.style.borderColor = 'red';
+    inputElement.style.borderColor = "red";
     return false;
   } else {
-    inputElement.style.borderColor = ''; // Or your default border color
+    inputElement.style.borderColor = ""; // Or your default border color
     return true;
   }
 }
@@ -1570,18 +1624,32 @@ function setupFieldChart2D() {
           ) {
             let targetModelX = chart.scales.x.getValueForPixel(clickXCanvas);
             let targetModelY = chart.scales.y.getValueForPixel(clickYCanvas);
-            if (currentFieldType === "real1" || currentFieldType === "extramap1" || currentFieldType === "extramap2") {
-              document.getElementById("target-x").value = (targetModelY - 1).toFixed(2);
-              document.getElementById("target-z").value = (targetModelX - 0.375).toFixed(2);
+            if (
+              currentFieldType === "real1" ||
+              currentFieldType === "extramap1" ||
+              currentFieldType === "extramap2"
+            ) {
+              document.getElementById("target-x").value = (
+                targetModelY - 1
+              ).toFixed(2);
+              document.getElementById("target-z").value = (
+                targetModelX - 0.375
+              ).toFixed(2);
               showCustomMessage(
-                `ตั้งเป้าหมายเป็น X: ${(targetModelY - 1).toFixed(2)}m, Z: ${(targetModelX - 0.375).toFixed(2)}m`,
+                `ตั้งเป้าหมายเป็น X: ${(targetModelY - 1).toFixed(2)}m, Z: ${(
+                  targetModelX - 0.375
+                ).toFixed(2)}m`,
                 "info"
               );
             } else {
-              document.getElementById("target-x").value = targetModelX.toFixed(2);
-              document.getElementById("target-z").value = targetModelY.toFixed(2);
+              document.getElementById("target-x").value =
+                targetModelX.toFixed(2);
+              document.getElementById("target-z").value =
+                targetModelY.toFixed(2);
               showCustomMessage(
-                `ตั้งเป้าหมายเป็น X: ${targetModelX.toFixed(2)}m, Z: ${targetModelY.toFixed(2)}m`,
+                `ตั้งเป้าหมายเป็น X: ${targetModelX.toFixed(
+                  2
+                )}m, Z: ${targetModelY.toFixed(2)}m`,
                 "info"
               );
             }
@@ -1864,12 +1932,22 @@ function updateFieldChart2D() {
 
   // Custom background for real1
   const canvas = document.getElementById("field-chart-2d");
-  if (currentFieldType === "real1" || currentFieldType === "extramap1" || currentFieldType === "extramap2") {
+  if (
+    currentFieldType === "real1" ||
+    currentFieldType === "extramap1" ||
+    currentFieldType === "extramap2"
+  ) {
     if (canvas) {
       let imgUrl = "/static/images/field_diagram.PNG";
       let widthPx = 1130;
-      if (currentFieldType === "extramap1") { imgUrl = "/static/images/extramap1.png"; widthPx = 1510; }
-      if (currentFieldType === "extramap2") { imgUrl = "/static/images/extramap2.png"; widthPx = 1130; }
+      if (currentFieldType === "extramap1") {
+        imgUrl = "/static/images/extramap1.png";
+        widthPx = 1510;
+      }
+      if (currentFieldType === "extramap2") {
+        imgUrl = "/static/images/extramap2.png";
+        widthPx = 1130;
+      }
       canvas.style.backgroundImage = `url('${imgUrl}')`;
       canvas.style.backgroundSize = "100% 100%";
       canvas.style.backgroundRepeat = "no-repeat";
@@ -1880,7 +1958,8 @@ function updateFieldChart2D() {
     }
     if (fieldChart2D.options.scales.x) {
       fieldChart2D.options.scales.x.min = 0;
-      fieldChart2D.options.scales.x.max = currentFieldType === "extramap1" ? 4 : 3;
+      fieldChart2D.options.scales.x.max =
+        currentFieldType === "extramap1" ? 4 : 3;
       fieldChart2D.options.scales.x.title.text = "ระยะทาง Z (ม)";
       fieldChart2D.options.scales.x.reverse = true;
       fieldChart2D.options.scales.x.display = false;
@@ -1920,7 +1999,7 @@ function updateFieldChart2D() {
       fieldChart2D.options.scales.x.display = true;
       fieldChart2D.options.scales.x.grid = { display: true };
       fieldChart2D.options.scales.x.ticks = { display: true };
-    } 
+    }
     if (fieldChart2D.options.scales.y) {
       fieldChart2D.options.scales.y.display = true;
       fieldChart2D.options.scales.y.grid = { display: true };
@@ -1932,4 +2011,3 @@ function updateFieldChart2D() {
   }
   fieldChart2D.update();
 }
-  
