@@ -144,15 +144,11 @@ function initializeEventListeners() {
   const strikeAngleElevationSlider = document.getElementById(
     "strike-angle-elevation"
   );
-  if (strikeAngleElevationSlider) {
-    strikeAngleElevationSlider.min = 45;
-    strikeAngleElevationSlider.max = 90;
-    strikeAngleElevationSlider.step = 5;
+  if (strikeAngleElevationSlider)
     strikeAngleElevationSlider.addEventListener("input", (e) => {
       document.getElementById("angle-elevation-value").textContent =
         parseFloat(e.target.value).toFixed(1) + "°";
     });
-  }
 
   const strikeAzimuthAngleSlider = document.getElementById(
     "strike-azimuth-angle"
@@ -477,39 +473,29 @@ function fetchFieldInfo() {
 
 function updateSliderRange(sliderId, minVal, maxVal) {
   const slider = document.getElementById(sliderId);
-  if (sliderId === "strike-angle-elevation") {
-    slider.min = 45;
-    slider.max = 90;
-    slider.step = 5;
-  } else {
-    if (slider && minVal !== undefined && maxVal !== undefined) {
-      const numMin = parseFloat(minVal);
-      const numMax = parseFloat(maxVal);
-      if (isNaN(numMin) || isNaN(numMax)) {
-        console.error(
-          `Invalid min/max for slider ${sliderId}:`,
-          minVal,
-          maxVal
-        );
-        return;
-      }
-      slider.min = numMin;
-      slider.max = numMax;
+  if (slider && minVal !== undefined && maxVal !== undefined) {
+    const numMin = parseFloat(minVal);
+    const numMax = parseFloat(maxVal);
+    if (isNaN(numMin) || isNaN(numMax)) {
+      console.error(`Invalid min/max for slider ${sliderId}:`, minVal, maxVal);
+      return;
+    }
+    slider.min = numMin;
+    slider.max = numMax;
 
-      const valueDisplayId =
-        sliderId.replace("strike-", "").replace("-angle", "") + "-value";
-      const valueDisplay = document.getElementById(valueDisplayId);
+    const valueDisplayId =
+      sliderId.replace("strike-", "").replace("-angle", "") + "-value";
+    const valueDisplay = document.getElementById(valueDisplayId);
 
-      if (valueDisplay) {
-        let currentValue = parseFloat(slider.value);
-        if (isNaN(currentValue)) currentValue = (numMin + numMax) / 2;
-        if (currentValue < numMin) slider.value = numMin;
-        else if (currentValue > numMax) slider.value = numMax;
-        valueDisplay.textContent =
-          parseFloat(slider.value).toFixed(
-            sliderId.includes("velocity") ? 2 : 1
-          ) + (sliderId.includes("velocity") ? " m/s" : "°");
-      }
+    if (valueDisplay) {
+      let currentValue = parseFloat(slider.value);
+      if (isNaN(currentValue)) currentValue = (numMin + numMax) / 2;
+      if (currentValue < numMin) slider.value = numMin;
+      else if (currentValue > numMax) slider.value = numMax;
+      valueDisplay.textContent =
+        parseFloat(slider.value).toFixed(
+          sliderId.includes("velocity") ? 2 : 1
+        ) + (sliderId.includes("velocity") ? " m/s" : "°");
     }
   }
 }
