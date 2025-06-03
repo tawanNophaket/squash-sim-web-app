@@ -217,21 +217,21 @@ class TargetArea:
         self.field_type = "standard"
         self.custom_zones = []
         self.colors = [
-            "#FF6347",
-            "#FFD700",
-            "#ADFF2F",
-            "#87CEEB",
-            "#9370DB",  # Tomato, Gold, GreenYellow, SkyBlue, MediumPurple
+            "#87CEEB",  # ฟ้า
+            "#32CD32",  # เขียว
+            "#FFD700",  # เหลือง
+            "#FF8C00",  # ส้ม
+            "#FF0000",  # แดง
             "#FFA07A",
             "#FF8C00",
             "#32CD32",
             "#00CED1",
-            "#BA55D3",  # LightSalmon, DarkOrange, LimeGreen, DarkTurquoise, MediumOrchid
+            "#BA55D3",
             "#F08080",
             "#FF69B4",
             "#7FFF00",
             "#40E0D0",
-            "#8A2BE2",  # LightCoral, HotPink, Chartreuse, Turquoise, BlueViolet
+            "#8A2BE2",
         ]
         self.zones = self._calculate_zones()
 
@@ -333,40 +333,46 @@ class TargetArea:
             idx += 1
 
         if self.field_type == "real1":
-            zones.append({
-                "id": "REAL1_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 3.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 1.5, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "REAL1_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 3.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 1.5, "z": 1.0},
+                }
+            )
 
         if self.field_type == "extramap1":
-            zones.append({
-                "id": "EXTRAMAP1_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 4.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 2.0, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "EXTRAMAP1_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 4.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 2.0, "z": 1.0},
+                }
+            )
 
         if self.field_type == "extramap2":
-            zones.append({
-                "id": "EXTRAMAP2_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 3.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 1.5, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "EXTRAMAP2_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 3.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 1.5, "z": 1.0},
+                }
+            )
 
         return zones
 
@@ -760,7 +766,9 @@ class Simulation:
 
         tolerance = 0.05  # Target 5cm accuracy
         if best_params["error"] < tolerance:
-            required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+            required_voltage = self.striker_settings.convert_velocity_to_power(
+                best_params["velocity"]
+            )
             best_params["required_voltage"] = required_voltage
             return True, best_params
 
@@ -832,7 +840,9 @@ class Simulation:
                             )
             # print(f"After refinement, best error: {best_params['error']:.3f}m")
             if best_params["error"] < tolerance:
-                required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+                required_voltage = self.striker_settings.convert_velocity_to_power(
+                    best_params["velocity"]
+                )
                 best_params["required_voltage"] = required_voltage
                 return True, best_params
 
