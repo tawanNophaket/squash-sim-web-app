@@ -121,6 +121,10 @@ document.addEventListener("DOMContentLoaded", function () {
   if (document.querySelector(".tab-btn")) {
     openTab("simulator");
   }
+
+  const setZoneBtn = document.getElementById("set-zone-btn");
+  if (setZoneBtn) setZoneBtn.addEventListener("click", setTargetToZoneCenter);
+  populateZoneSelect();
 });
 
 function setupAllCharts() {
@@ -454,6 +458,7 @@ function fetchFieldInfo() {
       }
       updateFieldChart2D();
       updateTargetZoneIndicator2D();
+      populateZoneSelect();
     })
     .catch((error) => {
       console.error("Error fetching field info (catch block):", error);
@@ -531,6 +536,7 @@ function handleFieldTypeChange() {
       }
       updateFieldChart2D();
       updateTargetZoneIndicator2D();
+      populateZoneSelect();
       showCustomMessage(
         `เปลี่ยนสนามเป็น ${currentFieldType} สำเร็จ`,
         "success"
@@ -756,6 +762,25 @@ function updateSimulationResultsUI(result) {
   document.getElementById("strike-time").textContent =
     result.strike_time.toFixed(3) + " s";
 
+  // --- แสดงระยะคลาดเคลื่อน ±5% ---
+  const landingZ = result.landing_position_z;
+  if (!isNaN(landingZ)) {
+    const minZ = (landingZ * 0.95).toFixed(3);
+    const maxZ = (landingZ * 1.05).toFixed(3);
+    let rangeText = `(${minZ} ถึง ${maxZ} m)`;
+    let el = document.getElementById("landing-z-range");
+    if (!el) {
+      // ถ้ายังไม่มี element ให้สร้างใหม่ใต้ landing-position-z
+      const zEl = document.getElementById("landing-position-z");
+      el = document.createElement("div");
+      el.id = "landing-z-range";
+      el.style.fontSize = "0.95em";
+      el.style.color = "#aaa";
+      zEl.parentNode.appendChild(el);
+    }
+    el.textContent = `ช่วงระยะ ±5%: ${rangeText}`;
+  }
+
   const targetZoneHitEl = document.getElementById("target-zone-hit");
   const zoneIndex = result.target_zone ? result.target_zone - 1 : -1;
 
@@ -820,6 +845,7 @@ function updateSimulationResultsUI(result) {
       error_distance: result.optimization_error_distance,
       actual_landing_x: result.optimized_actual_landing_x,
       actual_landing_z: result.optimized_actual_landing_z,
+      optimized_landing_z: result.optimized_actual_landing_z,
     });
   }
 }
@@ -847,6 +873,29 @@ function updateOptimizedParamsUI(data) {
     sysVelVal.textContent = safe(data.strike_velocity).toFixed(2) + " m/s";
   if (sysVoltVal && data.required_voltage !== undefined)
     sysVoltVal.textContent = safe(data.required_voltage).toFixed(2) + " V";
+
+  // --- แสดงระยะคลาดเคลื่อน ±5% สำหรับผลลัพธ์ Optimize ---
+  const sysLandingZ = data.optimized_landing_z || data.landing_z;
+  if (!isNaN(sysLandingZ)) {
+    const minZ = (sysLandingZ * 0.95).toFixed(3);
+    const maxZ = (sysLandingZ * 1.05).toFixed(3);
+    let rangeText = `(${minZ} ถึง ${maxZ} m)`;
+    let el = document.getElementById("optimized-landing-z-range");
+    if (!el) {
+      // ถ้ายังไม่มี element ให้สร้างใหม่ใต้ system-optimal-velocity-value หรือ ideal-landing-z
+      const zEl =
+        document.getElementById("system-optimal-velocity-value") ||
+        document.getElementById("ideal-landing-z");
+      if (zEl) {
+        el = document.createElement("div");
+        el.id = "optimized-landing-z-range";
+        el.style.fontSize = "0.95em";
+        el.style.color = "#aaa";
+        zEl.parentNode.appendChild(el);
+      }
+    }
+    if (el) el.textContent = `ช่วงระยะ ±5%: ${rangeText}`;
+  }
 
   // Update Adjustable Input Fields and their Ranges
   const elInput = document.getElementById("optimized-elevation-angle-input");
@@ -2041,4 +2090,60 @@ function getZoneColorNameTH(zoneIndex) {
     return colorNames[zoneIndex];
   }
   return "-";
+}
+
+// --- ฟีเจอร์เลือกโซนเป้าหมายด้วย dropdown ---
+function populateZoneSelect() {
+  const select = document.getElementById("zone-select");
+  if (!select) return;
+  select.innerHTML = "";
+  if (!currentRawZonesData || currentRawZonesData.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "ไม่มีโซน";
+    select.appendChild(opt);
+    return;
+  }
+  currentRawZonesData.forEach((zone, idx) => {
+    const color = zone.color || zoneColors[idx % zoneColors.length];
+    const colorName = getZoneColorNameTH(idx);
+    const opt = document.createElement("option");
+    opt.value = idx;
+    opt.textContent = `${zone.id || `โซน ${idx + 1}`} (${colorName})`;
+    opt.style.backgroundColor = color;
+    opt.style.color =
+      colorName === "เหลือง" || colorName === "ฟ้า" ? "#222" : "#fff";
+    select.appendChild(opt);
+  });
+}
+
+function setTargetToZoneCenter() {
+  const select = document.getElementById("zone-select");
+  if (!select || !currentRawZonesData || currentRawZonesData.length === 0)
+    return;
+  const idx = parseInt(select.value);
+  if (isNaN(idx) || !currentRawZonesData[idx]) return;
+  const zone = currentRawZonesData[idx];
+  // ใช้ค่ากลางของโซน
+  let x = 0,
+    z = 0;
+  if (zone.target_point) {
+    x = zone.target_point.x;
+    z = zone.target_point.z;
+  } else if (zone.shape === "rect") {
+    x = (zone.x_min + zone.x_max) / 2;
+    z = (zone.z_min + zone.z_max) / 2;
+  } else if (zone.shape === "radial1d") {
+    x = 0;
+    z = (zone.r_min + zone.r_max) / 2;
+  } else if (zone.shape === "sector") {
+    const mid_r = (zone.r_min + zone.r_max) / 2;
+    const mid_az = ((zone.az_min || 0) + (zone.az_max || 0)) / 2;
+    const mid_az_rad = Math.radians(mid_az);
+    x = mid_r * Math.sin(mid_az_rad);
+    z = mid_r * Math.cos(mid_az_rad);
+  }
+  document.getElementById("target-x").value = x.toFixed(2);
+  document.getElementById("target-z").value = z.toFixed(2);
+  updateTargetZoneIndicator2D();
 }
