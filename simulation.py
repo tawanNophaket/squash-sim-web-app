@@ -497,8 +497,9 @@ class StrikerSettings:
         self.strike_velocity = 5.25
         self.delay_time = 0.37
         self.striker_power = 50.0
-        self.angle_elevation_min = 10.0
-        self.angle_elevation_max = 80.0
+        self.angle_elevation_min = 45.0
+        self.angle_elevation_max = 90.0
+        self.angle_elevation_step = 5.0  # เพิ่ม step สำหรับมุมเงย
         self.azimuth_angle_min = -45.0
         self.azimuth_angle_max = 45.0
         self.velocity_min = 1.0
@@ -572,6 +573,9 @@ class StrikerSettings:
             "strike_velocity": self.strike_velocity,
             "delay_time": self.delay_time,
             "striker_power": self.striker_power,
+            "angle_elevation_min": self.angle_elevation_min,
+            "angle_elevation_max": self.angle_elevation_max,
+            "angle_elevation_step": self.angle_elevation_step,
         }
 
     def set_settings(self, settings):
@@ -703,19 +707,13 @@ class Simulation:
         release_h = self.striker_settings.release_height
         strike_h = self.striker_settings.strike_height
 
-        # Increased steps for better initial grid search
         az_steps = 20 if "azimuth_angle" not in fixed_params else 1
-        el_steps = 25 if "elevation_angle" not in fixed_params else 1
-        vel_steps = 25 if "velocity" not in fixed_params else 1
+        vel_steps = (
+            100 if "velocity" not in fixed_params else 1
+        )  # เพิ่มความละเอียดของ velocity
 
         vel_min_s = fixed_params.get("velocity", self.striker_settings.velocity_min)
         vel_max_s = fixed_params.get("velocity", self.striker_settings.velocity_max)
-        el_min_s = fixed_params.get(
-            "elevation_angle", self.striker_settings.angle_elevation_min
-        )
-        el_max_s = fixed_params.get(
-            "elevation_angle", self.striker_settings.angle_elevation_max
-        )
         az_min_s = fixed_params.get(
             "azimuth_angle", self.striker_settings.azimuth_angle_min
         )
@@ -723,26 +721,24 @@ class Simulation:
             "azimuth_angle", self.striker_settings.azimuth_angle_max
         )
 
-        # Heuristic adjustment based on target distance
-        target_rad = math.sqrt(target_x**2 + target_z**2)
-        if "velocity" not in fixed_params:
-            if target_rad > 3.5:
-                vel_min_s = max(vel_min_s, 7.0)
-            elif target_rad < 1.0:
-                vel_max_s = min(vel_max_s, 8.0)
-        if "elevation_angle" not in fixed_params:
-            if target_rad > 3.0:
-                el_max_s = min(el_max_s, 65.0)  # Lower angles for far targets
-            elif target_rad < 1.0:
-                el_min_s = max(el_min_s, 30.0)  # Higher angles for near targets
+        # --- ปรับช่วง elevation angle ให้ snap เฉพาะค่าที่หุ่นปรับได้ ---
+        if "elevation_angle" in fixed_params:
+            el_values = [fixed_params["elevation_angle"]]
+        else:
+            el_values = list(
+                range(
+                    int(self.striker_settings.angle_elevation_min),
+                    int(self.striker_settings.angle_elevation_max) + 1,
+                    int(self.striker_settings.angle_elevation_step),
+                )
+            )
 
         az_range = np.linspace(az_min_s, az_max_s, az_steps)
-        el_range = np.linspace(el_min_s, el_max_s, el_steps)
         vel_range = np.linspace(vel_min_s, vel_max_s, vel_steps)
 
         for az in az_range:
             cur_az = fixed_params.get("azimuth_angle", az)
-            for el in el_range:
+            for el in el_values:
                 cur_el = fixed_params.get("elevation_angle", el)
                 for vel in vel_range:
                     cur_vel = fixed_params.get("velocity", vel)
@@ -769,17 +765,16 @@ class Simulation:
             required_voltage = self.striker_settings.convert_velocity_to_power(
                 best_params["velocity"]
             )
+            if required_voltage > 17.0:
+                return False, "ไม่สามารถหาค่าที่เหมาะสมได้ (แรงดันเกิน 17V)"
             best_params["required_voltage"] = required_voltage
             return True, best_params
 
-        # Refined search if initial error is not too large (e.g. < 30cm)
+        # Refined search (ยังคง snap เฉพาะค่าที่หุ่นปรับได้)
         if best_params["error"] < 0.30:
-            # print(f"Refining search. Initial best error: {best_params['error']:.3f}m")
-            refine_steps = 9  # More steps for refinement
+            refine_steps = 9
             az_ref_min = best_params["azimuth_angle"] - 1.5
             az_ref_max = best_params["azimuth_angle"] + 1.5
-            el_ref_min = best_params["elevation_angle"] - 1.5
-            el_ref_max = best_params["elevation_angle"] + 1.5
             vel_ref_min = best_params["velocity"] - 0.3
             vel_ref_max = best_params["velocity"] + 0.3
 
@@ -788,11 +783,17 @@ class Simulation:
                 if "azimuth_angle" not in fixed_params
                 else [best_params["azimuth_angle"]]
             )
-            el_r_range = (
-                np.linspace(el_ref_min, el_ref_max, refine_steps)
-                if "elevation_angle" not in fixed_params
-                else [best_params["elevation_angle"]]
-            )
+            # snap เฉพาะค่าที่หุ่นปรับได้
+            if "elevation_angle" in fixed_params:
+                el_r_values = [fixed_params["elevation_angle"]]
+            else:
+                el_r_values = list(
+                    range(
+                        int(self.striker_settings.angle_elevation_min),
+                        int(self.striker_settings.angle_elevation_max) + 1,
+                        int(self.striker_settings.angle_elevation_step),
+                    )
+                )
             vel_r_range = (
                 np.linspace(vel_ref_min, vel_ref_max, refine_steps)
                 if "velocity" not in fixed_params
@@ -804,11 +805,6 @@ class Simulation:
                 self.striker_settings.azimuth_angle_min,
                 self.striker_settings.azimuth_angle_max,
             )
-            el_r_range = np.clip(
-                el_r_range,
-                self.striker_settings.angle_elevation_min,
-                self.striker_settings.angle_elevation_max,
-            )
             vel_r_range = np.clip(
                 vel_r_range,
                 self.striker_settings.velocity_min,
@@ -817,7 +813,7 @@ class Simulation:
 
             for az_r in az_r_range:
                 cur_az_r = fixed_params.get("azimuth_angle", az_r)
-                for el_r in el_r_range:
+                for el_r in el_r_values:
                     cur_el_r = fixed_params.get("elevation_angle", el_r)
                     for vel_r in vel_r_range:
                         cur_vel_r = fixed_params.get("velocity", vel_r)
@@ -838,11 +834,12 @@ class Simulation:
                                     "landing_z": land_z_r,
                                 }
                             )
-            # print(f"After refinement, best error: {best_params['error']:.3f}m")
             if best_params["error"] < tolerance:
                 required_voltage = self.striker_settings.convert_velocity_to_power(
                     best_params["velocity"]
                 )
+                if required_voltage > 17.0:
+                    return False, "ไม่สามารถหาค่าที่เหมาะสมได้ (แรงดันเกิน 17V)"
                 best_params["required_voltage"] = required_voltage
                 return True, best_params
 
