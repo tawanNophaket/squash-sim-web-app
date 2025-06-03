@@ -252,15 +252,7 @@
 
             <div class="control-group">
               <label for="strike-voltage">แรงดันที่จ่ายให้มอเตอร์ (V)</label>
-              <input
-                type="number"
-                id="strike-voltage"
-                min="0"
-                max="30"
-                step="0.01"
-                value="14.00"
-                class="input-control"
-              />
+              <input type="number" id="strike-voltage" min="0" max="30" step="0.01" value="14.00" class="input-control" />
             </div>
 
             <div class="control-group">
@@ -303,17 +295,6 @@
             <div class="zone-indicator" style="margin-top: var(--spacing-sm)">
               <span>โซนเป้าหมาย (จาก X,Z): </span>
               <span id="indicator-zone-2d" class="zone-badge">โซน ?</span>
-            </div>
-            <div class="control-group">
-              <label for="zone-select">เลือกโซนเป้าหมาย (เลือกสี):</label>
-              <select id="zone-select" class="input-control"></select>
-              <button
-                id="set-zone-btn"
-                class="btn-accent"
-                style="margin-top: 6px"
-              >
-                ใช้โซนนี้เป็นเป้าหมาย
-              </button>
             </div>
           </div>
 
@@ -452,111 +433,59 @@
               </h3>
 
               <!-- Section for Read-only System Optimized Values -->
-              <h4
-                style="
-                  margin-top: var(--spacing-sm);
-                  margin-bottom: var(--spacing-xs);
-                  color: var(--text-secondary);
-                "
-              >
-                <i class="fas fa-cogs"></i> ผลลัพธ์จากระบบ
-                (ค่าตั้งต้นสำหรับการปรับ):
+              <h4 style="margin-top: var(--spacing-sm); margin-bottom: var(--spacing-xs); color: var(--text-secondary);">
+                <i class="fas fa-cogs"></i> ผลลัพธ์จากระบบ (ค่าตั้งต้นสำหรับการปรับ):
               </h4>
               <div class="results-grid">
                 <div class="result-card">
                   <div class="result-label">มุมเงย (จากระบบ)</div>
-                  <div id="system-optimal-elevation-value" class="result-value">
-                    N/A
-                  </div>
+                  <div id="system-optimal-elevation-value" class="result-value">N/A</div>
                 </div>
                 <div class="result-card">
                   <div class="result-label">มุมทิศ (จากระบบ)</div>
-                  <div id="system-optimal-azimuth-value" class="result-value">
-                    N/A
-                  </div>
+                  <div id="system-optimal-azimuth-value" class="result-value">N/A</div>
                 </div>
                 <div class="result-card">
                   <div class="result-label">ความเร็ว (จากระบบ)</div>
-                  <div id="system-optimal-velocity-value" class="result-value">
-                    N/A
-                  </div>
+                  <div id="system-optimal-velocity-value" class="result-value">N/A</div>
                 </div>
                 <div class="result-card">
                   <div class="result-label">แรงดันที่ต้องใช้ (จากระบบ)</div>
-                  <div id="system-optimal-voltage-value" class="result-value">
-                    N/A
-                  </div>
+                  <div id="system-optimal-voltage-value" class="result-value">N/A</div>
                 </div>
               </div>
 
-              <hr style="margin: var(--spacing-md) 0" />
+              <hr style="margin: var(--spacing-md) 0;">
 
               <!-- Section for User Adjustable Inputs -->
-              <h4
-                style="
-                  margin-top: var(--spacing-sm);
-                  margin-bottom: var(--spacing-xs);
-                  color: var(--text-secondary);
-                "
-              >
-                <i class="fas fa-edit"></i> ปรับค่าพารามิเตอร์เพื่อทดลอง
-                (อ้างอิงจากผลระบบ ±5%):
+              <h4 style="margin-top: var(--spacing-sm); margin-bottom: var(--spacing-xs); color: var(--text-secondary);">
+                <i class="fas fa-edit"></i> ปรับค่าพารามิเตอร์เพื่อทดลอง (อ้างอิงจากผลระบบ ±5%):
               </h4>
               <div class="results-grid">
                 <div class="result-card">
-                  <label
-                    for="optimized-elevation-angle-input"
-                    class="result-label"
-                    >มุมเงย (ปรับค่า)</label
-                  >
-                  <input
-                    type="number"
-                    id="optimized-elevation-angle-input"
-                    class="input-control optimized-param-input"
-                    step="0.1"
-                  />
+                  <label for="optimized-elevation-angle-input" class="result-label">มุมเงย (ปรับค่า)</label>
+                  <input type="number" id="optimized-elevation-angle-input" class="input-control optimized-param-input" step="0.1">
                   <div class="result-detail">
-                    ช่วงที่แนะนำ:
-                    <span id="optimized-elevation-angle-range">N/A</span>
+                    ช่วงที่แนะนำ: <span id="optimized-elevation-angle-range">N/A</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <label
-                    for="optimized-azimuth-angle-input"
-                    class="result-label"
-                    >มุมทิศ (ปรับค่า)</label
-                  >
-                  <input
-                    type="number"
-                    id="optimized-azimuth-angle-input"
-                    class="input-control optimized-param-input"
-                    step="0.1"
-                  />
+                  <label for="optimized-azimuth-angle-input" class="result-label">มุมทิศ (ปรับค่า)</label>
+                  <input type="number" id="optimized-azimuth-angle-input" class="input-control optimized-param-input" step="0.1">
                   <div class="result-detail">
-                    ช่วงที่แนะนำ:
-                    <span id="optimized-azimuth-angle-range">N/A</span>
+                    ช่วงที่แนะนำ: <span id="optimized-azimuth-angle-range">N/A</span>
                   </div>
                 </div>
                 <div class="result-card">
-                  <label for="optimized-velocity-input" class="result-label"
-                    >ความเร็ว (ปรับค่า)</label
-                  >
-                  <input
-                    type="number"
-                    id="optimized-velocity-input"
-                    class="input-control optimized-param-input"
-                    step="0.01"
-                  />
+                  <label for="optimized-velocity-input" class="result-label">ความเร็ว (ปรับค่า)</label>
+                  <input type="number" id="optimized-velocity-input" class="input-control optimized-param-input" step="0.01">
                   <div class="result-detail">
                     ช่วงที่แนะนำ: <span id="optimized-velocity-range">N/A</span>
                   </div>
                 </div>
               </div>
-              <div style="margin-top: var(--spacing-md)">
-                <button
-                  id="simulate-with-optimal-inputs-btn"
-                  class="btn-secondary btn-full"
-                >
+              <div style="margin-top: var(--spacing-md);">
+                <button id="simulate-with-optimal-inputs-btn" class="btn-secondary btn-full">
                   <i class="fas fa-play-circle"></i> ใช้ค่าที่ปรับแล้วนี้จำลอง
                 </button>
               </div>
@@ -758,10 +687,7 @@
                     <td id="compare-error-distance">-</td>
                   </tr>
                   <tr>
-                    <td>
-                      ผลต่างของเวลา (จำลอง - จริง) (s) (Delta Time (Sim -
-                      Actual) (s))
-                    </td>
+                    <td>ผลต่างของเวลา (จำลอง - จริง) (s) (Delta Time (Sim - Actual) (s))</td>
                     <td id="compare-delta-time">-</td>
                   </tr>
                   <tr>
@@ -1176,41 +1102,25 @@
           let percentageErrorX = "-";
           if (!isNaN(actualX) && actualX !== 0) {
             percentageErrorX = ((deltaX / actualX) * 100).toFixed(2) + " %";
-          } else if (
-            !isNaN(actualX) &&
-            actualX === 0 &&
-            !isNaN(simX) &&
-            simX !== 0
-          ) {
+          } else if (!isNaN(actualX) && actualX === 0 && !isNaN(simX) && simX !== 0) {
             percentageErrorX = "∞ % (Actual is 0)"; // หรือ N/A
           }
-          document.getElementById("compare-percentage-error-x").textContent =
-            percentageErrorX;
+          document.getElementById("compare-percentage-error-x").textContent = percentageErrorX;
 
           let percentageErrorZ = "-";
           if (!isNaN(actualZ) && actualZ !== 0) {
             percentageErrorZ = ((deltaZ / actualZ) * 100).toFixed(2) + " %";
-          } else if (
-            !isNaN(actualZ) &&
-            actualZ === 0 &&
-            !isNaN(simZ) &&
-            simZ !== 0
-          ) {
+          } else if (!isNaN(actualZ) && actualZ === 0 && !isNaN(simZ) && simZ !== 0) {
             percentageErrorZ = "∞ % (Actual is 0)"; // หรือ N/A
           }
-          document.getElementById("compare-percentage-error-z").textContent =
-            percentageErrorZ;
-
+          document.getElementById("compare-percentage-error-z").textContent = percentageErrorZ;
+          
           let deltaTime = "-";
-          if (
-            simTime !== undefined &&
-            actualResultsCompare.strike_time !== undefined
-          ) {
-            deltaTime =
-              safe(simTime - actualResultsCompare.strike_time).toFixed(3) +
-              " s";
+          if (simTime !== undefined && actualResultsCompare.strike_time !== undefined) {
+            deltaTime = safe(simTime - actualResultsCompare.strike_time).toFixed(3) + " s";
           }
           document.getElementById("compare-delta-time").textContent = deltaTime;
+
 
           exportCsvCompareBtn.disabled = false; // เปิดใช้งานปุ่ม Export เมื่อมีการเปรียบเทียบสำเร็จ
           showCustomMessage(
@@ -1223,16 +1133,8 @@
           if (
             Object.keys(simParamsCompare).length === 0 ||
             Object.keys(simResultsCompare).length === 0 || // ต้องมีผลจำลอง
-            isNaN(
-              parseFloat(
-                document.getElementById("compare-actual-landing-x").value
-              )
-            ) || // ต้องมีผลจริง X
-            isNaN(
-              parseFloat(
-                document.getElementById("compare-actual-landing-z").value
-              )
-            ) // ต้องมีผลจริง Z
+            (isNaN(parseFloat(document.getElementById("compare-actual-landing-x").value)) || // ต้องมีผลจริง X
+             isNaN(parseFloat(document.getElementById("compare-actual-landing-z").value))) // ต้องมีผลจริง Z
           ) {
             showCustomMessage(
               "ข้อมูลไม่ครบถ้วนสำหรับการ Export (เปรียบเทียบ): กรุณาทำการจำลองและป้อนค่า X, Z จริง",
@@ -1242,28 +1144,20 @@
           }
           // actualResultsCompare จะถูก set ใน compareResultsBtn.addEventListener
           // ดังนั้น ตรวจสอบอีกครั้งว่ามีค่าที่จำเป็นหรือไม่
-          const currentActualX = parseFloat(
-            document.getElementById("compare-actual-landing-x").value
-          );
-          const currentActualZ = parseFloat(
-            document.getElementById("compare-actual-landing-z").value
-          );
-          const currentActualTime = parseFloat(
-            document.getElementById("compare-actual-strike-time").value
-          );
+          const currentActualX = parseFloat(document.getElementById("compare-actual-landing-x").value);
+          const currentActualZ = parseFloat(document.getElementById("compare-actual-landing-z").value);
+          const currentActualTime = parseFloat(document.getElementById("compare-actual-strike-time").value);
 
           // อัปเดต actualResultsCompare ให้เป็นค่าล่าสุดก่อน export
           actualResultsCompare = {
             landing_position_x: currentActualX,
             landing_position_z: currentActualZ,
-            strike_time: !isNaN(currentActualTime)
-              ? currentActualTime
-              : undefined,
+            strike_time: !isNaN(currentActualTime) ? currentActualTime : undefined,
           };
 
+
           let csvContent = "data:text/csv;charset=utf-8,";
-          csvContent +=
-            "Parameter,Simulated Value,Actual Value,Difference,Percentage Error\r\n";
+          csvContent += "Parameter,Simulated Value,Actual Value,Difference,Percentage Error\r\n";
           csvContent +=
             "Release Height (m)," +
             simParamsCompare.release_height +
@@ -1286,33 +1180,23 @@
             ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Gravity (m/s²)," +
-            (simParamsCompare.physics
-              ? simParamsCompare.physics.gravity
-              : "N/A") +
+            (simParamsCompare.physics ? simParamsCompare.physics.gravity : 'N/A') +
             ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Ball Mass (kg)," +
-            (simParamsCompare.physics
-              ? simParamsCompare.physics.ball_mass
-              : "N/A") +
+            (simParamsCompare.physics ? simParamsCompare.physics.ball_mass : 'N/A') +
             ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Air Density (kg/m³)," +
-            (simParamsCompare.physics
-              ? simParamsCompare.physics.air_density
-              : "N/A") +
+            (simParamsCompare.physics ? simParamsCompare.physics.air_density : 'N/A') +
             ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Drag Coefficient," +
-            (simParamsCompare.physics
-              ? simParamsCompare.physics.drag_coefficient
-              : "N/A") +
+            (simParamsCompare.physics ? simParamsCompare.physics.drag_coefficient : 'N/A') +
             ",N/A,N/A,N/A\r\n";
           csvContent +=
             "Elasticity," +
-            (simParamsCompare.physics
-              ? simParamsCompare.physics.elasticity
-              : "N/A") +
+            (simParamsCompare.physics ? simParamsCompare.physics.elasticity : 'N/A') +
             ",N/A,N/A,N/A\r\n";
 
           const simX = simResultsCompare.landing_position_x;
@@ -1323,14 +1207,11 @@
           const actZ = actualResultsCompare.landing_position_z;
           const actTime = actualResultsCompare.strike_time;
 
-          let diffX_val =
-            simX !== undefined && actX !== undefined && !isNaN(actX)
-              ? safe(simX - actX).toFixed(3)
-              : "";
+          let diffX_val = (simX !== undefined && actX !== undefined && !isNaN(actX)) ? safe(simX - actX).toFixed(3) : "";
           let percErrorX_val = "";
           if (simX !== undefined && actX !== undefined && !isNaN(actX)) {
             if (actX !== 0) {
-              percErrorX_val = (((simX - actX) / actX) * 100).toFixed(2) + "%";
+              percErrorX_val = (( (simX - actX) / actX) * 100).toFixed(2) + "%";
             } else if (simX !== 0) {
               percErrorX_val = "Inf";
             } else {
@@ -1349,18 +1230,15 @@
             percErrorX_val +
             "\r\n";
 
-          let diffZ_val =
-            simZ !== undefined && actZ !== undefined && !isNaN(actZ)
-              ? safe(simZ - actZ).toFixed(3)
-              : "";
+          let diffZ_val = (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) ? safe(simZ - actZ).toFixed(3) : "";
           let percErrorZ_val = "";
-          if (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) {
+           if (simZ !== undefined && actZ !== undefined && !isNaN(actZ)) {
             if (actZ !== 0) {
               percErrorZ_val = (((simZ - actZ) / actZ) * 100).toFixed(2) + "%";
             } else if (simZ !== 0) {
               percErrorZ_val = "Inf";
             } else {
-              percErrorZ_val = "0.00%";
+               percErrorZ_val = "0.00%";
             }
           }
 
@@ -1375,17 +1253,12 @@
             percErrorZ_val +
             "\r\n";
 
-          let diffTime_val =
-            simTime !== undefined && actTime !== undefined && !isNaN(actTime)
-              ? safe(simTime - actTime).toFixed(3)
-              : "";
+          let diffTime_val = (simTime !== undefined && actTime !== undefined && !isNaN(actTime)) ? safe(simTime - actTime).toFixed(3) : "";
           csvContent +=
             "Strike Time (s)," +
             (simTime !== undefined ? safe(simTime).toFixed(3) : "") +
             "," +
-            (actTime !== undefined && !isNaN(actTime)
-              ? safe(actTime).toFixed(3)
-              : "") +
+            (actTime !== undefined && !isNaN(actTime) ? safe(actTime).toFixed(3) : "") +
             "," +
             diffTime_val +
             ",N/A\r\n"; // Percentage error for time usually not standard, keep as N/A
@@ -1419,3 +1292,5 @@
     </script>
   </body>
 </html>
+
+
