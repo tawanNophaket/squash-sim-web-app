@@ -8,11 +8,11 @@ let currentFieldType = "standard";
 let fieldInfoExpanded = false;
 
 const zoneColors = [
-  "#87CEEB", // ฟ้า
-  "#32CD32", // เขียว
-  "#FFD700", // เหลือง
-  "#FF8C00", // ส้ม
-  "#FF0000", // แดง
+  "#FF6347",
+  "#FFD700",
+  "#ADFF2F",
+  "#87CEEB",
+  "#9370DB",
   "#FFA07A",
   "#FF8C00",
   "#32CD32",
@@ -163,16 +163,14 @@ function initializeEventListeners() {
       const v = parseFloat(e.target.value);
       const voltage = v / 0.314;
       strikeVoltageInput.value = voltage.toFixed(2);
-      document.getElementById("velocity-value").textContent =
-        v.toFixed(2) + " m/s";
+      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
     });
     // เมื่อเปลี่ยนแรงดัน -> อัปเดตความเร็ว
     strikeVoltageInput.addEventListener("input", (e) => {
       const voltage = parseFloat(e.target.value);
       const v = 0.314 * voltage;
       strikeVelocitySlider.value = v.toFixed(2);
-      document.getElementById("velocity-value").textContent =
-        v.toFixed(2) + " m/s";
+      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
     });
   }
 
@@ -765,11 +763,11 @@ function updateSimulationResultsUI(result) {
     zoneIndex < currentRawZonesData.length
   ) {
     const zoneDef = currentRawZonesData[zoneIndex];
-    const zoneName = zoneDef.id ? zoneDef.id : "โซน " + (zoneIndex + 1);
+    targetZoneHitEl.textContent = zoneDef.id
+      ? zoneDef.id
+      : "โซน " + (zoneIndex + 1);
     const zoneColor =
       zoneDef.color || zoneColors[zoneIndex % zoneColors.length];
-    const colorNameTH = getZoneColorNameTH(zoneIndex);
-    targetZoneHitEl.textContent = `${zoneName} (${colorNameTH})`;
     targetZoneHitEl.style.color = zoneColor;
   } else {
     targetZoneHitEl.textContent = "ไม่พบ";
@@ -1167,7 +1165,6 @@ function updateTargetZoneIndicator2D() {
   ) {
     indicatorEl.textContent = "ไม่มีข้อมูล";
     indicatorEl.style.backgroundColor = "#607D8B";
-    indicatorEl.style.color = "#fff";
     return;
   }
 
@@ -1229,19 +1226,12 @@ function updateTargetZoneIndicator2D() {
   }
 
   if (hitZoneDef) {
-    // หาชื่อสีภาษาไทยและรหัสสี
-    const colorNameTH = getZoneColorNameTH(zoneHitIndex);
-    const colorCode =
+    indicatorEl.textContent = hitZoneDef.id || `โซน ${zoneHitIndex + 1}`;
+    indicatorEl.style.backgroundColor =
       hitZoneDef.color || zoneColors[zoneHitIndex % zoneColors.length];
-    indicatorEl.textContent =
-      (hitZoneDef.id || `โซน ${zoneHitIndex + 1}`) + ` (${colorNameTH})`;
-    indicatorEl.style.backgroundColor = colorCode;
-    indicatorEl.style.color =
-      colorNameTH === "เหลือง" || colorNameTH === "ฟ้า" ? "#222" : "#fff"; // เหลือง/ฟ้าใช้ตัวหนังสือสีเข้ม
   } else {
     indicatorEl.textContent = "ไม่พบ";
     indicatorEl.style.backgroundColor = "#607D8B";
-    indicatorEl.style.color = "#fff";
   }
 }
 
@@ -2032,13 +2022,4 @@ function updateFieldChart2D() {
     }
   }
   fieldChart2D.update();
-}
-
-// แปลงเลขโซนเป็นชื่อสีภาษาไทย
-function getZoneColorNameTH(zoneIndex) {
-  const colorNames = ["ฟ้า", "เขียว", "เหลือง", "ส้ม", "แดง"];
-  if (zoneIndex >= 0 && zoneIndex < colorNames.length) {
-    return colorNames[zoneIndex];
-  }
-  return "-";
 }
