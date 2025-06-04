@@ -333,40 +333,46 @@ class TargetArea:
             idx += 1
 
         if self.field_type == "real1":
-            zones.append({
-                "id": "REAL1_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 3.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 1.5, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "REAL1_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 3.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 1.5, "z": 1.0},
+                }
+            )
 
         if self.field_type == "extramap1":
-            zones.append({
-                "id": "EXTRAMAP1_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 4.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 2.0, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "EXTRAMAP1_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 4.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 2.0, "z": 1.0},
+                }
+            )
 
         if self.field_type == "extramap2":
-            zones.append({
-                "id": "EXTRAMAP2_FIELD",
-                "shape": "rect",
-                "x_min": 0.0,
-                "x_max": 3.0,
-                "z_min": 0.0,
-                "z_max": 2.0,
-                "color": "#607D8B",
-                "target_point": {"x": 1.5, "z": 1.0},
-            })
+            zones.append(
+                {
+                    "id": "EXTRAMAP2_FIELD",
+                    "shape": "rect",
+                    "x_min": 0.0,
+                    "x_max": 3.0,
+                    "z_min": 0.0,
+                    "z_max": 2.0,
+                    "color": "#607D8B",
+                    "target_point": {"x": 1.5, "z": 1.0},
+                }
+            )
 
         return zones
 
@@ -488,15 +494,17 @@ class StrikerSettings:
         self.strike_height = 0.35
         self.strike_angle_elevation = 45.0
         self.strike_azimuth_angle = 0.0
-        self.strike_velocity = 5.25
+        self.strike_velocity = 4.4  # m/s (14V * 0.314)
         self.delay_time = 0.37
         self.striker_power = 50.0
-        self.angle_elevation_min = 10.0
-        self.angle_elevation_max = 80.0
+        # เปลี่ยนขีดจำกัดมุมเงยเป็น 45-90 องศา (ทีละ 5 องศา: 45, 50, 55, 60, 65, 70, 75, 80, 85, 90)
+        self.angle_elevation_min = 45.0
+        self.angle_elevation_max = 90.0
         self.azimuth_angle_min = -45.0
         self.azimuth_angle_max = 45.0
-        self.velocity_min = 1.0
-        self.velocity_max = 20.0
+        # จำกัดความเร็วตามขีดจำกัดแรงดัน 15V (15V * 0.314 = 4.71 m/s)
+        self.velocity_min = 1.0  # m/s
+        self.velocity_max = 4.71  # m/s (จำกัดโดยแรงดัน 15V)
         self.power_min = 10.0
         self.power_max = 100.0
         self.delay_min = 0.0
@@ -695,12 +703,14 @@ class Simulation:
         }
 
         release_h = self.striker_settings.release_height
-        strike_h = self.striker_settings.strike_height
-
-        # Increased steps for better initial grid search
+        strike_h = (
+            self.striker_settings.strike_height
+        )  # Increased steps for better initial grid search
         az_steps = 20 if "azimuth_angle" not in fixed_params else 1
         el_steps = 25 if "elevation_angle" not in fixed_params else 1
-        vel_steps = 25 if "velocity" not in fixed_params else 1
+        vel_steps = (
+            50 if "velocity" not in fixed_params else 1
+        )  # เพิ่มความละเอียดของ velocity
 
         vel_min_s = fixed_params.get("velocity", self.striker_settings.velocity_min)
         vel_max_s = fixed_params.get("velocity", self.striker_settings.velocity_max)
@@ -760,20 +770,44 @@ class Simulation:
 
         tolerance = 0.05  # Target 5cm accuracy
         if best_params["error"] < tolerance:
-            required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+            required_voltage = self.striker_settings.convert_velocity_to_power(
+                best_params["velocity"]
+            )
             best_params["required_voltage"] = required_voltage
+
+            # ปัดมุมเงยให้เป็นทวีคูณของ 5 องศาที่ใกล้ที่สุด
+            original_elevation = best_params["elevation_angle"]
+            rounded_elevation = round(original_elevation / 5) * 5
+            # ตรวจสอบว่าค่าที่ปัดแล้วยังอยู่ในช่วงที่อนุญาตหรือไม่
+            if rounded_elevation < self.striker_settings.angle_elevation_min:
+                rounded_elevation = self.striker_settings.angle_elevation_min
+            elif rounded_elevation > self.striker_settings.angle_elevation_max:
+                rounded_elevation = self.striker_settings.angle_elevation_max
+
+            # คำนวณใหม่ด้วยมุมเงยที่ปัดแล้ว
+            if rounded_elevation != original_elevation:
+                land_x_rounded, land_z_rounded = self.ball_physics.get_landing_position(
+                    release_h, best_params["velocity"], rounded_elevation,
+                    best_params["azimuth_angle"], strike_h
+                )
+                best_params["elevation_angle"] = rounded_elevation
+                best_params["landing_x"] = land_x_rounded
+                best_params["landing_z"] = land_z_rounded
+                best_params["error"] = math.sqrt(
+                    (land_x_rounded - target_x) ** 2 + (land_z_rounded - target_z) ** 2
+                )
+
             return True, best_params
 
-        # Refined search if initial error is not too large (e.g. < 30cm)
         if best_params["error"] < 0.30:
             # print(f"Refining search. Initial best error: {best_params['error']:.3f}m")
-            refine_steps = 9  # More steps for refinement
+            refine_steps = 15  # เพิ่มขั้นตอนการปรับแต่งสำหรับความแม่นยำที่ดีขึ้น
             az_ref_min = best_params["azimuth_angle"] - 1.5
             az_ref_max = best_params["azimuth_angle"] + 1.5
             el_ref_min = best_params["elevation_angle"] - 1.5
             el_ref_max = best_params["elevation_angle"] + 1.5
-            vel_ref_min = best_params["velocity"] - 0.3
-            vel_ref_max = best_params["velocity"] + 0.3
+            vel_ref_min = best_params["velocity"] - 0.2  # ลดช่วงการค้นหาแต่เพิ่มความละเอียด
+            vel_ref_max = best_params["velocity"] + 0.2
 
             az_r_range = (
                 np.linspace(az_ref_min, az_ref_max, refine_steps)
@@ -827,13 +861,37 @@ class Simulation:
                                     "elevation_angle": cur_el_r,
                                     "velocity": cur_vel_r,
                                     "landing_x": land_x_r,
-                                    "landing_z": land_z_r,
-                                }
+                                    "landing_z": land_z_r,                                }
                             )
-            # print(f"After refinement, best error: {best_params['error']:.3f}m")
+
             if best_params["error"] < tolerance:
-                required_voltage = self.striker_settings.convert_velocity_to_power(best_params["velocity"])
+                required_voltage = self.striker_settings.convert_velocity_to_power(
+                    best_params["velocity"]
+                )
                 best_params["required_voltage"] = required_voltage
+
+                # ปัดมุมเงยให้เป็นทวีคูณของ 5 องศาที่ใกล้ที่สุด
+                original_elevation = best_params["elevation_angle"]
+                rounded_elevation = round(original_elevation / 5) * 5
+                # ตรวจสอบว่าค่าที่ปัดแล้วยังอยู่ในช่วงที่อนุญาตหรือไม่
+                if rounded_elevation < self.striker_settings.angle_elevation_min:
+                    rounded_elevation = self.striker_settings.angle_elevation_min
+                elif rounded_elevation > self.striker_settings.angle_elevation_max:
+                    rounded_elevation = self.striker_settings.angle_elevation_max
+
+                # คำนวณใหม่ด้วยมุมเงยที่ปัดแล้ว
+                if rounded_elevation != original_elevation:
+                    land_x_rounded, land_z_rounded = self.ball_physics.get_landing_position(
+                        release_h, best_params["velocity"], rounded_elevation,
+                        best_params["azimuth_angle"], strike_h
+                    )
+                    best_params["elevation_angle"] = rounded_elevation
+                    best_params["landing_x"] = land_x_rounded
+                    best_params["landing_z"] = land_z_rounded
+                    best_params["error"] = math.sqrt(
+                        (land_x_rounded - target_x) ** 2 + (land_z_rounded - target_z) ** 2
+                    )
+
                 return True, best_params
 
         return False, (
@@ -841,6 +899,146 @@ class Simulation:
             f"Best error: {best_params['error']:.2f}m. "
             f"Params: Az:{best_params['azimuth_angle']:.1f}, El:{best_params['elevation_angle']:.1f}, Vel:{best_params['velocity']:.1f}"
         )
+
+    def find_multiple_optimal_solutions(
+        self, target_x, target_z, fixed_params=None, max_solutions=5
+    ):
+        """
+        หาทางเลือกหลายๆ แบบสำหรับการตีไปยังเป้าหมายเดียวกัน
+        Returns: (success, solutions_list or error_message)
+        """
+        if fixed_params is None:
+            fixed_params = {}
+
+        solutions = []
+        tolerance = 0.08  # ใช้ tolerance ที่หลวมกว่าเล็กน้อยเพื่อหาทางเลือกมากขึ้น
+
+        release_h = self.striker_settings.release_height
+        strike_h = self.striker_settings.strike_height  # ขยายช่วงการค้นหาให้กว้างขึ้น
+        az_steps = 30 if "azimuth_angle" not in fixed_params else 1
+        el_steps = 35 if "elevation_angle" not in fixed_params else 1
+        vel_steps = (
+            60 if "velocity" not in fixed_params else 1
+        )  # เพิ่มความละเอียดของ velocity สำหรับทางเลือกหลายแบบ
+
+        vel_min_s = fixed_params.get("velocity", self.striker_settings.velocity_min)
+        vel_max_s = fixed_params.get("velocity", self.striker_settings.velocity_max)
+        el_min_s = fixed_params.get(
+            "elevation_angle", self.striker_settings.angle_elevation_min
+        )
+        el_max_s = fixed_params.get(
+            "elevation_angle", self.striker_settings.angle_elevation_max
+        )
+        az_min_s = fixed_params.get(
+            "azimuth_angle", self.striker_settings.azimuth_angle_min
+        )
+        az_max_s = fixed_params.get(
+            "azimuth_angle", self.striker_settings.azimuth_angle_max
+        )
+
+        az_range = np.linspace(az_min_s, az_max_s, az_steps)
+        el_range = np.linspace(el_min_s, el_max_s, el_steps)
+        vel_range = np.linspace(vel_min_s, vel_max_s, vel_steps)
+
+        # เก็บผลลัพธ์ทั้งหมดที่อยู่ใน tolerance
+        candidate_solutions = []
+
+        for az in az_range:
+            cur_az = fixed_params.get("azimuth_angle", az)
+            for el in el_range:
+                cur_el = fixed_params.get("elevation_angle", el)
+                for vel in vel_range:
+                    cur_vel = fixed_params.get("velocity", vel)
+                    land_x, land_z = self.ball_physics.get_landing_position(
+                        release_h, cur_vel, cur_el, cur_az, strike_h
+                    )
+                    error = math.sqrt(
+                        (land_x - target_x) ** 2 + (land_z - target_z) ** 2
+                    )
+
+                    if error < tolerance:
+                        required_voltage = (
+                            self.striker_settings.convert_velocity_to_power(cur_vel)
+                        )
+
+                        # ปัดมุมเงยให้เป็นทวีคูณของ 5 องศาที่ใกล้ที่สุด
+                        original_elevation = cur_el
+                        rounded_elevation = round(original_elevation / 5) * 5
+                        # ตรวจสอบว่าค่าที่ปัดแล้วยังอยู่ในช่วงที่อนุญาตหรือไม่
+                        if rounded_elevation < self.striker_settings.angle_elevation_min:
+                            rounded_elevation = self.striker_settings.angle_elevation_min
+                        elif rounded_elevation > self.striker_settings.angle_elevation_max:
+                            rounded_elevation = self.striker_settings.angle_elevation_max
+
+                        # คำนวณใหม่ด้วยมุมเงยที่ปัดแล้ว
+                        if rounded_elevation != original_elevation:
+                            land_x_rounded, land_z_rounded = self.ball_physics.get_landing_position(
+                                release_h, cur_vel, rounded_elevation, cur_az, strike_h
+                            )
+                            final_error = math.sqrt(
+                                (land_x_rounded - target_x) ** 2 + (land_z_rounded - target_z) ** 2
+                            )
+                            # ใช้ค่าที่ปัดแล้วถ้ายังอยู่ใน tolerance
+                            if final_error < tolerance:
+                                candidate_solutions.append(
+                                    {
+                                        "elevation_angle": rounded_elevation,
+                                        "azimuth_angle": cur_az,
+                                        "velocity": cur_vel,
+                                        "required_voltage": required_voltage,
+                                        "error": final_error,
+                                        "landing_x": land_x_rounded,
+                                        "landing_z": land_z_rounded,
+                                    }
+                                )
+                        else:
+                            candidate_solutions.append(
+                                {
+                                    "elevation_angle": rounded_elevation,
+                                    "azimuth_angle": cur_az,
+                                    "velocity": cur_vel,
+                                    "required_voltage": required_voltage,
+                                    "error": error,
+                                    "landing_x": land_x,
+                                    "landing_z": land_z,
+                                }
+                            )
+
+        if not candidate_solutions:
+            return False, "ไม่พบทางเลือกใดๆ ที่เหมาะสม โปรดปรับเป้าหมายหรือขยายช่วงการค้นหา"
+
+        # เรียงตาม error จากน้อยไปมาก
+        candidate_solutions.sort(key=lambda x: x["error"])
+
+        # คัดเลือกทางเลือกที่หลากหลาย โดยไม่ให้ซ้ำกันมาก
+        for candidate in candidate_solutions:
+            if len(solutions) >= max_solutions:
+                break  # ตรวจสอบว่าทางเลือกนี้แตกต่างจากที่มีอยู่แล้วหรือไม่
+            is_different = True
+            for existing in solutions:
+                vel_diff = abs(candidate["velocity"] - existing["velocity"])
+                el_diff = abs(
+                    candidate["elevation_angle"] - existing["elevation_angle"]
+                )
+                az_diff = abs(candidate["azimuth_angle"] - existing["azimuth_angle"])
+
+                # ถ้าค่าต่างกันน้อยเกินไป ถือว่าเป็นทางเลือกเดียวกัน (ลดเกณฑ์สำหรับ velocity)
+                if (
+                    vel_diff < 0.2 and el_diff < 3.0 and az_diff < 3.0
+                ):  # ลดจาก 0.5 เป็น 0.2 สำหรับ velocity
+                    is_different = False
+                    break
+
+            if is_different:
+                solutions.append(candidate)
+
+        # ถ้าได้ทางเลือกน้อยเกินไป ให้ขยาย tolerance
+        if len(solutions) < 2 and tolerance < 0.15:
+            return self.find_multiple_optimal_solutions(
+                target_x, target_z, fixed_params, max_solutions
+            )
+
+        return True, solutions
 
     def save_settings(self, filename):
         settings_data = {

@@ -136,14 +136,19 @@ function initializeEventListeners() {
       document.getElementById("height-value").textContent =
         e.target.value + " m";
     });
-
   const strikeAngleElevationSlider = document.getElementById(
     "strike-angle-elevation"
   );
   if (strikeAngleElevationSlider)
     strikeAngleElevationSlider.addEventListener("input", (e) => {
+      // ปัดเศษให้เป็นทวีคูณของ 5 และจำกัดขอบเขต 45-90
+      let value = parseFloat(e.target.value);
+      value = Math.round(value / 5) * 5;
+      value = Math.max(45, Math.min(90, value));
+
+      e.target.value = value;
       document.getElementById("angle-elevation-value").textContent =
-        parseFloat(e.target.value).toFixed(1) + "°";
+        value.toFixed(1) + "°";
     });
 
   const strikeAzimuthAngleSlider = document.getElementById(
@@ -158,19 +163,46 @@ function initializeEventListeners() {
   const strikeVelocitySlider = document.getElementById("strike-velocity");
   const strikeVoltageInput = document.getElementById("strike-voltage");
   if (strikeVelocitySlider && strikeVoltageInput) {
-    // เมื่อเปลี่ยนความเร็ว -> อัปเดตแรงดัน
+    // เมื่อเปลี่ยนความเร็ว -> อัปเดตแรงดัน (จำกัดสูงสุด 15V)
     strikeVelocitySlider.addEventListener("input", (e) => {
       const v = parseFloat(e.target.value);
       const voltage = v / 0.314;
-      strikeVoltageInput.value = voltage.toFixed(2);
-      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
+
+      // จำกัดแรงดันไม่เกิน 15V
+      if (voltage > 15) {
+        const maxVelocity = 15 * 0.314;
+        e.target.value = maxVelocity.toFixed(2);
+        strikeVoltageInput.value = "15.00";
+        document.getElementById("velocity-value").textContent =
+          maxVelocity.toFixed(2) + " m/s";
+        showCustomMessage(
+          "แรงดันถูกจำกัดไม่เกิน 15V (ความเร็วสูงสุด " +
+            maxVelocity.toFixed(2) +
+            " m/s)",
+          "warning"
+        );
+      } else {
+        strikeVoltageInput.value = voltage.toFixed(2);
+        document.getElementById("velocity-value").textContent =
+          v.toFixed(2) + " m/s";
+      }
     });
-    // เมื่อเปลี่ยนแรงดัน -> อัปเดตความเร็ว
+
+    // เมื่อเปลี่ยนแรงดัน -> อัปเดตความเร็ว (จำกัดสูงสุด 15V)
     strikeVoltageInput.addEventListener("input", (e) => {
-      const voltage = parseFloat(e.target.value);
+      let voltage = parseFloat(e.target.value);
+
+      // จำกัดแรงดันไม่เกิน 15V
+      if (voltage > 15) {
+        voltage = 15;
+        e.target.value = "15.00";
+        showCustomMessage("แรงดันถูกจำกัดไม่เกิน 15V", "warning");
+      }
+
       const v = 0.314 * voltage;
       strikeVelocitySlider.value = v.toFixed(2);
-      document.getElementById("velocity-value").textContent = v.toFixed(2) + " m/s";
+      document.getElementById("velocity-value").textContent =
+        v.toFixed(2) + " m/s";
     });
   }
 
@@ -672,8 +704,10 @@ function optimizeSettings() {
   addDebugInfo("request", payload);
   setButtonDisabled("optimize-btn", true);
   showCustomMessage("กำลังหาค่าที่เหมาะสม...", "info");
+  // เพิ่ม max_solutions parameter สำหรับทางเลือกหลายแบบ
+  payload.max_solutions = 5;
 
-  fetch("/api/optimize", {
+  fetch("/api/optimize_multiple", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -697,41 +731,53 @@ function optimizeSettings() {
         );
         return;
       }
-      updateOptimizedParamsUI(result);
 
-      if (
-        !payload.fixed_params.elevation_angle &&
-        result.strike_angle_elevation !== undefined
-      ) {
-        document.getElementById("strike-angle-elevation").value =
-          result.strike_angle_elevation.toFixed(1);
-        document.getElementById("angle-elevation-value").textContent =
-          result.strike_angle_elevation.toFixed(1) + "°";
-      }
-      if (
-        !payload.fixed_params.azimuth_angle &&
-        result.strike_azimuth_angle !== undefined
-      ) {
-        document.getElementById("strike-azimuth-angle").value =
-          result.strike_azimuth_angle.toFixed(1);
-        document.getElementById("angle-azimuth-value").textContent =
-          result.strike_azimuth_angle.toFixed(1) + "°";
-      }
-      if (
-        !payload.fixed_params.velocity &&
-        result.strike_velocity !== undefined
-      ) {
-        document.getElementById("strike-velocity").value =
-          result.strike_velocity.toFixed(2);
-        document.getElementById("velocity-value").textContent =
-          result.strike_velocity.toFixed(2) + " m/s";
-      }
+      // แสดงทางเลือกหลายแบบ
+      if (result.solutions && result.solutions.length > 0) {
+        updateMultipleOptimalSolutionsUI(result);
 
-      showCustomMessage(
-        "พบค่าที่เหมาะสมแล้ว! กำลังจำลองด้วยค่าใหม่...",
-        "success"
-      );
-      setTimeout(() => startSimulation(), 500);
+        // ใช้ทางเลือกแรก (ที่ดีที่สุด) สำหรับการอัปเดตค่าหลัก
+        const bestSolution = result.solutions[0];
+
+        if (
+          !payload.fixed_params.elevation_angle &&
+          bestSolution.strike_angle_elevation !== undefined
+        ) {
+          document.getElementById("strike-angle-elevation").value =
+            bestSolution.strike_angle_elevation.toFixed(1);
+          document.getElementById("angle-elevation-value").textContent =
+            bestSolution.strike_angle_elevation.toFixed(1) + "°";
+        }
+        if (
+          !payload.fixed_params.azimuth_angle &&
+          bestSolution.strike_azimuth_angle !== undefined
+        ) {
+          document.getElementById("strike-azimuth-angle").value =
+            bestSolution.strike_azimuth_angle.toFixed(1);
+          document.getElementById("angle-azimuth-value").textContent =
+            bestSolution.strike_azimuth_angle.toFixed(1) + "°";
+        }
+        if (
+          !payload.fixed_params.velocity &&
+          bestSolution.strike_velocity !== undefined
+        ) {
+          document.getElementById("strike-velocity").value =
+            bestSolution.strike_velocity.toFixed(2);
+          document.getElementById("velocity-value").textContent =
+            bestSolution.strike_velocity.toFixed(2) + " m/s";
+        }
+
+        showCustomMessage(
+          `พบ ${result.solutions.length} ทางเลือกสำหรับการตีไปยังเป้าหมาย! กำลังจำลองด้วยทางเลือกที่ดีที่สุด...`,
+          "success"
+        );
+        setTimeout(() => startSimulation(), 500);
+      } else {
+        showCustomMessage(
+          "ไม่พบทางเลือกที่เหมาะสมสำหรับเป้าหมายนี้",
+          "warning"
+        );
+      }
     })
     .catch((error) => {
       console.error("Error optimizing settings (catch block):", error);
@@ -744,6 +790,184 @@ function optimizeSettings() {
     .finally(() => {
       setButtonDisabled("optimize-btn", false);
     });
+}
+
+// ฟังก์ชันสำหรับแสดงผลทางเลือกหลายแบบ
+function updateMultipleOptimalSolutionsUI(data) {
+  // อัปเดต UI ด้วยทางเลือกแรก (ที่ดีที่สุด) สำหรับการแสดงผลหลัก
+  if (data.solutions && data.solutions.length > 0) {
+    const bestSolution = data.solutions[0];
+
+    // แสดงพารามิเตอร์ที่เหมาะสมหลักด้วยทางเลือกที่ดีที่สุด
+    updateOptimizedParamsUI({
+      strike_angle_elevation: bestSolution.strike_angle_elevation,
+      strike_azimuth_angle: bestSolution.strike_azimuth_angle,
+      strike_velocity: bestSolution.strike_velocity,
+      required_voltage: bestSolution.required_voltage,
+      // สร้างช่วงประมาณ ±5% สำหรับแต่ละค่า
+      strike_angle_elevation_range: [
+        bestSolution.strike_angle_elevation * 0.95,
+        bestSolution.strike_angle_elevation * 1.05,
+      ],
+      strike_azimuth_angle_range: [
+        bestSolution.strike_azimuth_angle -
+          Math.abs(bestSolution.strike_azimuth_angle * 0.05),
+        bestSolution.strike_azimuth_angle +
+          Math.abs(bestSolution.strike_azimuth_angle * 0.05),
+      ],
+      strike_velocity_range: [
+        bestSolution.strike_velocity * 0.95,
+        bestSolution.strike_velocity * 1.05,
+      ],
+    });
+
+    // สร้าง UI สำหรับแสดงทางเลือกหลายแบบ
+    createMultipleSolutionsTable(data.solutions);
+  }
+}
+
+// ฟังก์ชันสำหรับสร้างตารางแสดงทางเลือกหลายแบบ
+function createMultipleSolutionsTable(solutions) {
+  // ค้นหาตำแหน่งที่จะแทรกตาราง (หลังจาก optimal-params-display)
+  const optimalParamsDisplay = document.getElementById(
+    "optimal-params-display"
+  );
+  if (!optimalParamsDisplay) return;
+
+  // ลบตารางเก่าถ้ามี
+  const existingTable = document.getElementById(
+    "multiple-solutions-table-container"
+  );
+  if (existingTable) {
+    existingTable.remove();
+  }
+  // สร้าง container สำหรับตาราง
+  const tableContainer = document.createElement("div");
+  tableContainer.id = "multiple-solutions-table-container";
+
+  // สร้างหัวข้อ
+  const header = document.createElement("h3");
+  header.innerHTML =
+    '<i class="fas fa-list-alt"></i> ทางเลือกทั้งหมดสำหรับการตีไปยังเป้าหมาย';
+  tableContainer.appendChild(header);
+
+  // สร้างตาราง
+  const table = document.createElement("table");
+  table.className = "solutions-table";
+  // สร้างหัวตาราง
+  const thead = document.createElement("thead");
+  thead.innerHTML = `
+    <tr>
+      <th>ตัวเลือก</th>
+      <th>แรงดัน (V)</th>
+      <th>มุมเงย (°)</th>
+      <th>มุมทิศ (°)</th>
+      <th>ความเร็ว (m/s)</th>
+      <th>ความคลาดเคลื่อน (cm)</th>
+      <th>การดำเนินการ</th>
+    </tr>
+  `;
+  table.appendChild(thead);
+  // สร้างเนื้อหาตาราง
+  const tbody = document.createElement("tbody");
+  solutions.forEach((solution, index) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>
+        ${index === 0 ? '<i class="fas fa-star star-icon"></i>' : ""}${
+      solution.option_number
+    }
+        ${
+          index === 0 ? '<br><small class="best-option">(ดีที่สุด)</small>' : ""
+        }
+      </td>
+      <td>${solution.required_voltage.toFixed(1)}</td>
+      <td>${solution.strike_angle_elevation.toFixed(1)}</td>
+      <td>${solution.strike_azimuth_angle.toFixed(1)}</td>
+      <td>${solution.strike_velocity.toFixed(2)}</td>
+      <td>
+        ${(solution.error_distance * 100).toFixed(1)}
+        <br><small style="color: var(--text-secondary);">(${solution.error_percent.toFixed(
+          1
+        )}%)</small>
+      </td>
+      <td>
+        <button
+          class="btn-secondary"
+          onclick="applySolution(${index})"
+          title="ใช้ค่านี้สำหรับการจำลอง"
+        >
+          <i class="fas fa-play"></i> ใช้ค่านี้
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+  // เพิ่มคำอธิบาย
+  const description = document.createElement("div");
+  description.className = "solutions-description";
+  description.innerHTML = `
+    <small>
+      <i class="fas fa-info-circle"></i>
+      ระบบแสดง ${solutions.length} ทางเลือกที่เหมาะสมสำหรับการตีไปยังเป้าหมาย
+      ตัวเลือกที่ 1 คือทางเลือกที่ดีที่สุด (ความคลาดเคลื่อนน้อยที่สุด)
+      <br>คลิก "ใช้ค่านี้" เพื่อนำพารามิเตอร์ไปใช้ในการจำลอง
+    </small>
+  `;
+
+  tableContainer.appendChild(table);
+  tableContainer.appendChild(description);
+
+  // แทรกตารางหลังจาก optimal-params-display
+  optimalParamsDisplay.parentNode.insertBefore(
+    tableContainer,
+    optimalParamsDisplay.nextSibling
+  );
+
+  // เก็บข้อมูล solutions ไว้ใช้งาน
+  window.currentSolutions = solutions;
+}
+
+// ฟังก์ชันสำหรับใช้ทางเลือกที่เลือก
+function applySolution(solutionIndex) {
+  if (!window.currentSolutions || !window.currentSolutions[solutionIndex]) {
+    showCustomMessage("ไม่พบข้อมูลทางเลือกที่เลือก", "error");
+    return;
+  }
+
+  const solution = window.currentSolutions[solutionIndex];
+
+  // อัปเดตค่าในฟอร์มหลัก
+  document.getElementById("strike-angle-elevation").value =
+    solution.strike_angle_elevation.toFixed(1);
+  document.getElementById("angle-elevation-value").textContent =
+    solution.strike_angle_elevation.toFixed(1) + "°";
+
+  document.getElementById("strike-azimuth-angle").value =
+    solution.strike_azimuth_angle.toFixed(1);
+  document.getElementById("angle-azimuth-value").textContent =
+    solution.strike_azimuth_angle.toFixed(1) + "°";
+
+  document.getElementById("strike-velocity").value =
+    solution.strike_velocity.toFixed(2);
+  document.getElementById("velocity-value").textContent =
+    solution.strike_velocity.toFixed(2) + " m/s";
+
+  showCustomMessage(
+    `ใช้ทางเลือกที่ ${
+      solution.option_number
+    }: แรงดัน ${solution.required_voltage.toFixed(
+      1
+    )}V, มุมเงย ${solution.strike_angle_elevation.toFixed(
+      1
+    )}°, ความเร็ว ${solution.strike_velocity.toFixed(2)}m/s`,
+    "success"
+  );
+
+  // เริ่มการจำลองด้วยค่าใหม่
+  setTimeout(() => startSimulation(), 300);
 }
 
 function updateSimulationResultsUI(result) {
@@ -1246,9 +1470,9 @@ function resetSimulation() {
   document.getElementById("release-height").value = "2.0";
   document.getElementById("strike-height").value = "0.35";
   document.getElementById("height-value").textContent = "0.35 m";
-
   const elSlider = document.getElementById("strike-angle-elevation");
   if (elSlider) {
+    // ตั้งค่าเริ่มต้นเป็น 45 องศา (ค่าต่ำสุดที่อนุญาต)
     elSlider.value = "45";
     document.getElementById("angle-elevation-value").textContent = "45.0°";
   }
@@ -1258,11 +1482,11 @@ function resetSimulation() {
     azSlider.value = "0";
     document.getElementById("angle-azimuth-value").textContent = "0.0°";
   }
-
   const velSlider = document.getElementById("strike-velocity");
   if (velSlider) {
-    velSlider.value = "5.25";
-    document.getElementById("velocity-value").textContent = "5.25 m/s";
+    // ตั้งความเร็วเริ่มต้นที่ 4.4 m/s (14V * 0.314)
+    velSlider.value = "4.4";
+    document.getElementById("velocity-value").textContent = "4.4 m/s";
   }
 
   document.getElementById("ideal-comparison").checked = false;

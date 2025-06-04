@@ -43,6 +43,48 @@ def calculate():
         strike_height = float(data.get("strike_height", 0.35))
         show_ideal = data.get("show_ideal", False)
 
+        # ตรวจสอบขีดจำกัดแรงดัน (ไม่เกิน 15V)
+        if "strike_voltage" in data:
+            strike_voltage = float(data["strike_voltage"])
+            if strike_voltage > 15.0:
+                return (
+                    jsonify({"error": f"แรงดันต้องไม่เกิน 15V (ได้รับ: {strike_voltage}V)"}),
+                    400,
+                )
+            # แปลงแรงดันเป็นความเร็วและตรวจสอบ
+            calculated_velocity = strike_voltage * 0.314
+            if calculated_velocity > 4.71:
+                return (
+                    jsonify(
+                        {
+                            "error": f"ความเร็วที่คำนวณจากแรงดันเกินขีดจำกัด: {calculated_velocity:.2f} m/s (สูงสุด 4.71 m/s)"
+                        }
+                    ),
+                    400,
+                )
+
+        # ตรวจสอบขีดจำกัดมุมเงย (45-90 องศา)
+        if strike_angle_elevation < 45.0 or strike_angle_elevation > 90.0:
+            return (
+                jsonify(
+                    {
+                        "error": f"มุมเงยต้องอยู่ระหว่าง 45-90 องศา (ได้รับ: {strike_angle_elevation}°)"
+                    }
+                ),
+                400,
+            )
+
+        # ตรวจสอบว่ามุมเงยเป็นทวีคูณของ 5
+        if strike_angle_elevation % 5 != 0:
+            return (
+                jsonify(
+                    {
+                        "error": f"มุมเงยต้องเป็นทวีคูณของ 5 องศา (ได้รับ: {strike_angle_elevation}°)"
+                    }
+                ),
+                400,
+            )
+
         simulation.striker_settings.release_height = release_height
         simulation.striker_settings.strike_angle_elevation = strike_angle_elevation
         simulation.striker_settings.strike_azimuth_angle = strike_azimuth_angle
@@ -177,6 +219,17 @@ def optimize():
             vel = opt_result_data["velocity"]
             required_voltage = opt_result_data.get("required_voltage", None)
 
+            # ตรวจสอบว่าแรงดันที่ต้องการไม่เกิน 15V
+            if required_voltage and required_voltage > 15.0:
+                return (
+                    jsonify(
+                        {
+                            "error": f"ไม่สามารถหาค่าที่เหมาะสมได้ภายในขีดจำกัดแรงดัน 15V (ต้องการ: {required_voltage:.2f}V)"
+                        }
+                    ),
+                    400,
+                )
+
             el_angle_tolerance = el_angle * 0.05
             az_angle_tolerance = abs(
                 az_angle * 0.05
@@ -222,8 +275,16 @@ def optimize():
                         ),
                     ],
                     "strike_velocity_range": [
-                        (vel - vel_tolerance if "velocity" not in fixed_params else vel),
-                        (vel + vel_tolerance if "velocity" not in fixed_params else vel),
+                        (
+                            vel - vel_tolerance
+                            if "velocity" not in fixed_params
+                            else vel
+                        ),
+                        (
+                            vel + vel_tolerance
+                            if "velocity" not in fixed_params
+                            else vel
+                        ),
                     ],
                     "actual_landing_x": opt_result_data["landing_x"],
                     "actual_landing_z": opt_result_data["landing_z"],
@@ -241,6 +302,131 @@ def optimize():
         app.logger.error(f"Error in /api/optimize: {e}", exc_info=True)
         return (
             jsonify({"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การปรับให้เหมาะสม: {str(e)}"}),
+            500,
+        )
+
+
+@app.route("/api/optimize_multiple", methods=["POST"])
+def optimize_multiple():
+    if simulation is None:
+        return (
+            jsonify(
+                {"error": "เครื่องจำลองการทำงานเริ่มต้นไม่สำเร็จ กรุณาตรวจสอบบันทึกของเซิร์ฟเวอร์"}
+            ),
+            500,
+        )
+    try:
+        data = request.json
+        target_x = float(data.get("target_x", 0.0))
+        target_z = float(data.get("target_z", 1.7))
+        release_height = float(data.get("release_height", 2.0))
+        strike_height = float(data.get("strike_height", 0.35))
+        current_elevation_angle = float(data.get("current_elevation_angle", 45.0))
+        current_azimuth_angle = float(data.get("current_azimuth_angle", 0.0))
+        current_velocity = float(data.get("current_velocity", 5.25))
+        max_solutions = int(data.get("max_solutions", 5))
+
+        fixed_params_input = data.get("fixed_params", {})
+        fixed_params = {}
+        if fixed_params_input.get("elevation_angle"):
+            fixed_params["elevation_angle"] = current_elevation_angle
+        if fixed_params_input.get("azimuth_angle"):
+            fixed_params["azimuth_angle"] = current_azimuth_angle
+        if fixed_params_input.get("velocity"):
+            fixed_params["velocity"] = current_velocity
+
+        simulation.striker_settings.release_height = release_height
+        simulation.striker_settings.strike_height = strike_height
+        simulation.striker_settings.strike_angle_elevation = current_elevation_angle
+        simulation.striker_settings.strike_azimuth_angle = current_azimuth_angle
+        simulation.striker_settings.strike_velocity = current_velocity
+
+        if "physics" in data:
+            physics_data = data["physics"]
+            simulation.ball_physics.gravity = float(physics_data.get("gravity", 9.81))
+            simulation.ball_physics.ball_mass = float(
+                physics_data.get("ball_mass", 0.024)
+            )
+            simulation.air_density = float(physics_data.get("air_density", 1.225))
+            simulation.drag_coefficient = float(
+                physics_data.get("drag_coefficient", 0.5)
+            )
+            simulation.ball_physics.elasticity = float(
+                physics_data.get("elasticity", 0.4)
+            )
+
+        if not hasattr(simulation, "find_multiple_optimal_solutions"):
+            return (
+                jsonify(
+                    {
+                        "error": "ไม่พบฟังก์ชันการค้นหาทางเลือกหลายแบบ (find_multiple_optimal_solutions) ในแกนกลางของระบบจำลอง"
+                    }
+                ),
+                501,
+            )
+
+        success, solutions_data = simulation.find_multiple_optimal_solutions(
+            target_x, target_z, fixed_params=fixed_params, max_solutions=max_solutions
+        )
+
+        if success:
+            # กรองเฉพาะทางเลือกที่แรงดันไม่เกิน 15V
+            valid_solutions = []
+            for solution in solutions_data:
+                required_voltage = solution["required_voltage"]
+                if required_voltage <= 15.0:
+                    valid_solutions.append(solution)
+
+            if not valid_solutions:
+                return jsonify({"error": "ไม่พบทางเลือกใดที่อยู่ภายในขีดจำกัดแรงดัน 15V"}), 400
+
+            formatted_solutions = []
+            for i, solution in enumerate(valid_solutions):
+                el_angle = solution["elevation_angle"]
+                az_angle = solution["azimuth_angle"]
+                vel = solution["velocity"]
+                required_voltage = solution["required_voltage"]
+                error_distance = solution["error"]
+
+                target_radial_dist = math.sqrt(target_x**2 + target_z**2)
+                error_percent = (
+                    (error_distance / target_radial_dist) * 100
+                    if target_radial_dist > 1e-6
+                    else 0
+                )
+
+                formatted_solutions.append(
+                    {
+                        "option_number": i + 1,
+                        "strike_angle_elevation": el_angle,
+                        "strike_azimuth_angle": az_angle,
+                        "strike_velocity": vel,
+                        "required_voltage": required_voltage,
+                        "actual_landing_x": solution["landing_x"],
+                        "actual_landing_z": solution["landing_z"],
+                        "error_distance": error_distance,
+                        "error_percent": error_percent,
+                        "description": f"ตัวเลือก {i+1}: {required_voltage:.1f}V, {el_angle:.1f}°, ความเร็ว {vel:.1f}m/s",
+                    }
+                )
+
+            return jsonify(
+                {
+                    "solutions": formatted_solutions,
+                    "target_x": target_x,
+                    "target_z": target_z,
+                    "total_options": len(formatted_solutions),
+                    "message": f"พบทางเลือก {len(formatted_solutions)} แบบสำหรับการตีไปยังเป้าหมาย",
+                }
+            )
+        else:
+            return jsonify({"error": solutions_data}), 400
+    except Exception as e:
+        app.logger.error(f"Error in /api/optimize_multiple: {e}", exc_info=True)
+        return (
+            jsonify(
+                {"error": f"เกิดข้อผิดพลาดที่ไม่คาดคิดใน API การหาทางเลือกหลายแบบ: {str(e)}"}
+            ),
             500,
         )
 
@@ -265,8 +451,8 @@ def field_info():
             "field_type": field_data.get("field_type"),
             "azimuth_angle_min": simulation.striker_settings.azimuth_angle_min,
             "azimuth_angle_max": simulation.striker_settings.azimuth_angle_max,
-            "elevation_angle_min": simulation.striker_settings.angle_elevation_min,
-            "elevation_angle_max": simulation.striker_settings.angle_elevation_max,
+            "elevation_angle_min": 45.0,  # มุมเงยขั้นต่ำ 45 องศา
+            "elevation_angle_max": 90.0,  # มุมเงยสูงสุด 90 องศา
             "velocity_min": simulation.striker_settings.velocity_min,
             "velocity_max": simulation.striker_settings.velocity_max,
         }
@@ -274,7 +460,14 @@ def field_info():
             {
                 "dimensions": response_dimensions,
                 "zones_data": field_data.get("raw_zones_data"),
-                "available_field_types": ["standard", "extra1", "extra2", "real1", "extramap1", "extramap2"],
+                "available_field_types": [
+                    "standard",
+                    "extra1",
+                    "extra2",
+                    "real1",
+                    "extramap1",
+                    "extramap2",
+                ],
             }
         )
     except Exception as e:
@@ -307,8 +500,8 @@ def change_field():
             "field_type": new_field_data.get("field_type"),
             "azimuth_angle_min": simulation.striker_settings.azimuth_angle_min,
             "azimuth_angle_max": simulation.striker_settings.azimuth_angle_max,
-            "elevation_angle_min": simulation.striker_settings.angle_elevation_min,
-            "elevation_angle_max": simulation.striker_settings.angle_elevation_max,
+            "elevation_angle_min": 45.0,  # มุมเงยขั้นต่ำ 45 องศา
+            "elevation_angle_max": 90.0,  # มุมเงยสูงสุด 90 องศา
             "velocity_min": simulation.striker_settings.velocity_min,
             "velocity_max": simulation.striker_settings.velocity_max,
         }

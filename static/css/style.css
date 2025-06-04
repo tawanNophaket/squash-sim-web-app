@@ -6,7 +6,8 @@ button,
 input,
 select,
 table {
-  font-family: "Anuphan", "Sarabun", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Anuphan", "Sarabun", "Inter", -apple-system, BlinkMacSystemFont,
+    sans-serif;
 }
 
 /* Mobile-First Styles for Squash Ball Striker App */
@@ -17,20 +18,22 @@ table {
   --primary-light: #ff5252;
   --primary-dark: #c50e16;
   --accent: #ff9e80;
-
   /* Dark Theme Colors */
   --bg-color: #121212;
+  --bg-secondary: #2a2a2a;
   --card-color: #1e1e1e;
+  --card-bg: #1e1e1e;
   --card-hover: #2a2a2a;
   --text-primary: #ffffff;
   --text-secondary: #b0b0b0;
   --border-color: #333333;
-
   /* Status Colors */
   --success: #00e676;
+  --success-color-light: rgba(0, 230, 118, 0.1);
   --warning: #ffab40;
   --error: #ff5252;
   --info: #64b5f6;
+  --accent-color: #ff6b35;
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -941,4 +944,120 @@ button:disabled {
   100% {
     text-shadow: 0 0 10px var(--primary-dark);
   }
+}
+
+/* CSS สำหรับตารางทางเลือกหลายแบบ */
+.solutions-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.solutions-table thead th {
+  background-color: var(--accent-color);
+  color: white;
+  padding: 12px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+
+.solutions-table tbody td {
+  padding: 10px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  transition: background-color var(--transition-fast);
+}
+
+.solutions-table tbody tr:first-child {
+  background-color: var(--success-color-light) !important;
+  font-weight: bold;
+}
+
+.solutions-table tbody tr:nth-child(even) {
+  background-color: var(--bg-secondary);
+}
+
+.solutions-table tbody tr:nth-child(odd) {
+  background-color: var(--card-bg);
+}
+
+.solutions-table tbody tr:hover {
+  background-color: var(--card-hover) !important;
+}
+
+.solutions-table .star-icon {
+  color: #ffd700;
+  margin-right: 4px;
+}
+
+.solutions-table .best-option {
+  color: var(--success);
+  font-size: 0.8em;
+}
+
+#multiple-solutions-table-container {
+  margin-top: 16px;
+  background: var(--card-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+#multiple-solutions-table-container h3 {
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  font-size: 1.2em;
+}
+
+#multiple-solutions-table-container h3 i {
+  color: var(--accent-color);
+  margin-right: 8px;
+}
+
+.solutions-description {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--info);
+}
+
+.solutions-description small {
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.solutions-description i {
+  color: var(--info);
+  margin-right: 4px;
+}
+
+/* ปรับปรุงปุ่มในตาราง */
+.solutions-table .btn-secondary {
+  padding: 6px 12px;
+  font-size: 0.8em;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-weight: 500;
+}
+
+.solutions-table .btn-secondary:hover {
+  background-color: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.solutions-table .btn-secondary i {
+  margin-right: 4px;
 }
