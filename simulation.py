@@ -1030,13 +1030,78 @@ class Simulation:
                     break
 
             if is_different:
-                solutions.append(candidate)
-
-        # ถ้าได้ทางเลือกน้อยเกินไป ให้ขยาย tolerance
+                solutions.append(candidate)        # ถ้าได้ทางเลือกน้อยเกินไป ให้ขยาย tolerance (ป้องกัน recursion)
         if len(solutions) < 2 and tolerance < 0.15:
-            return self.find_multiple_optimal_solutions(
-                target_x, target_z, fixed_params, max_solutions
-            )
+            # สร้าง tolerance ใหม่และหยุด recursion ถ้าไม่ได้ผล
+            new_tolerance = min(tolerance * 1.5, 0.15)
+            if new_tolerance > tolerance:  # ป้องกัน infinite recursion
+                # ค้นหาใหม่ด้วย tolerance ที่ขยายแล้ว โดยไม่ recursion
+                expanded_solutions = []
+                for az in az_range:
+                    cur_az = fixed_params.get("azimuth_angle", az)
+                    for el in el_range:
+                        cur_el = fixed_params.get("elevation_angle", el)
+                        for vel in vel_range:
+                            cur_vel = fixed_params.get("velocity", vel)
+                            land_x, land_z = self.ball_physics.get_landing_position(
+                                release_h, cur_vel, cur_el, cur_az, strike_h
+                            )
+                            error = math.sqrt(
+                                (land_x - target_x) ** 2 + (land_z - target_z) ** 2
+                            )
+
+                            if error < new_tolerance:
+                                required_voltage = self.striker_settings.convert_velocity_to_power(cur_vel)
+                                original_elevation = cur_el
+                                rounded_elevation = round(original_elevation / 5) * 5
+                                if rounded_elevation < self.striker_settings.angle_elevation_min:
+                                    rounded_elevation = self.striker_settings.angle_elevation_min
+                                elif rounded_elevation > self.striker_settings.angle_elevation_max:
+                                    rounded_elevation = self.striker_settings.angle_elevation_max
+                                
+                                if rounded_elevation != original_elevation:
+                                    land_x_rounded, land_z_rounded = self.ball_physics.get_landing_position(
+                                        release_h, cur_vel, rounded_elevation, cur_az, strike_h
+                                    )
+                                    final_error = math.sqrt(
+                                        (land_x_rounded - target_x) ** 2 + (land_z_rounded - target_z) ** 2
+                                    )
+                                    if final_error < new_tolerance:
+                                        expanded_solutions.append({
+                                            "elevation_angle": rounded_elevation,
+                                            "azimuth_angle": cur_az,
+                                            "velocity": cur_vel,
+                                            "required_voltage": required_voltage,
+                                            "error": final_error,
+                                            "landing_x": land_x_rounded,
+                                            "landing_z": land_z_rounded,
+                                        })
+                                else:
+                                    expanded_solutions.append({
+                                        "elevation_angle": rounded_elevation,
+                                        "azimuth_angle": cur_az,
+                                        "velocity": cur_vel,
+                                        "required_voltage": required_voltage,
+                                        "error": error,
+                                        "landing_x": land_x,
+                                        "landing_z": land_z,
+                                    })
+                
+                # เรียงและเลือกทางเลือกจาก expanded_solutions
+                expanded_solutions.sort(key=lambda x: x["error"])
+                for candidate in expanded_solutions:
+                    if len(solutions) >= max_solutions:
+                        break
+                    is_different = True
+                    for existing in solutions:
+                        vel_diff = abs(candidate["velocity"] - existing["velocity"])
+                        el_diff = abs(candidate["elevation_angle"] - existing["elevation_angle"])
+                        az_diff = abs(candidate["azimuth_angle"] - existing["azimuth_angle"])
+                        if vel_diff < 0.2 and el_diff < 3.0 and az_diff < 3.0:
+                            is_different = False
+                            break
+                    if is_different:
+                        solutions.append(candidate)
 
         return True, solutions
 
